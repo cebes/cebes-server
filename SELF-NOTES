@@ -1,0 +1,3 @@
+- Authentication: https://github.com/softwaremill/akka-http-session
+- Dependency Injection with Guice: http://jonasboner.com/real-world-scala-dependency-injection-di/
+- Handling exceptions: http://doc.akka.io/docs/akka/2.4.9/scala/http/routing-dsl/exception-handling.html

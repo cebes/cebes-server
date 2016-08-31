@@ -1,0 +1,8 @@
+akka {
+  loglevel = WARNING
+}
+
+http = {
+  interface = "localhost"
+  port = 21000
+}
