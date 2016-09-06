@@ -20,10 +20,6 @@ import io.cebes.server.http.HttpServer
 object Main {
 
   def main(args: Array[String]) {
-
-    // initialize Spark service
-
-    // start akka-http
     val server = InjectorService.injector.getInstance(classOf[HttpServer])
     server.start()
   }

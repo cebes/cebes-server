@@ -21,12 +21,14 @@ import com.google.inject.Inject
 import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.auth.AuthService
 import io.cebes.df.DataframeService
+import io.cebes.storage.StorageService
 
 import scala.io.StdIn
 
 class HttpServer @Inject()(override val authService: AuthService,
-                           override val dfService: DataframeService)
-  extends StrictLogging with Routes with Config {
+                           override val dfService: DataframeService,
+                           override val storageService: StorageService)
+  extends StrictLogging with Routes with CebesHttpConfig {
 
   def start(): Unit = {
     implicit val system = ActorSystem("CebesServerApp")
@@ -35,7 +37,7 @@ class HttpServer @Inject()(override val authService: AuthService,
 
     val bindingFuture = Http().bindAndHandle(routes, httpInterface, httpPort)
 
-    logger.info("RESTful server started")
+    logger.info(s"RESTful server started on $httpInterface:$httpPort")
     StdIn.readChar()
 
     bindingFuture
@@ -44,5 +46,6 @@ class HttpServer @Inject()(override val authService: AuthService,
         system.terminate()
         logger.info("RESTful server stopped")
       }
+    System.exit(0)
   }
 }
