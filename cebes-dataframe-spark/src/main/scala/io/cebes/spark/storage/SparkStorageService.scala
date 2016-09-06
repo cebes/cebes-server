@@ -18,7 +18,7 @@ import java.util.Properties
 
 import com.google.inject.Inject
 import io.cebes.df.Dataframe
-import io.cebes.spark.config.{CebesSparkConfig, HasSparkSession}
+import io.cebes.spark.config.HasSparkSession
 import io.cebes.spark.df.SparkDataframe
 import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
