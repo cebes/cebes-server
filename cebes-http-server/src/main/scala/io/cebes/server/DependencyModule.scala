@@ -14,19 +14,25 @@
 
 package io.cebes.server
 
-import com.google.inject.{Binder, Guice, Module}
+import com.google.inject.Guice
 import io.cebes.auth.AuthService
 import io.cebes.auth.simple.SimpleAuthService
 import io.cebes.df.DataframeService
+import io.cebes.spark.CebesSparkDependencyModule
 import io.cebes.spark.df.SparkDataframeService
+import io.cebes.spark.storage.SparkStorageService
+import io.cebes.storage.StorageService
 
 /**
   * Guice's configuration class that is defining the interface-implementation bindings
   */
-class DependencyModule extends Module {
-  def configure(binder: Binder): Unit = {
-    binder.bind(classOf[AuthService]).to(classOf[SimpleAuthService])
-    binder.bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
+class DependencyModule extends CebesSparkDependencyModule {
+
+  protected override def configure(): Unit = {
+    super.configure()
+    bind(classOf[AuthService]).to(classOf[SimpleAuthService])
+    bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
+    bind(classOf[StorageService]).to(classOf[SparkStorageService])
   }
 }
 

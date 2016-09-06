@@ -9,17 +9,18 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 06/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.spark
 
-import com.typesafe.config.ConfigFactory
+import com.google.inject.AbstractModule
+import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
 
-trait Config {
-  private val config = ConfigFactory.load()
-  private val httpConfig = config.getConfig("http")
 
-  val httpInterface = httpConfig.getString("interface")
-  val httpPort = httpConfig.getInt("port")
+class CebesSparkDependencyModule extends AbstractModule {
+
+  protected def configure(): Unit = {
+    bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
+  }
 }

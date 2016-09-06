@@ -11,15 +11,15 @@ lazy val cebesAuth = project.in(file("cebes-auth")).
   settings(commonSettings: _*)
 lazy val cebesDataframe = project.in(file("cebes-dataframe")).
   settings(commonSettings: _*)
-lazy val cebesDataFrameSpark = project.in(file("cebes-dataframe-spark")).
+lazy val cebesDataframeSpark = project.in(file("cebes-dataframe-spark")).
   settings(commonSettings: _*).
   dependsOn(cebesDataframe)
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
-  dependsOn(cebesAuth, cebesDataFrameSpark)
+  dependsOn(cebesAuth, cebesDataframeSpark)
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).
-  aggregate(cebesAuth, cebesHttpServer, cebesDataframe, cebesDataFrameSpark)
+  aggregate(cebesAuth, cebesHttpServer, cebesDataframe, cebesDataframeSpark)
 
 scalastyleConfig := baseDirectory.value / "build" / "scalastyle-config.xml"

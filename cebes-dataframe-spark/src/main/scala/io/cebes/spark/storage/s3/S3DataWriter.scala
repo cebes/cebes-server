@@ -32,10 +32,10 @@ import scala.collection.{JavaConversions, mutable}
 class S3DataWriter(val s3Client: AmazonS3Client,
                    val bucketName: String, val key: String) extends DataWriter {
 
-  var partNumber: Int = 1
-  val uploadId = s3Client.initiateMultipartUpload(
+  private var partNumber: Int = 1
+  private val uploadId = s3Client.initiateMultipartUpload(
     new InitiateMultipartUploadRequest(bucketName, key)).getUploadId
-  val partETags = new mutable.MutableList[PartETag]()
+  private val partETags = new mutable.MutableList[PartETag]()
 
   /**
     * Append some bytes into the current file

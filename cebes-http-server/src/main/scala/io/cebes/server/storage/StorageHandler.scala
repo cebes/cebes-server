@@ -9,21 +9,29 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 05/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.server.storage
 
 import akka.http.scaladsl.server.Directives._
-import io.cebes.server.auth.AuthHandler
-import io.cebes.server.df.DataframeHandler
-import io.cebes.server.storage.StorageHandler
+import io.cebes.server.http.SecuredSession
+import io.cebes.storage.StorageService
 
-trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with StorageHandler {
-  val routes =
-    pathPrefix("v1") {
-      authApi ~
-      dataframeApi ~
-      storageApi
-    } ~ path("")(getFromResource("public/index.html"))
+trait StorageHandler extends SecuredSession {
+
+  val storageService: StorageService
+
+  val storageApi = pathPrefix("storage") {
+    path("tmp") {
+      post {
+        myRequiredSession { session =>
+          myInvalidateSession { ctx =>
+            logger.info(s"Logging out $session")
+            ctx.complete("ok")
+          }
+        }
+      }
+    }
+  }
 }
