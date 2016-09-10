@@ -14,6 +14,8 @@
 
 package io.cebes.server.http
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
@@ -21,31 +23,41 @@ import com.google.inject.Inject
 import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.auth.AuthService
 import io.cebes.df.DataframeService
+import io.cebes.prop.{Prop, Property}
 import io.cebes.storage.StorageService
 
-import scala.io.StdIn
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class HttpServer @Inject()(override val authService: AuthService,
                            override val dfService: DataframeService,
-                           override val storageService: StorageService)
-  extends StrictLogging with Routes with CebesHttpConfig {
+                           override val storageService: StorageService,
+                           @Prop(Property.HTTP_INTERFACE) val httpInterface: String,
+                           @Prop(Property.HTTP_PORT) val httpPort: Int)
+  extends StrictLogging with Routes {
+
+  implicit val system = ActorSystem("CebesServerApp")
+  implicit val materializer = ActorMaterializer()
+
+  var bindingFuture: Option[Future[Http.ServerBinding]] = None
 
   def start(): Unit = {
-    implicit val system = ActorSystem("CebesServerApp")
-    implicit val materializer = ActorMaterializer()
-    import system.dispatcher
-
-    val bindingFuture = Http().bindAndHandle(routes, httpInterface, httpPort)
-
+    bindingFuture = Option(Http().bindAndHandle(routes, httpInterface, httpPort))
     logger.info(s"RESTful server started on $httpInterface:$httpPort")
-    StdIn.readChar()
+  }
 
-    bindingFuture
-      .flatMap(_.unbind())
-      .onComplete { _ =>
-        system.terminate()
-        logger.info("RESTful server stopped")
-      }
-    System.exit(0)
+  def stop(): Unit = {
+    bindingFuture.foreach { f =>
+      f.flatMap(_.unbind())
+        .onComplete { _ =>
+          Await.result(system.terminate(), Duration(1, TimeUnit.MINUTES))
+          logger.info("RESTful server stopped")
+        }
+    }
+  }
+
+  def waitServer(): Unit = {
+    bindingFuture.wait()
   }
 }

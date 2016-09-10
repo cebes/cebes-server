@@ -20,6 +20,14 @@ package io.cebes.storage
 trait DataWriter {
 
   /**
+    * The exact path to the file written, maybe different from the path of the DataSource
+    * (if DataSource points to an existing directory)
+    *
+    * @return the exact path where data was written
+    */
+  val path: String
+
+  /**
     * Append some bytes into the current file
     *
     * @param bytes the bytes to be written

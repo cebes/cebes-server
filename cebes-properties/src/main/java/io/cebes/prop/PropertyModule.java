@@ -9,19 +9,20 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server
+package io.cebes.prop;
 
-import io.cebes.server.http.HttpServer
+import com.google.inject.AbstractModule;
 
+import java.util.stream.Stream;
 
-object Main {
+public class PropertyModule extends AbstractModule {
 
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
-  }
+    @Override
+    protected void configure() {
+        Stream.of(Property.values()).forEach(p ->
+                bindConstant().annotatedWith(new PropImpl(p)).to(p.getValue()));
+    }
 }

@@ -14,7 +14,8 @@
 
 package io.cebes.spark.config
 
-import com.google.inject.{Provider, Singleton}
+import com.google.inject.{Inject, Provider, Singleton}
+import io.cebes.prop.{Prop, Property}
 import org.apache.spark.sql.SparkSession
 
 trait HasSparkSession {
@@ -22,12 +23,13 @@ trait HasSparkSession {
   val session: SparkSession
 }
 
-class HasSparkSessionProvider extends Provider[HasSparkSession] with CebesSparkConfig {
+class HasSparkSessionProvider @Inject()
+(@Prop(Property.SPARK_MODE) val sparkMode: String) extends Provider[HasSparkSession] {
 
   override def get(): HasSparkSession = {
-    sparkMode match {
-      case CebesSparkConfig.SPARK_MODE_LOCAL => new HasSparkSessionLocal()
-      case CebesSparkConfig.SPARK_MODE_YARN => new HasSparkSessionYarn()
+    sparkMode.toLowerCase match {
+      case "local" => new HasSparkSessionLocal()
+      case "yarn" => new HasSparkSessionYarn()
       case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")
     }
   }

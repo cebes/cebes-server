@@ -21,11 +21,11 @@ import io.cebes.storage.DataWriter
 /**
   * Data Writer that writes to local file system
   *
-  * @param filePath the path to the underlying file
+  * @param path the path to the underlying file
   */
-class LocalFsDataWriter(val filePath: File) extends DataWriter {
+class LocalFsDataWriter(override val path: String) extends DataWriter {
 
-  private val fileWriter = new FileOutputStream(filePath, false)
+  private val fileWriter = new FileOutputStream(new File(path), false)
 
   /**
     * Append some bytes into the current file

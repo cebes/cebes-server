@@ -9,16 +9,23 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 07/09/16.
  */
 
 package io.cebes.server.auth
 
-import spray.json.DefaultJsonProtocol
+import com.typesafe.scalalogging.slf4j.StrictLogging
+import io.cebes.server.helpers.HasCebesClient
+import io.cebes.server.models.UserLogin
+import io.cebes.server.models.CebesJsonProtocol._
 
-case class UserLogin(userName: String, passwordHash: String)
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
+class AuthHandlerSuite extends HasCebesClient with StrictLogging {
 
-trait AuthProtocol extends DefaultJsonProtocol {
-  implicit val userLoginFormat = jsonFormat2(UserLogin)
+  test("login") {
+    val response = post[UserLogin, String]("auth/login", UserLogin("foo", "bar"))
+    logger.info(s"Reponse: ${Await.result(response, Duration.Inf)}")
+  }
 }

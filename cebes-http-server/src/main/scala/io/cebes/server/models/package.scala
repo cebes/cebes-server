@@ -9,19 +9,28 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 09/09/16.
  */
 
 package io.cebes.server
 
-import io.cebes.server.http.HttpServer
+import spray.json.DefaultJsonProtocol
+
+//import scala.language.implicitConversions
+
+package object models {
+
+  case class UserLogin(userName: String, passwordHash: String)
 
 
-object Main {
+  /**
+    * Contains all JsonProtocol for Cebes HTTP server
+    */
+  trait CebesJsonProtocol extends DefaultJsonProtocol {
 
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
+    implicit val userLoginFormat = jsonFormat2(UserLogin)
   }
+
+  object CebesJsonProtocol extends CebesJsonProtocol
+
 }

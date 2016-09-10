@@ -29,13 +29,21 @@ import scala.collection.{JavaConversions, mutable}
   * @param bucketName bucket name
   * @param key        key to the object
   */
-class S3DataWriter(val s3Client: AmazonS3Client,
+class S3DataWriter(private val s3Client: AmazonS3Client,
                    val bucketName: String, val key: String) extends DataWriter {
 
   private var partNumber: Int = 1
   private val uploadId = s3Client.initiateMultipartUpload(
     new InitiateMultipartUploadRequest(bucketName, key)).getUploadId
   private val partETags = new mutable.MutableList[PartETag]()
+
+  /**
+    * The exact path to the file written, maybe different from the path of the DataSource
+    * (if DataSource points to an existing directory)
+    *
+    * @return the exact path where data was written
+    */
+  override val path: String = s3Client.getResourceUrl(bucketName, key)
 
   /**
     * Append some bytes into the current file

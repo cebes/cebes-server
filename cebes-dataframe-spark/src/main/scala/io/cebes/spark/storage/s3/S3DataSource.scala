@@ -23,10 +23,10 @@ class S3DataSource(val awsAccessKey: String, val awsSecretKey: String,
                    val bucketName: String, val key: String,
                    val format: DataFormatEnum) extends DataSource {
 
+  private val s3client = new AmazonS3Client(new BasicAWSCredentials(awsAccessKey, awsSecretKey))
+
   def fullUrl: String = {
-    new AmazonS3Client(
-      new BasicAWSCredentials(awsAccessKey, awsSecretKey))
-      .getResourceUrl(bucketName, key)
+    s3client.getResourceUrl(bucketName, key)
   }
 
   /**
@@ -37,8 +37,6 @@ class S3DataSource(val awsAccessKey: String, val awsSecretKey: String,
     * @return a [[DataWriter]] object
     */
   override def open(overwrite: Boolean): DataWriter = {
-    val awsCreds = new BasicAWSCredentials(awsAccessKey, awsSecretKey)
-    val s3client = new AmazonS3Client(awsCreds)
     if (!s3client.doesBucketExist(bucketName)) {
       s3client.createBucket(bucketName)
     }

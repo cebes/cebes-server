@@ -23,15 +23,7 @@ class HdfsDataSource(val path: String,
                      val uri: Option[String],
                      val format: DataFormatEnum) extends DataSource {
 
-  def fullUrl: String = {
-    val host = uri.getOrElse("localhost:9000")
-    val protocolHost = if (host.startsWith("hdfs://")) {
-      host
-    } else {
-      s"hdfs://$host"
-    }
-    s"$protocolHost/$path"
-  }
+  def fullUrl: String = HdfsDataSource.getFullUrl(uri, path)
 
   /**
     * Open a data writer on this source, normally a file
@@ -52,6 +44,19 @@ class HdfsDataSource(val path: String,
       s => fs.exists(new Path(s)),
       fs.isFile(p), fs.isDirectory(p), overwrite)
 
-    new HdfsDataWriter(fs.create(new Path(fp)))
+    new HdfsDataWriter(HdfsDataSource.getFullUrl(uri, fp), fs.create(new Path(fp)))
+  }
+}
+
+object HdfsDataSource {
+
+  def getFullUrl(uri: Option[String], path: String): String = {
+    val host = uri.getOrElse("localhost:9000")
+    val protocolHost = if (host.startsWith("hdfs://")) {
+      host
+    } else {
+      s"hdfs://$host"
+    }
+    s"$protocolHost/$path"
   }
 }

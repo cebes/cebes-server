@@ -20,12 +20,14 @@ import com.softwaremill.session.CsrfDirectives._
 import com.softwaremill.session.CsrfOptions._
 import io.cebes.auth.AuthService
 import io.cebes.server.http.{SecuredSession, SessionData}
+import io.cebes.server.models.{CebesJsonProtocol, UserLogin}
 
 /**
   * Handle all authentication requests
   */
-trait AuthHandler extends AuthProtocol with SecuredSession {
+trait AuthHandler extends CebesJsonProtocol with SecuredSession {
 
+  // to be overridden (possibly injected) by the class that pulls in this trait
   val authService: AuthService
 
   val authApi = pathPrefix("auth") {

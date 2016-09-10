@@ -34,6 +34,6 @@ class LocalFsDataSource(val path: String, val format: DataFormatEnum) extends Da
       x => new File(x).exists(),
       f.isFile, f.isDirectory, overwrite)
 
-    new LocalFsDataWriter(new File(fp))
+    new LocalFsDataWriter(fp)
   }
 }

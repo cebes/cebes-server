@@ -15,7 +15,7 @@
 package io.cebes.storage.localfs
 
 import java.io.IOException
-import java.nio.file.{FileAlreadyExistsException, Files}
+import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
 
 import io.cebes.storage.DataFormat
 import org.scalatest.FunSuite
@@ -23,8 +23,8 @@ import org.scalatest.FunSuite
 class LocalFsDataSourceSuite extends FunSuite {
 
   test("open and write a file") {
-    val fTmp = Files.createTempFile("cebes", "fsdatasource")
-    val src = new LocalFsDataSource(fTmp.toAbsolutePath.toString, DataFormat.Csv)
+    val pTmp = Files.createTempFile("cebes", "fsdatasource")
+    val src = new LocalFsDataSource(pTmp.toAbsolutePath.toString, DataFormat.Csv)
     intercept[FileAlreadyExistsException] {
       src.open(false)
     }
@@ -37,7 +37,24 @@ class LocalFsDataSourceSuite extends FunSuite {
       writer.append(Array(1, 2, 3).map(_.toByte))
     }
 
-    assert(arrData.deep === Files.readAllBytes(fTmp))
-    Files.delete(fTmp)
+    assert(arrData.deep === Files.readAllBytes(pTmp))
+    Files.delete(pTmp)
+  }
+
+  test("open and write a file in a directory") {
+    val pTmp = Files.createTempDirectory("cebes")
+    val src = new LocalFsDataSource(pTmp.toAbsolutePath.toString, DataFormat.Csv)
+    val writer = src.open(false)
+    val arrData = Array(10, 20, 30, 40, 50).map(_.toByte)
+    assert(writer.isInstanceOf[LocalFsDataWriter])
+    assert(5 === writer.append(arrData))
+    writer.close()
+    intercept[IOException] {
+      writer.append(Array(1, 2, 3).map(_.toByte))
+    }
+    assert(pTmp.toString !== writer.path)
+    assert(arrData.deep === Files.readAllBytes(Paths.get(writer.path)))
+    Files.delete(Paths.get(writer.path))
+    Files.delete(pTmp)
   }
 }
