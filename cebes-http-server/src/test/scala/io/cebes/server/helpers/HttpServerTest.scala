@@ -17,7 +17,7 @@ package io.cebes.server.helpers
 import io.cebes.server.InjectorService
 import io.cebes.server.http.HttpServer
 
-object CebesHttpServerTest {
+object HttpServerTest {
 
   private val server = InjectorService.injector.getInstance(classOf[HttpServer])
   @volatile private var counter: Int = 0

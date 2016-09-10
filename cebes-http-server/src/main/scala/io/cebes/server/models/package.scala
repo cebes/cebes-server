@@ -16,8 +16,6 @@ package io.cebes.server
 
 import spray.json.DefaultJsonProtocol
 
-//import scala.language.implicitConversions
-
 package object models {
 
   case class UserLogin(userName: String, passwordHash: String)
