@@ -30,8 +30,8 @@ trait SecuredSession extends StrictLogging {
     def log(msg: String) = logger.info(msg)
   }
 
-  def mySetSession(v: SessionData) = setSession(refreshable, usingCookies, v)
+  def mySetSession(v: SessionData) = setSession(refreshable, usingHeaders, v)
 
-  val myRequiredSession = requiredSession(refreshable, usingCookies)
-  val myInvalidateSession = invalidateSession(refreshable, usingCookies)
+  val myRequiredSession = requiredSession(refreshable, usingHeaders)
+  val myInvalidateSession = invalidateSession(refreshable, usingHeaders)
 }

@@ -21,11 +21,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{Unmarshal, _}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -35,6 +36,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 class Client {
 
   val apiVersion = "v1"
+  var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
+  //var requestCookies: immutable.Seq[HttpHeader]
+
   implicit val system = ActorSystem("CebesClientApp")
   implicit val materializer = ActorMaterializer()
 
@@ -64,10 +68,22 @@ class Client {
   (uri: String, content: RequestType)(implicit ma: ToEntityMarshaller[RequestType],
                                       ua: FromEntityUnmarshaller[ResponseType],
                                       ec: ExecutionContext): Future[ResponseType] = {
-    cebesRequest(RequestBuilding.Post(s"/$apiVersion/$uri", content)).flatMap { response =>
+    val request = RequestBuilding.Post(s"/$apiVersion/$uri", content).withHeaders(requestHeaders)
+      .withHeaders(headers.RawHeader("sdasd", "asdasd"))
+    cebesRequest(request).flatMap { response =>
       response.status match {
-        case StatusCodes.OK => Unmarshal(response.entity).to[ResponseType]
-        case _ => Future.failed(new IOException(s"FAILED: ${response.status}"))
+        case StatusCodes.OK =>
+          requestHeaders = response.headers.filter(_.name().startsWith("Set-")).map {
+            case headers.`Set-Cookie`(c) =>
+              println(s"============= Cookie ${c.name}: ${c.value}")
+              headers.Cookie(c.name, c.value)
+            case h if h.name().startsWith("Set-") =>
+              headers.Cookie(h.name().substring(4), h.value())
+          }
+          Unmarshal(response.entity).to[ResponseType]
+        case _ =>
+          val msg = Await.result(Unmarshal(response.entity).to[String], Duration(10, TimeUnit.SECONDS))
+          Future.failed(new IOException(s"FAILED: ${response.status}: $msg"))
       }
     }
   }

@@ -40,24 +40,23 @@ class HttpServer @Inject()(override val authService: AuthService,
   implicit val system = ActorSystem("CebesServerApp")
   implicit val materializer = ActorMaterializer()
 
-  var bindingFuture: Option[Future[Http.ServerBinding]] = None
+  var bindingFuture: Future[Http.ServerBinding] = _
 
   def start(): Unit = {
-    bindingFuture = Option(Http().bindAndHandle(routes, httpInterface, httpPort))
+    bindingFuture = Http().bindAndHandle(routes, httpInterface, httpPort)
     logger.info(s"RESTful server started on $httpInterface:$httpPort")
   }
 
   def stop(): Unit = {
-    bindingFuture.foreach { f =>
-      f.flatMap(_.unbind())
-        .onComplete { _ =>
-          Await.result(system.terminate(), Duration(1, TimeUnit.MINUTES))
-          logger.info("RESTful server stopped")
-        }
-    }
+    bindingFuture.flatMap(_.unbind())
+      .onComplete { _ =>
+        Await.result(system.terminate(), Duration(1, TimeUnit.MINUTES))
+        logger.info("RESTful server stopped")
+      }
   }
 
   def waitServer(): Unit = {
+    //TODO: this wait() is invalid
     bindingFuture.wait()
   }
 }
