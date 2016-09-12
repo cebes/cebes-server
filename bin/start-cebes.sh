@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-SPARK_HOME="${SPARK_HOME:-$HOME/bin/spark-2.0.0-bin-hadoop2.7}"
-CEBES_PATH="`dirname $0`/../"
+CEBES_PATH="$(cd "$(dirname "$0")/../"; pwd)"
+SPARK_HOME="${SPARK_HOME:-$CEBES_PATH/spark/spark-2.0.0-bin-hadoop2.7}"
 
 ${SPARK_HOME}/bin/spark-submit --class "io.cebes.server.Main" \
     --master local[4] \

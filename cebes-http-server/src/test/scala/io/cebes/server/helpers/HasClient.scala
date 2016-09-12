@@ -32,11 +32,11 @@ trait HasClient extends FunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     super.beforeAll()
     HttpServerTest.register()
-    assert(client.post[UserLogin, String]("auth/login", UserLogin("foo", "bar")) === "ok")
+    assert("ok" === client.post[UserLogin, String]("auth/login", UserLogin("foo", "bar")))
   }
 
   override def afterAll(): Unit = {
-    assert(client.post[String, String]("auth/logout", "") === "ok")
+    assert(client.post[UserLogin, String]("auth/logout", UserLogin("", "")) === "ok")
     HttpServerTest.unregister()
     super.afterAll()
   }

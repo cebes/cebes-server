@@ -1,3 +1,7 @@
 akka {
   loglevel = WARNING
 }
+
+akka.http.session {
+  encrypt-data = true
+}

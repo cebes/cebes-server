@@ -22,10 +22,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 trait SecuredSession extends StrictLogging {
 
-  val sessionConfig = SessionConfig.default("long random sequence sequence random long this is already long damnit")
-  implicit val serializer = JValueSessionSerializer.caseClass[SessionData]
-  implicit val encoder = new JwtSessionEncoder[SessionData]
+  val sessionConfig = SessionConfig.default("9MLs9gc8Axvdi1tbM1T7ZpjFMM5R5QR7b788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0")
+
+  implicit val encoder = new BasicSessionEncoder[SessionData]
   implicit val sessionManager = new SessionManager[SessionData](sessionConfig)
+
   implicit val refreshTokenStorage = new InMemoryRefreshTokenStorage[SessionData] {
     def log(msg: String) = logger.info(msg)
   }

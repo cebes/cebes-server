@@ -14,4 +14,17 @@
 
 package io.cebes.server.http
 
-case class SessionData()
+import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer}
+
+import scala.util.Try
+
+case class SessionData(userName: String)
+
+object SessionData {
+  implicit def serializer: SessionSerializer[SessionData, String] = new SingleValueSessionSerializer(
+    _.userName,
+    (un: String) => Try {
+      SessionData(un)
+    }
+  )
+}

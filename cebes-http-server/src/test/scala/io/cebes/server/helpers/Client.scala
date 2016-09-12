@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.{Unmarshal, _}
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 
@@ -35,10 +35,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   */
 class Client {
 
-  val apiVersion = "v1"
-  var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
-  //var requestCookies: immutable.Seq[HttpHeader]
-
   implicit val system = ActorSystem("CebesClientApp")
   implicit val materializer = ActorMaterializer()
 
@@ -47,6 +43,28 @@ class Client {
 
   def cebesRequest(request: HttpRequest): Future[HttpResponse] =
     Source.single(request).via(cebesConnectionFlow).runWith(Sink.head)
+
+  //@volatile
+  var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
+
+
+  /**
+    * Post a message and block until the response is available
+    * See the doc of [[Client.postAsync()]] for important notices regarding how to use this function.
+    *
+    * @param uri     the URI of the Cebes server, without address and API version
+    * @param content the message sent along this request
+    * @tparam RequestType  type of the request message
+    * @tparam ResponseType type of the expected response
+    * @return the response
+    */
+  def post[RequestType, ResponseType]
+  (uri: String, content: RequestType)(implicit ma: ToEntityMarshaller[RequestType],
+                                      ua: FromEntityUnmarshaller[ResponseType],
+                                      ec: ExecutionContext): ResponseType = {
+    val futureResult = postAsync(uri, content)
+    Await.result(futureResult, Duration(10, TimeUnit.SECONDS))
+  }
 
   /**
     * Post a request to server.
@@ -65,20 +83,30 @@ class Client {
     * @return a Future.
     */
   def postAsync[RequestType, ResponseType]
-  (uri: String, content: RequestType)(implicit ma: ToEntityMarshaller[RequestType],
-                                      ua: FromEntityUnmarshaller[ResponseType],
-                                      ec: ExecutionContext): Future[ResponseType] = {
-    val request = RequestBuilding.Post(s"/$apiVersion/$uri", content).withHeaders(requestHeaders)
-      .withHeaders(headers.RawHeader("sdasd", "asdasd"))
+  (uri: String, content: RequestType)
+  (implicit ma: ToEntityMarshaller[RequestType],
+   ua: FromEntityUnmarshaller[ResponseType],
+   ec: ExecutionContext): Future[ResponseType] = {
+
+    val request = RequestBuilding.Post(s"/${Client.apiVersion}/$uri", content).withHeaders(requestHeaders)
+    request.headers.foreach { h =>
+      println(s"======> HEADER IN CLIENT: ${h.name()}: ${h.value()}")
+    }
+
     cebesRequest(request).flatMap { response =>
       response.status match {
         case StatusCodes.OK =>
-          requestHeaders = response.headers.filter(_.name().startsWith("Set-")).map {
-            case headers.`Set-Cookie`(c) =>
-              println(s"============= Cookie ${c.name}: ${c.value}")
-              headers.Cookie(c.name, c.value)
+          response.headers.foreach { h =>
+            println(s"======> HEADER FROM SERVER: ${h.name()}: ${h.value()}")
+          }
+          // always update request headers
+          this.requestHeaders = response.headers.filter(_.name().startsWith("Set-")).map {
+            case headers.`Set-Cookie`(c) => c.name.toUpperCase() match {
+              case "XSRF-TOKEN" => headers.RawHeader("X-XSRF-TOKEN", c.value)
+              case _ => headers.Cookie(c.name, c.value)
+            }
             case h if h.name().startsWith("Set-") =>
-              headers.Cookie(h.name().substring(4), h.value())
+              headers.RawHeader(h.name().substring(4), h.value())
           }
           Unmarshal(response.entity).to[ResponseType]
         case _ =>
@@ -87,11 +115,9 @@ class Client {
       }
     }
   }
+}
 
-  def post[RequestType, ResponseType]
-  (uri: String, content: RequestType)(implicit ma: ToEntityMarshaller[RequestType],
-                                      ua: FromEntityUnmarshaller[ResponseType],
-                                      ec: ExecutionContext): ResponseType = {
-    Await.result(postAsync(uri, content), Duration(1, TimeUnit.MINUTES))
-  }
+object Client {
+
+  val apiVersion = "v1"
 }

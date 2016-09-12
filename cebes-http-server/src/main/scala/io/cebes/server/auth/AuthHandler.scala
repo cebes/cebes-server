@@ -35,7 +35,7 @@ trait AuthHandler extends CebesJsonProtocol with SecuredSession {
       entity(as[UserLogin]) { userLogin =>
         authService.login(userLogin.userName, userLogin.passwordHash) match {
           case true =>
-            mySetSession(SessionData()) {
+            mySetSession(SessionData(userLogin.userName)) {
               setNewCsrfToken(checkHeader) { ctx => ctx.complete("ok") }
             }
           case _ =>
@@ -44,8 +44,10 @@ trait AuthHandler extends CebesJsonProtocol with SecuredSession {
       }
     } ~ (path("logout") & post) {
       myRequiredSession { session =>
-        myInvalidateSession { ctx =>
-          ctx.complete("ok")
+        randomTokenCsrfProtection(checkHeader) {
+          myInvalidateSession { ctx =>
+            ctx.complete("ok")
+          }
         }
       }
     }

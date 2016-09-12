@@ -29,6 +29,7 @@ import io.cebes.storage.StorageService
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.io.StdIn
 
 class HttpServer @Inject()(override val authService: AuthService,
                            override val dfService: DataframeService,
@@ -37,26 +38,31 @@ class HttpServer @Inject()(override val authService: AuthService,
                            @Prop(Property.HTTP_PORT) val httpPort: Int)
   extends StrictLogging with Routes {
 
-  implicit val system = ActorSystem("CebesServerApp")
+  implicit val actorSystem = ActorSystem("CebesServerApp")
   implicit val materializer = ActorMaterializer()
 
   var bindingFuture: Future[Http.ServerBinding] = _
 
+  /**
+    * Start the Cebes http service
+    *
+    */
   def start(): Unit = {
     bindingFuture = Http().bindAndHandle(routes, httpInterface, httpPort)
     logger.info(s"RESTful server started on $httpInterface:$httpPort")
   }
 
   def stop(): Unit = {
-    bindingFuture.flatMap(_.unbind())
-      .onComplete { _ =>
-        Await.result(system.terminate(), Duration(1, TimeUnit.MINUTES))
-        logger.info("RESTful server stopped")
-      }
+    bindingFuture.flatMap(_.unbind()).onComplete { _ =>
+      actorSystem.terminate()
+      Await.result(actorSystem.whenTerminated, Duration(10, TimeUnit.SECONDS))
+      logger.info("RESTful server stopped")
+    }
   }
 
   def waitServer(): Unit = {
-    //TODO: this wait() is invalid
-    bindingFuture.wait()
+    //Await.result(actorSystem.whenTerminated, Duration.Inf)
+    logger.info("Press enter to stop")
+    StdIn.readLine()
   }
 }

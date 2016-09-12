@@ -18,9 +18,12 @@ package io.cebes.server.auth
 import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.server.helpers.HasClient
 
+
 class AuthHandlerSuite extends HasClient with StrictLogging {
 
   test("login") {
-    assert(1 === 1)
+    Thread.sleep(1000)
+    logger.info("In AuthHandlerSuite")
+    assert((3 + 1) !== 2)
   }
 }
