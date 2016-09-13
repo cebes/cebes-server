@@ -9,16 +9,20 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server.auth
+package io.cebes.server.helpers
 
-import spray.json.DefaultJsonProtocol
+import com.google.inject.{Guice, Stage}
+import io.cebes.prop.PropertyModule
+import io.cebes.server.CebesHttpDependencyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
-case class UserLogin(userName: String, passwordHash: String)
+object TestInjector {
 
-
-trait AuthProtocol extends DefaultJsonProtocol {
-  implicit val userLoginFormat = jsonFormat2(UserLogin)
+  lazy val injector = Guice.createInjector(Stage.DEVELOPMENT,
+    new PropertyModule,
+    new CebesHttpDependencyModule,
+    new CebesSparkDependencyModule)
 }

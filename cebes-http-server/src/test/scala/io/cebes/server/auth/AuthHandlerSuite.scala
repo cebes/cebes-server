@@ -9,22 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 07/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.server.auth
 
-import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer}
+import com.typesafe.scalalogging.slf4j.StrictLogging
+import io.cebes.server.helpers.HasClient
 
-import scala.util.Try
 
-case class SessionData(userName: String)
+class AuthHandlerSuite extends HasClient with StrictLogging {
 
-object SessionData {
-  implicit def serializer: SessionSerializer[SessionData, String] = new SingleValueSessionSerializer(
-    _.userName,
-    (un: String) => Try {
-      SessionData(un)
-    }
-  )
+  test("login") {
+    Thread.sleep(1000)
+    assert((3 + 1) !== 2)
+  }
 }

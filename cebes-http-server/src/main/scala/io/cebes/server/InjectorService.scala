@@ -9,22 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.server
 
-import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer}
+import com.google.inject.{Guice, Stage}
+import io.cebes.prop.PropertyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
-import scala.util.Try
+object InjectorService {
 
-case class SessionData(userName: String)
-
-object SessionData {
-  implicit def serializer: SessionSerializer[SessionData, String] = new SingleValueSessionSerializer(
-    _.userName,
-    (un: String) => Try {
-      SessionData(un)
-    }
-  )
+  lazy val injector = Guice.createInjector(Stage.PRODUCTION,
+    new PropertyModule,
+    new CebesHttpDependencyModule,
+    new CebesSparkDependencyModule)
 }

@@ -22,5 +22,7 @@ object Main {
   def main(args: Array[String]) {
     val server = InjectorService.injector.getInstance(classOf[HttpServer])
     server.start()
+    server.waitServer()
+    server.stop()
   }
 }

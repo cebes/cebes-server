@@ -9,22 +9,26 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.server
 
-import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer}
+import spray.json.DefaultJsonProtocol
 
-import scala.util.Try
+package object models {
 
-case class SessionData(userName: String)
+  case class UserLogin(userName: String, passwordHash: String)
 
-object SessionData {
-  implicit def serializer: SessionSerializer[SessionData, String] = new SingleValueSessionSerializer(
-    _.userName,
-    (un: String) => Try {
-      SessionData(un)
-    }
-  )
+
+  /**
+    * Contains all JsonProtocol for Cebes HTTP server
+    */
+  trait CebesJsonProtocol extends DefaultJsonProtocol {
+
+    implicit val userLoginFormat = jsonFormat2(UserLogin)
+  }
+
+  object CebesJsonProtocol extends CebesJsonProtocol
+
 }

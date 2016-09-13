@@ -2,7 +2,6 @@ akka {
   loglevel = WARNING
 }
 
-http = {
-  interface = "localhost"
-  port = 21000
+akka.http.session {
+  encrypt-data = true
 }

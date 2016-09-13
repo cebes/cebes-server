@@ -17,7 +17,8 @@ package io.cebes.spark.storage.hdfs
 import io.cebes.storage.DataWriter
 import org.apache.hadoop.fs.FSDataOutputStream
 
-class HdfsDataWriter(val outStream: FSDataOutputStream) extends DataWriter {
+class HdfsDataWriter(override val path: String,
+                     val outStream: FSDataOutputStream) extends DataWriter {
 
   /**
     * Append some bytes into the current file

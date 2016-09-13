@@ -14,6 +14,8 @@
 
 package io.cebes.server.http
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
@@ -21,31 +23,46 @@ import com.google.inject.Inject
 import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.auth.AuthService
 import io.cebes.df.DataframeService
+import io.cebes.prop.{Prop, Property}
 import io.cebes.storage.StorageService
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.io.StdIn
 
 class HttpServer @Inject()(override val authService: AuthService,
                            override val dfService: DataframeService,
-                           override val storageService: StorageService)
-  extends StrictLogging with Routes with CebesHttpConfig {
+                           override val storageService: StorageService,
+                           @Prop(Property.HTTP_INTERFACE) val httpInterface: String,
+                           @Prop(Property.HTTP_PORT) val httpPort: Int)
+  extends StrictLogging with Routes {
 
+  implicit val actorSystem = ActorSystem("CebesServerApp")
+  implicit val executor = actorSystem.dispatcher
+  implicit val materializer = ActorMaterializer()
+
+  var bindingFuture: Future[Http.ServerBinding] = _
+
+  /**
+    * Start the Cebes http service
+    *
+    */
   def start(): Unit = {
-    implicit val system = ActorSystem("CebesServerApp")
-    implicit val materializer = ActorMaterializer()
-    import system.dispatcher
-
-    val bindingFuture = Http().bindAndHandle(routes, httpInterface, httpPort)
-
+    bindingFuture = Http().bindAndHandle(routes, httpInterface, httpPort)
     logger.info(s"RESTful server started on $httpInterface:$httpPort")
-    StdIn.readChar()
+  }
 
-    bindingFuture
-      .flatMap(_.unbind())
-      .onComplete { _ =>
-        system.terminate()
-        logger.info("RESTful server stopped")
-      }
-    System.exit(0)
+  def stop(): Unit = {
+    bindingFuture.flatMap(_.unbind()).onComplete { _ =>
+      actorSystem.terminate()
+      Await.result(actorSystem.whenTerminated, Duration(10, TimeUnit.SECONDS))
+      logger.info("RESTful server stopped")
+    }
+  }
+
+  def waitServer(): Unit = {
+    //Await.result(actorSystem.whenTerminated, Duration.Inf)
+    logger.info("Press enter to stop")
+    StdIn.readLine()
   }
 }

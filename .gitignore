@@ -17,3 +17,7 @@ project/plugins/project/
 .worksheet
 
 .idea/
+*.iml
+
+# spark versions
+spark/spark*

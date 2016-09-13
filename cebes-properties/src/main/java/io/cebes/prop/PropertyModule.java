@@ -9,22 +9,20 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.prop;
 
-import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer}
+import com.google.inject.AbstractModule;
 
-import scala.util.Try
+import java.util.stream.Stream;
 
-case class SessionData(userName: String)
+public class PropertyModule extends AbstractModule {
 
-object SessionData {
-  implicit def serializer: SessionSerializer[SessionData, String] = new SingleValueSessionSerializer(
-    _.userName,
-    (un: String) => Try {
-      SessionData(un)
+    @Override
+    protected void configure() {
+        Stream.of(Property.values()).forEach(p ->
+                bindConstant().annotatedWith(new PropImpl(p)).to(p.getValue()));
     }
-  )
 }

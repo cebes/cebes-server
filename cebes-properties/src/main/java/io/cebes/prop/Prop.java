@@ -9,22 +9,21 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 24/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server.http
+package io.cebes.prop;
 
-import com.softwaremill.session.{SessionSerializer, SingleValueSessionSerializer}
+import com.google.inject.BindingAnnotation;
 
-import scala.util.Try
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-case class SessionData(userName: String)
-
-object SessionData {
-  implicit def serializer: SessionSerializer[SessionData, String] = new SingleValueSessionSerializer(
-    _.userName,
-    (un: String) => Try {
-      SessionData(un)
-    }
-  )
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@BindingAnnotation
+public @interface Prop {
+    Property value();
 }
