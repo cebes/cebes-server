@@ -26,7 +26,6 @@ import io.cebes.df.DataframeService
 import io.cebes.prop.{Prop, Property}
 import io.cebes.storage.StorageService
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.io.StdIn
@@ -39,6 +38,7 @@ class HttpServer @Inject()(override val authService: AuthService,
   extends StrictLogging with Routes {
 
   implicit val actorSystem = ActorSystem("CebesServerApp")
+  implicit val executor = actorSystem.dispatcher
   implicit val materializer = ActorMaterializer()
 
   var bindingFuture: Future[Http.ServerBinding] = _

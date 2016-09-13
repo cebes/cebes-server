@@ -43,10 +43,12 @@ trait AuthHandler extends CebesJsonProtocol with SecuredSession {
         }
       }
     } ~ (path("logout") & post) {
-      myRequiredSession { session =>
-        randomTokenCsrfProtection(checkHeader) {
-          myInvalidateSession { ctx =>
-            ctx.complete("ok")
+      logRequestResult("logoutLOG") {
+        myRequiredSession { session =>
+          randomTokenCsrfProtection(checkHeader) {
+            myInvalidateSession { ctx =>
+              ctx.complete("ok")
+            }
           }
         }
       }

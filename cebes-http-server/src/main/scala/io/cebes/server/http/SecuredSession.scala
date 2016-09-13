@@ -18,6 +18,7 @@ import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import com.softwaremill.session._
 import com.typesafe.scalalogging.slf4j.StrictLogging
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait SecuredSession extends StrictLogging {

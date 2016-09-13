@@ -23,12 +23,13 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
@@ -38,14 +39,26 @@ class Client {
   implicit val system = ActorSystem("CebesClientApp")
   implicit val materializer = ActorMaterializer()
 
-  lazy val cebesConnectionFlow: Flow[HttpRequest, HttpResponse, Any] =
-    Http().outgoingConnection(HttpServerTest.httpInterface, HttpServerTest.httpPort)
+  // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
+  // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
+  lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](
+    HttpServerTest.httpInterface, HttpServerTest.httpPort)
 
-  def cebesRequest(request: HttpRequest): Future[HttpResponse] =
-    Source.single(request).via(cebesConnectionFlow).runWith(Sink.head)
+  lazy val cebesQueue = Source.queue[(HttpRequest, Promise[HttpResponse])](10, OverflowStrategy.dropNew)
+    .via(cebesPoolFlow).toMat(Sink.foreach({
+    case ((Success(resp), p)) => p.success(resp)
+    case ((Failure(e), p)) => p.failure(e)
+  }))(Keep.left).run
 
-  //@volatile
-  var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
+  def cebesRequest(request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+    val promise = Promise[HttpResponse]
+    cebesQueue.offer(request -> promise).flatMap {
+      case QueueOfferResult.Enqueued => promise.future
+      case _ => Future.failed(new RuntimeException())
+    }
+  }
+
+  @volatile var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
 
 
   /**
@@ -58,11 +71,11 @@ class Client {
     * @tparam ResponseType type of the expected response
     * @return the response
     */
-  def post[RequestType, ResponseType]
-  (uri: String, content: RequestType)(implicit ma: ToEntityMarshaller[RequestType],
+  def post[RequestType, ResponseType](uri: String, content: RequestType)
+                                     (implicit ma: ToEntityMarshaller[RequestType],
                                       ua: FromEntityUnmarshaller[ResponseType],
                                       ec: ExecutionContext): ResponseType = {
-    val futureResult = postAsync(uri, content)
+    val futureResult = postAsync(uri, content)(ma, ua, ec)
     Await.result(futureResult, Duration(10, TimeUnit.SECONDS))
   }
 
@@ -82,31 +95,25 @@ class Client {
     * @tparam ResponseType type of the expected response
     * @return a Future.
     */
-  def postAsync[RequestType, ResponseType]
-  (uri: String, content: RequestType)
-  (implicit ma: ToEntityMarshaller[RequestType],
-   ua: FromEntityUnmarshaller[ResponseType],
-   ec: ExecutionContext): Future[ResponseType] = {
+  def postAsync[RequestType, ResponseType](uri: String, content: RequestType)
+                                          (implicit ma: ToEntityMarshaller[RequestType],
+                                           ua: FromEntityUnmarshaller[ResponseType],
+                                           ec: ExecutionContext): Future[ResponseType] = {
 
     val request = RequestBuilding.Post(s"/${Client.apiVersion}/$uri", content).withHeaders(requestHeaders)
-    request.headers.foreach { h =>
-      println(s"======> HEADER IN CLIENT: ${h.name()}: ${h.value()}")
-    }
 
     cebesRequest(request).flatMap { response =>
       response.status match {
         case StatusCodes.OK =>
-          response.headers.foreach { h =>
-            println(s"======> HEADER FROM SERVER: ${h.name()}: ${h.value()}")
-          }
           // always update request headers
-          this.requestHeaders = response.headers.filter(_.name().startsWith("Set-")).map {
+          this.requestHeaders = response.headers.filter(_.name().startsWith("Set-")).flatMap {
             case headers.`Set-Cookie`(c) => c.name.toUpperCase() match {
-              case "XSRF-TOKEN" => headers.RawHeader("X-XSRF-TOKEN", c.value)
-              case _ => headers.Cookie(c.name, c.value)
+              case "XSRF-TOKEN" =>
+                Seq(headers.RawHeader("X-XSRF-TOKEN", c.value), headers.Cookie(c.name, c.value))
+              case _ => Seq(headers.Cookie(c.name, c.value))
             }
-            case h if h.name().startsWith("Set-") =>
-              headers.RawHeader(h.name().substring(4), h.value())
+            case h =>
+              Seq(headers.RawHeader(h.name().substring(4), h.value()))
           }
           Unmarshal(response.entity).to[ResponseType]
         case _ =>

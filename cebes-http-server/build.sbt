@@ -5,6 +5,7 @@ scalastyleConfig := baseDirectory.value / "../build/scalastyle-config.xml"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-experimental" % "2.4.10",
   "com.typesafe.akka" %% "akka-http-spray-json-experimental" % "2.4.10",
+  "com.typesafe.akka" %% "akka-http-testkit" % "2.4.10" % "test",
   "com.softwaremill.akka-http-session" %% "core" % "0.2.7",
 
   "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
@@ -22,4 +23,6 @@ libraryDependencies ++= Seq(
 
 mainClass in assembly := Some("io.cebes.server.Main")
 
-dependencyOverrides += "org.scalatest" %% "scalatest_2.11" % "3.0.0"
+// this is just to help IntelliJ determine the
+// correct scalatest. It is not included in the assembly anyway.
+dependencyOverrides += "org.scalatest" %% "scalatest" % "3.0.0"
