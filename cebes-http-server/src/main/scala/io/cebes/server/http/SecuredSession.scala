@@ -14,6 +14,8 @@
 
 package io.cebes.server.http
 
+import com.softwaremill.session.CsrfDirectives._
+import com.softwaremill.session.CsrfOptions._
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import com.softwaremill.session._
@@ -34,6 +36,6 @@ trait SecuredSession extends StrictLogging {
 
   def mySetSession(v: SessionData) = setSession(refreshable, usingHeaders, v)
 
-  val myRequiredSession = requiredSession(refreshable, usingHeaders)
+  val myRequiredSession = randomTokenCsrfProtection(checkHeader) & requiredSession(refreshable, usingHeaders)
   val myInvalidateSession = invalidateSession(refreshable, usingHeaders)
 }

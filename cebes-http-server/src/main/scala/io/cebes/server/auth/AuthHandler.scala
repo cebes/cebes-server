@@ -20,12 +20,13 @@ import com.softwaremill.session.CsrfDirectives._
 import com.softwaremill.session.CsrfOptions._
 import io.cebes.auth.AuthService
 import io.cebes.server.http.{SecuredSession, SessionData}
-import io.cebes.server.models.{CebesJsonProtocol, UserLogin}
+import io.cebes.server.models.CebesJsonProtocol._
+import io.cebes.server.models.{OkResponse, UserLogin}
 
 /**
   * Handle all authentication requests
   */
-trait AuthHandler extends CebesJsonProtocol with SecuredSession {
+trait AuthHandler extends SecuredSession {
 
   // to be overridden (possibly injected) by the class that pulls in this trait
   val authService: AuthService
@@ -36,20 +37,18 @@ trait AuthHandler extends CebesJsonProtocol with SecuredSession {
         authService.login(userLogin.userName, userLogin.passwordHash) match {
           case true =>
             mySetSession(SessionData(userLogin.userName)) {
-              setNewCsrfToken(checkHeader) { ctx => ctx.complete("ok") }
+              setNewCsrfToken(checkHeader) { ctx =>
+                ctx.complete(OkResponse("ok"))
+              }
             }
           case _ =>
             throw new IllegalArgumentException("Invalid username or password")
         }
       }
     } ~ (path("logout") & post) {
-      logRequestResult("logoutLOG") {
-        myRequiredSession { session =>
-          randomTokenCsrfProtection(checkHeader) {
-            myInvalidateSession { ctx =>
-              ctx.complete("ok")
-            }
-          }
+      myRequiredSession { session =>
+        myInvalidateSession { ctx =>
+          ctx.complete(OkResponse("ok"))
         }
       }
     }

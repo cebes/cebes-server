@@ -19,7 +19,7 @@ package io.cebes.auth
   */
 trait AuthService {
 
-  def register(username: String, passwordHash: String)
+  def register(username: String, passwordHash: String): Boolean
 
   def login(username: String, passwordHash: String): Boolean
 }
