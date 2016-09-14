@@ -14,8 +14,11 @@
 
 package io.cebes.server.storage
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import io.cebes.server.http.SecuredSession
+import io.cebes.server.models.CebesJsonProtocol._
+import io.cebes.server.models._
 import io.cebes.storage.StorageService
 
 trait StorageHandler extends SecuredSession {
@@ -23,14 +26,9 @@ trait StorageHandler extends SecuredSession {
   val storageService: StorageService
 
   val storageApi = pathPrefix("storage") {
-    path("tmp") {
-      post {
-        myRequiredSession { session =>
-          myInvalidateSession { ctx =>
-            logger.info(s"Logging out $session")
-            ctx.complete("ok")
-          }
-        }
+    myRequiredSession { session =>
+      myInvalidateSession { ctx =>
+        ctx.complete(OkResponse("ok"))
       }
     }
   }

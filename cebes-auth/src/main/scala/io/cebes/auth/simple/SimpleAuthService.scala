@@ -21,7 +21,7 @@ import io.cebes.auth.AuthService
   */
 class SimpleAuthService extends AuthService {
 
-  override def register(username: String, passwordHash: String): Unit = ???
+  override def register(username: String, passwordHash: String): Boolean = ???
 
   override def login(username: String, passwordHash: String): Boolean = true
 }

@@ -16,7 +16,7 @@ package io.cebes.server.helpers
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.UserLogin
+import io.cebes.server.models.{UserLogin, OkResponse}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,11 +32,11 @@ trait HasClient extends FunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     super.beforeAll()
     HttpServerTest.register()
-    assert("ok" === client.post[UserLogin, String]("auth/login", UserLogin("foo", "bar")))
+    assert("ok" === client.post[UserLogin, OkResponse]("auth/login", UserLogin("foo", "bar")).message)
   }
 
   override def afterAll(): Unit = {
-    assert(client.post[String, String]("auth/logout", "") === "ok")
+    assert("ok" === client.post[String, OkResponse]("auth/logout", "").message)
     HttpServerTest.unregister()
     super.afterAll()
   }
