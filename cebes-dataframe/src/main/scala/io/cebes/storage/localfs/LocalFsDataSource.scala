@@ -19,6 +19,7 @@ import java.io.File
 import io.cebes.storage.DataFormat.DataFormatEnum
 import io.cebes.storage.{DataSource, DataWriter}
 
+
 class LocalFsDataSource(val path: String, val format: DataFormatEnum) extends DataSource {
 
   /**
@@ -35,5 +36,21 @@ class LocalFsDataSource(val path: String, val format: DataFormatEnum) extends Da
       f.isFile, f.isDirectory, overwrite)
 
     new LocalFsDataWriter(fp)
+  }
+}
+
+object LocalFsDataSource {
+
+  def ensureDirectoryExists(path: String): Unit = {
+    val f = new File(path)
+    if (f.exists()) {
+      if (!f.isDirectory) {
+        throw new IllegalArgumentException(s"Invalid directory at $path")
+      }
+    } else {
+      if (!f.mkdirs()) {
+        throw new IllegalArgumentException(s"Could not create directory at $path")
+      }
+    }
   }
 }

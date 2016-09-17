@@ -21,7 +21,10 @@ public enum Property {
     HTTP_INTERFACE("CEBES_HTTP_INTERFACE", "cebes.http.interface", "localhost",
             "The interface on which the HTTP service will be listening"),
     HTTP_PORT("CEBES_HTTP_PORT", "cebes.http.port", "21000",
-            "The port on which the HTTP service will be listening, to be combined with HTTP_INTERFACE");
+            "The port on which the HTTP service will be listening, to be combined with HTTP_INTERFACE"),
+
+    UPLOAD_PATH("CEBES_UPLOAD_PATH", "cebes.upload.path", "/tmp/upload/",
+            "The directory to upload data to");
 
     private String environmentVar;
     private String propertyKey;

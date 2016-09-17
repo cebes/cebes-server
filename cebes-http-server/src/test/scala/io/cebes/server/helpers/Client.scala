@@ -36,8 +36,8 @@ import scala.util.{Failure, Success}
   */
 class Client {
 
-  implicit val system = ActorSystem("CebesClientApp")
-  implicit val materializer = ActorMaterializer()
+  implicit val actorSystem = Client.system
+  implicit val actorMaterializer = Client.materializer
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
@@ -127,4 +127,7 @@ class Client {
 object Client {
 
   val apiVersion = "v1"
+
+  implicit val system = ActorSystem("CebesClientApp")
+  implicit val materializer = ActorMaterializer()
 }

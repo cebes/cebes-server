@@ -12,7 +12,7 @@
  * Created by phvu on 24/08/16.
  */
 
-package io.cebes.server.df
+package io.cebes.server.routes.df
 
 import akka.http.scaladsl.server.Directives._
 import io.cebes.df.DataframeService

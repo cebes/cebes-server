@@ -14,10 +14,12 @@
 
 package io.cebes.spark.df
 
+import java.util.UUID
+
 import io.cebes.df.Dataframe
 import org.apache.spark.sql.DataFrame
 
 class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
 
-
+  override val id: UUID = UUID.randomUUID()
 }

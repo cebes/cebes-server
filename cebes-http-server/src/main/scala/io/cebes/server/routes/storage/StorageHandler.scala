@@ -12,23 +12,35 @@
  * Created by phvu on 05/09/16.
  */
 
-package io.cebes.server.storage
+package io.cebes.server.routes.storage
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
+import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models._
+import io.cebes.server.models.ReadRequest
 import io.cebes.storage.StorageService
+
+import scala.concurrent.ExecutionContext
 
 trait StorageHandler extends SecuredSession {
 
   val storageService: StorageService
+  implicit val executor: ExecutionContext
+  implicit val materializer: Materializer
 
   val storageApi = pathPrefix("storage") {
     myRequiredSession { session =>
-      myInvalidateSession { ctx =>
-        ctx.complete(OkResponse("ok"))
+      (path("read") & post) {
+        entity(as[ReadRequest]) { readRequest =>
+          implicit ctx => ctx.complete(new Read(storageService).run(readRequest))
+        }
+      } ~ (path("upload") & put) {
+        entity(as[Multipart.FormData]) { formData =>
+          complete(new Upload().run(formData))
+        }
       }
     }
   }

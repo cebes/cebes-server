@@ -26,7 +26,7 @@ object DataFormat {
   case object Orc extends DataFormatEnum("orc")
   case object Text extends DataFormatEnum("text")
 
-  val allFormats = Seq(Unknown, Csv, Json, Parquet, Orc, Text)
+  val values = Seq(Unknown, Csv, Json, Parquet, Orc, Text)
 
-  def fromString(name: String) = allFormats.find(f => f.name == name)
+  def fromString(name: String) = values.find(_.name == name)
 }

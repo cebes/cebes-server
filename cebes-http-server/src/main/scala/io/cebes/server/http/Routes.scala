@@ -15,9 +15,9 @@
 package io.cebes.server.http
 
 import akka.http.scaladsl.server.Directives._
-import io.cebes.server.auth.AuthHandler
-import io.cebes.server.df.DataframeHandler
-import io.cebes.server.storage.StorageHandler
+import io.cebes.server.routes.auth.AuthHandler
+import io.cebes.server.routes.df.DataframeHandler
+import io.cebes.server.routes.storage.StorageHandler
 
 trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with StorageHandler {
   val routes =

@@ -16,7 +16,7 @@ package io.cebes.server.helpers
 
 import com.google.inject.{Guice, Stage}
 import io.cebes.prop.PropertyModule
-import io.cebes.server.CebesHttpDependencyModule
+import io.cebes.server.inject.CebesHttpDependencyModule
 import io.cebes.spark.CebesSparkDependencyModule
 
 object TestInjector {

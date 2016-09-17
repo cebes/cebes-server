@@ -9,19 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 09/09/16.
+ * Created by phvu on 17/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.routes.storage
 
-import com.google.inject.{Guice, Stage}
-import io.cebes.prop.PropertyModule
-import io.cebes.spark.CebesSparkDependencyModule
+import com.typesafe.scalalogging.slf4j.StrictLogging
+import io.cebes.server.helpers.HasClient
+import io.cebes.server.models.{FutureResult, ReadRequest, S3ReadRequest}
 
-object InjectorService {
+class StorageHandlerSuite extends HasClient with StrictLogging {
 
-  lazy val injector = Guice.createInjector(Stage.PRODUCTION,
-    new PropertyModule,
-    new CebesHttpDependencyModule,
-    new CebesSparkDependencyModule)
+  test("read data from S3") {
+    //val result = client.post[ReadRequest, FutureResult]("storage/read",
+    //  ReadRequest(None, Some(S3ReadRequest()), None, None, None))
+  }
 }
