@@ -16,10 +16,10 @@ package io.cebes.server.common
 
 import java.io.{PrintWriter, StringWriter}
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.RequestContext
-import io.cebes.server.models.{FailResponse, FutureResult, Request, Result}
-import io.cebes.server.result.{ResultActorProducer, SerializableResult}
+import io.cebes.server.models._
+import io.cebes.server.result.ResultActorProducer
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,10 +38,19 @@ import scala.util.{Failure, Success}
   */
 trait AsyncExecutor[E, T, R] {
 
+  def runImplWrapped(request: Request[E], resultActor: ActorRef)
+                    (implicit ec: ExecutionContext,
+                     jfE: JsonFormat[E],
+                     jfR: JsonFormat[R],
+                     jfResult: JsonFormat[Result[E, R]]): Future[T] = Future {
+    resultActor ! SerializableResult(request.requestId, RequestStatus.STARTED, None)
+    runImpl(request.entity)
+  }
+
   /**
     * Implement this to do the real work
     */
-  def runImpl(requestEntity: E)(implicit ec: ExecutionContext): Future[T]
+  def runImpl(requestEntity: E): T
 
   /**
     * Transform the actual result (of type T)
@@ -52,7 +61,7 @@ trait AsyncExecutor[E, T, R] {
     * @param result        The actual result, returned by `runImpl`
     * @return a JSON-serializable object, to be returned to the clients
     */
-  def transformResult(requestEntity: E, result: T): R
+  def transformResult(requestEntity: E, result: T): Option[R]
 
   def run(requestEntity: E)
          (implicit ec: ExecutionContext,
@@ -64,28 +73,30 @@ trait AsyncExecutor[E, T, R] {
           jfFr: JsonFormat[FailResponse],
           jfResultFail: JsonFormat[Result[E, FailResponse]]): FutureResult = {
 
+    val resultActor = actorSystem.actorOf(ResultActorProducer.props)
+
     val requestObj = Request(requestEntity,
       ctx.request.uri.path.toString(), java.util.UUID.randomUUID())
 
-    this.runImpl(requestEntity).onComplete {
+    resultActor ! SerializableResult(requestObj.requestId, RequestStatus.SCHEDULED, None)
+
+    this.runImplWrapped(requestObj, resultActor).onComplete {
       case Success(t) =>
-        saveResult(requestObj, this.transformResult(requestEntity, t))
+
+        resultActor ! SerializableResult(
+          requestObj.requestId, RequestStatus.FINISHED,
+          this.transformResult(requestEntity, t).map(_.toJson))
 
       case Failure(t) =>
         val sw = new StringWriter()
         val pw = new PrintWriter(sw)
         t.printStackTrace(pw)
-        saveResult(requestObj, FailResponse(t.getMessage, sw.toString))
+
+        resultActor ! SerializableResult(
+          requestObj.requestId, RequestStatus.FAILED,
+          Some(FailResponse(t.getMessage, sw.toString).toJson))
     }
     FutureResult(requestObj.requestId)
   }
 
-  def saveResult[ResponseType](request: Request[E], response: ResponseType)
-                              (implicit actorSystem: ActorSystem,
-                               jfE: JsonFormat[E],
-                               jfR: JsonFormat[ResponseType],
-                               jfResult: JsonFormat[Result[E, ResponseType]]) = {
-    val actor = actorSystem.actorOf(ResultActorProducer.props)
-    actor ! SerializableResult(Result(request, response))
-  }
 }

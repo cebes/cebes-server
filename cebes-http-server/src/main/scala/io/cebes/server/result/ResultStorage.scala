@@ -16,6 +16,8 @@ package io.cebes.server.result
 
 import java.util.UUID
 
+import io.cebes.server.models.SerializableResult
+
 trait ResultStorage {
 
   def save(serializableResult: SerializableResult): Unit

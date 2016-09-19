@@ -19,14 +19,14 @@ object DataFormat {
     override def toString: String = name
   }
 
-  case object Unknown extends DataFormatEnum("unknown")
-  case object Csv extends DataFormatEnum("csv")
-  case object Json extends DataFormatEnum("json")
-  case object Parquet extends DataFormatEnum("parquet")
-  case object Orc extends DataFormatEnum("orc")
-  case object Text extends DataFormatEnum("text")
+  case object UNKNOWN extends DataFormatEnum("unknown")
+  case object CSV extends DataFormatEnum("csv")
+  case object JSON extends DataFormatEnum("json")
+  case object PARQUET extends DataFormatEnum("parquet")
+  case object ORC extends DataFormatEnum("orc")
+  case object TEXT extends DataFormatEnum("text")
 
-  val values = Seq(Unknown, Csv, Json, Parquet, Orc, Text)
+  val values = Seq(UNKNOWN, CSV, JSON, PARQUET, ORC, TEXT)
 
   def fromString(name: String) = values.find(_.name == name)
 }

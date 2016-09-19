@@ -23,16 +23,13 @@ import io.cebes.spark.storage.s3.S3DataSource
 import io.cebes.storage.localfs.LocalFsDataSource
 import io.cebes.storage.{DataFormat, StorageService}
 
-import scala.concurrent.{ExecutionContext, Future}
-
 class Read(storageService: StorageService)
   extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
 
   /**
     * Implement this to do the real work
     */
-  override def runImpl(requestEntity: ReadRequest)
-                      (implicit ec: ExecutionContext): Future[Dataframe] = Future {
+  override def runImpl(requestEntity: ReadRequest): Dataframe = {
 
     val dataSrc = requestEntity match {
       case ReadRequest(Some(localFs), None, None, None, None) =>
@@ -43,9 +40,9 @@ class Read(storageService: StorageService)
       case ReadRequest(None, None, Some(hdfs), None, None) =>
         new HdfsDataSource(hdfs.path, hdfs.uri, hdfs.format)
       case ReadRequest(None, None, None, Some(jdbc), None) =>
-        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbc.passwordBase64, DataFormat.Unknown)
+        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbc.passwordBase64, DataFormat.UNKNOWN)
       case ReadRequest(None, None, None, None, Some(hive)) =>
-        new HiveDataSource(hive.tableName, DataFormat.Unknown)
+        new HiveDataSource(hive.tableName, DataFormat.UNKNOWN)
       case _ => throw new IllegalArgumentException("Invalid read request")
     }
     storageService.read(dataSrc)
@@ -61,7 +58,7 @@ class Read(storageService: StorageService)
     * @param result        The actual result, returned by `runImpl`
     * @return a JSON-serializable object, to be returned to the clients
     */
-  override def transformResult(requestEntity: ReadRequest, result: Dataframe): DataframeResponse = {
-    DataframeResponse(result.id)
+  override def transformResult(requestEntity: ReadRequest, result: Dataframe): Option[DataframeResponse] = {
+    Some(DataframeResponse(result.id))
   }
 }

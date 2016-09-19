@@ -16,6 +16,7 @@ package io.cebes.server.result
 
 import akka.actor.Actor
 import com.google.inject.Inject
+import io.cebes.server.models.SerializableResult
 
 class ResultActor @Inject()(resultHandler: ResultStorage) extends Actor {
 

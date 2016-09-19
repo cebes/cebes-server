@@ -16,11 +16,25 @@ package io.cebes.server
 
 import java.util.UUID
 
+import io.cebes.server.models.RequestStatus.RequestStatusEnum
 import io.cebes.storage.DataFormat
 import io.cebes.storage.DataFormat.DataFormatEnum
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, deserializationError}
 
 package object models {
+
+  object RequestStatus {
+    sealed abstract class RequestStatusEnum(val name: String)
+
+    case object SCHEDULED extends RequestStatusEnum("scheduled")
+    case object STARTED extends RequestStatusEnum("started")
+    case object FINISHED extends RequestStatusEnum("finished")
+    case object FAILED extends RequestStatusEnum("failed")
+
+    val values = Seq(SCHEDULED, STARTED, FINISHED, FAILED)
+
+    def fromString(name: String) = values.find(_.name == name)
+  }
 
   // Objects in requests
   case class UserLogin(userName: String, passwordHash: String)
@@ -52,7 +66,13 @@ package object models {
   case class Request[E](entity: E, uri: String, requestId: UUID)
 
   // when user asks for results of a particular request
-  case class Result[E, R](request: Request[E], response: R)
+  case class Result[E, +R](request: Request[E],
+                          status: RequestStatus.RequestStatusEnum,
+                          response: Option[R])
+
+  case class SerializableResult(requestId: UUID,
+                                status: RequestStatus.RequestStatusEnum,
+                                response: Option[JsValue])
 
   /** **************************************************************************/
 
@@ -95,6 +115,18 @@ package object models {
       }
     }
 
+    implicit object RequestStatusEnumFormat extends JsonFormat[RequestStatusEnum] {
+      override def write(obj: RequestStatusEnum): JsValue = JsString(obj.name)
+
+      override def read(json: JsValue): RequestStatusEnum = json match {
+        case JsString(fmtName) => RequestStatus.fromString(fmtName) match {
+          case Some(fmt) => fmt
+          case None => deserializationError(s"Unrecognized Request Status: $fmtName")
+        }
+        case _ => deserializationError(s"Expected RequestStatus as a string")
+      }
+    }
+
     implicit val userLoginFormat = jsonFormat2(UserLogin)
 
     implicit val localFsReadRequestFormat = jsonFormat2(LocalFsReadRequest)
@@ -108,7 +140,9 @@ package object models {
 
     implicit def requestFormat[T](implicit jf: JsonFormat[T]) = jsonFormat3(Request[T])
 
-    implicit def resultFormat[T, R](implicit jf1: JsonFormat[T], jf2: JsonFormat[R]) = jsonFormat2(Result[T, R])
+    implicit def resultFormat[T, R](implicit jf1: JsonFormat[T], jf2: JsonFormat[R]) = jsonFormat3(Result[T, R])
+
+    implicit val serializableResultFormat = jsonFormat3(SerializableResult)
 
     //
 

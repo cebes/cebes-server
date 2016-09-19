@@ -14,14 +14,23 @@
 
 package io.cebes.server.routes.result
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import io.cebes.server.http.SecuredSession
+import io.cebes.server.models.CebesJsonProtocol._
+import io.cebes.server.result.ResultStorage
 
 trait ResultHandler extends SecuredSession {
 
-  val resultApi = pathPrefix("result") {
+  val resultStorage: ResultStorage
+
+  val resultApi = pathPrefix("request") {
     myRequiredSession { session =>
-      (path())
+      pathPrefix(JavaUUID) { requestId =>
+        (path("status") & post) { ctx =>
+          ctx.complete(resultStorage.get(requestId))
+        }
+      }
     }
   }
 }

@@ -12,18 +12,22 @@
  * Created by phvu on 24/08/16.
  */
 
-package io.cebes.server.http
+package io.cebes.server.routes
 
 import akka.http.scaladsl.server.Directives._
+import io.cebes.server.http.ApiErrorHandler
 import io.cebes.server.routes.auth.AuthHandler
 import io.cebes.server.routes.df.DataframeHandler
+import io.cebes.server.routes.result.ResultHandler
 import io.cebes.server.routes.storage.StorageHandler
 
-trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with StorageHandler {
+trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler
+  with StorageHandler with ResultHandler {
   val routes =
     pathPrefix("v1") {
       authApi ~
       dataframeApi ~
-      storageApi
+      storageApi ~
+      resultApi
     } ~ path("")(getFromResource("public/index.html"))
 }

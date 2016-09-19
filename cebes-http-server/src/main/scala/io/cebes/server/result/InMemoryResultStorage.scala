@@ -17,7 +17,7 @@ package io.cebes.server.result
 import java.util.UUID
 
 import com.google.inject.Singleton
-import spray.json.JsValue
+import io.cebes.server.models.SerializableResult
 
 import scala.collection.mutable
 
@@ -28,12 +28,12 @@ import scala.collection.mutable
   */
 @Singleton class InMemoryResultStorage extends ResultStorage {
 
-  val storage = mutable.HashMap.empty[UUID, JsValue]
+  val storage = mutable.HashMap.empty[UUID, SerializableResult]
 
   override def save(serializableResult: SerializableResult): Unit = {
-    storage.put(serializableResult.requestId, serializableResult.result)
+    storage.put(serializableResult.requestId, serializableResult)
   }
 
   override def get(requestId: UUID): Option[SerializableResult] =
-    storage.get(requestId).map(SerializableResult(requestId, _))
+    storage.get(requestId)
 }

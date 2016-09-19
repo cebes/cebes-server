@@ -28,9 +28,9 @@ class DataWriterProvider @Inject()
     sparkMode.toLowerCase match {
       case "local" =>
         LocalFsDataSource.ensureDirectoryExists(uploadPath)
-        new LocalFsDataSource(uploadPath, DataFormat.Csv).open(false)
+        new LocalFsDataSource(uploadPath, DataFormat.CSV).open(false)
       case "yarn" =>
-        val ds = new HdfsDataSource(uploadPath, None, DataFormat.Csv)
+        val ds = new HdfsDataSource(uploadPath, None, DataFormat.CSV)
         ds.ensureDirectoryExists()
         ds.open(false)
       case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")

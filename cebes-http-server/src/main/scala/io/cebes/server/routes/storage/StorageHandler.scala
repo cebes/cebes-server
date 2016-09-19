@@ -30,9 +30,9 @@ trait StorageHandler extends SecuredSession {
 
   val storageService: StorageService
 
-  implicit val actorSystem: ActorSystem
-  implicit val actorExecutor: ExecutionContext
-  implicit val actorMaterializer: Materializer
+  implicit def actorSystem: ActorSystem
+  implicit def actorExecutor: ExecutionContext
+  implicit def actorMaterializer: Materializer
 
   val storageApi = pathPrefix("storage") {
     myRequiredSession { session =>

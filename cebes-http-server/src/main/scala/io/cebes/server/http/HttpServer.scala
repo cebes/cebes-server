@@ -24,6 +24,8 @@ import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.auth.AuthService
 import io.cebes.df.DataframeService
 import io.cebes.prop.{Prop, Property}
+import io.cebes.server.result.ResultStorage
+import io.cebes.server.routes.Routes
 import io.cebes.storage.StorageService
 
 import scala.concurrent.duration.Duration
@@ -33,6 +35,7 @@ import scala.io.StdIn
 class HttpServer @Inject()(override val authService: AuthService,
                            override val dfService: DataframeService,
                            override val storageService: StorageService,
+                           override val resultStorage: ResultStorage,
                            @Prop(Property.HTTP_INTERFACE) val httpInterface: String,
                            @Prop(Property.HTTP_PORT) val httpPort: Int)
   extends StrictLogging with Routes {
