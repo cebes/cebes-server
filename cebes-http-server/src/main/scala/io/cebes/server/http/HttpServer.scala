@@ -38,8 +38,8 @@ class HttpServer @Inject()(override val authService: AuthService,
   extends StrictLogging with Routes {
 
   implicit val actorSystem = ActorSystem("CebesServerApp")
-  implicit val executor = actorSystem.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val actorExecutor = actorSystem.dispatcher
+  implicit val actorMaterializer = ActorMaterializer()
 
   var bindingFuture: Future[Http.ServerBinding] = _
 

@@ -16,8 +16,11 @@ package io.cebes.server.common
 
 import java.io.{PrintWriter, StringWriter}
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.server.RequestContext
 import io.cebes.server.models.{FailResponse, FutureResult, Request, Result}
+import io.cebes.server.result.{ResultActorProducer, SerializableResult}
+import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -52,21 +55,37 @@ trait AsyncExecutor[E, T, R] {
   def transformResult(requestEntity: E, result: T): R
 
   def run(requestEntity: E)
-         (implicit ec: ExecutionContext, ctx: RequestContext): FutureResult = {
-    val requestObj = Request[E](requestEntity,
+         (implicit ec: ExecutionContext,
+          ctx: RequestContext,
+          actorSystem: ActorSystem,
+          jfE: JsonFormat[E],
+          jfR: JsonFormat[R],
+          jfResult: JsonFormat[Result[E, R]],
+          jfFr: JsonFormat[FailResponse],
+          jfResultFail: JsonFormat[Result[E, FailResponse]]): FutureResult = {
+
+    val requestObj = Request(requestEntity,
       ctx.request.uri.path.toString(), java.util.UUID.randomUUID())
 
     this.runImpl(requestEntity).onComplete {
       case Success(t) =>
-        // tell result actor to store
-        Result(requestObj, this.transformResult(requestEntity, t))
+        saveResult(requestObj, this.transformResult(requestEntity, t))
+
       case Failure(t) =>
         val sw = new StringWriter()
         val pw = new PrintWriter(sw)
         t.printStackTrace(pw)
-
-        Result(requestObj, FailResponse(t.getMessage, sw.toString))
+        saveResult(requestObj, FailResponse(t.getMessage, sw.toString))
     }
     FutureResult(requestObj.requestId)
+  }
+
+  def saveResult[ResponseType](request: Request[E], response: ResponseType)
+                              (implicit actorSystem: ActorSystem,
+                               jfE: JsonFormat[E],
+                               jfR: JsonFormat[ResponseType],
+                               jfResult: JsonFormat[Result[E, ResponseType]]) = {
+    val actor = actorSystem.actorOf(ResultActorProducer.props)
+    actor ! SerializableResult(Result(request, response))
   }
 }

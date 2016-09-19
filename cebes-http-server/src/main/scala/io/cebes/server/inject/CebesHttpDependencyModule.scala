@@ -18,6 +18,7 @@ import com.google.inject.AbstractModule
 import io.cebes.auth.AuthService
 import io.cebes.auth.simple.SimpleAuthService
 import io.cebes.df.DataframeService
+import io.cebes.server.result.{InMemoryResultStorage, ResultStorage}
 import io.cebes.spark.df.SparkDataframeService
 import io.cebes.spark.storage.SparkStorageService
 import io.cebes.storage.{DataWriter, StorageService}
@@ -32,5 +33,6 @@ class CebesHttpDependencyModule extends AbstractModule {
     bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
     bind(classOf[StorageService]).to(classOf[SparkStorageService])
     bind(classOf[DataWriter]).toProvider(classOf[DataWriterProvider])
+    bind(classOf[ResultStorage]).to(classOf[InMemoryResultStorage])
   }
 }

@@ -49,10 +49,10 @@ package object models {
   // Future response
   case class FutureResult(requestId: UUID)
 
-  case class Request[T](entity: T, uri: String, requestId: UUID)
+  case class Request[E](entity: E, uri: String, requestId: UUID)
 
   // when user asks for results of a particular request
-  case class Result[T, R](request: Request[T], response: R)
+  case class Result[E, R](request: Request[E], response: R)
 
   /** **************************************************************************/
 
