@@ -9,19 +9,12 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 07/09/16.
+ * Created by phvu on 20/09/16.
  */
 
-package io.cebes.server.auth
+package io.cebes.server.helpers
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
-import io.cebes.server.helpers.HasClient
+trait HasTestProperties {
 
-
-class AuthHandlerSuite extends HasClient with StrictLogging {
-
-  test("login") {
-    Thread.sleep(1000)
-    assert((3 + 1) !== 2)
-  }
+  val properties = TestInjector.injector.getInstance(classOf[TestProperties])
 }

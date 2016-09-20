@@ -1,9 +1,9 @@
 name := "cebes-server"
 
 lazy val commonSettings = Seq(
-  version := Common.projectVersion,
-  organization := Common.organizationName,
-  scalaVersion := Common.scalaVersion,
+  version := "0.1.0-SNAPSHOT",
+  organization := "io.cebes",
+  scalaVersion := "2.11.8",
   test in assembly := {},
 
   // generate test reports (likely for jenkins to pickup, once we have jenkins...)

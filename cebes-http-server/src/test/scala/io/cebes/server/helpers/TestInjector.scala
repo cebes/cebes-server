@@ -22,7 +22,7 @@ import io.cebes.spark.CebesSparkDependencyModule
 object TestInjector {
 
   lazy val injector = Guice.createInjector(Stage.DEVELOPMENT,
-    new PropertyModule,
+    new PropertyModule(true),
     new CebesHttpDependencyModule,
     new CebesSparkDependencyModule)
 }

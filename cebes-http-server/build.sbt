@@ -11,14 +11,14 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
   "ch.qos.logback" % "logback-classic" % "1.1.7",
 
-  "org.apache.spark" %% "spark-core" % "2.0.0" % "provided"
+  "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),
-  "org.apache.spark" %% "spark-sql" % "2.0.0" % "provided"
+  "org.apache.spark" %% "spark-sql" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),
 
-  "com.google.inject" % "guice" % "4.1.0"
+  "com.google.inject" % "guice" % Common.guiceVersion
 )
 
 mainClass in assembly := Some("io.cebes.server.Main")

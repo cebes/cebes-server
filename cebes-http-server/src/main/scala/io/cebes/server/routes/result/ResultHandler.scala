@@ -27,8 +27,11 @@ trait ResultHandler extends SecuredSession {
   val resultApi = pathPrefix("request") {
     myRequiredSession { session =>
       pathPrefix(JavaUUID) { requestId =>
-        (path("status") & post) { ctx =>
-          ctx.complete(resultStorage.get(requestId))
+        post { ctx =>
+          resultStorage.get(requestId) match {
+            case Some(result) => ctx.complete(result)
+            case None => throw new NoSuchElementException(s"Request ID not found: ${requestId.toString}")
+          }
         }
       }
     }

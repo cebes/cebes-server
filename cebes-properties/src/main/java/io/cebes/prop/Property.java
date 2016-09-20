@@ -24,27 +24,51 @@ public enum Property {
             "The port on which the HTTP service will be listening, to be combined with HTTP_INTERFACE"),
 
     UPLOAD_PATH("CEBES_UPLOAD_PATH", "cebes.upload.path", "/tmp/upload/",
-            "The directory to upload data to");
+            "The directory to upload data to"),
+
+    // test-only properties
+    TEST_AWS_ACCESSKEY("CEBES_TEST_AWS_ACCESSKEY", "cebes.test.aws.accesskey",
+            "", "AWS access key used for tests", true),
+    TEST_AWS_SECRETKEY("CEBES_TEST_AWS_SECRETKEY", "cebes.test.aws.secretkey",
+            "", "AWS secret key used for tests", true);
 
     private String environmentVar;
     private String propertyKey;
     private String description;
     private String defaultValue;
+    private Boolean testProperty;
 
-    Property(String environmentVar, String propertyKey, String defaultValue, String description) {
+    Property(String environmentVar, String propertyKey, String defaultValue,
+             String description) {
+        this(environmentVar, propertyKey, defaultValue, description, false);
+    }
+
+    Property(String environmentVar, String propertyKey, String defaultValue,
+             String description, Boolean testOnly) {
         this.environmentVar = environmentVar;
         this.propertyKey = propertyKey;
         this.description = description;
         this.defaultValue = defaultValue;
+        this.testProperty = testOnly;
+    }
+
+    public String getEnvironmentVar() {
+        return environmentVar;
+    }
+
+    public String getPropertyKey() {
+        return propertyKey;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public String getValue() {
-        return System.getenv().getOrDefault(this.environmentVar,
-                System.getProperty(this.propertyKey, this.defaultValue));
+    public String getDefaultValue() {
+        return defaultValue;
     }
 
+    public Boolean isTestProperty() {
+        return testProperty;
+    }
 }

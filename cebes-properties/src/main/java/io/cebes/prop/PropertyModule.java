@@ -20,9 +20,21 @@ import java.util.stream.Stream;
 
 public class PropertyModule extends AbstractModule {
 
+    private Boolean testPropEnabled = false;
+
+    public PropertyModule(Boolean testPropEnabled) {
+        this.testPropEnabled = testPropEnabled;
+    }
+
     @Override
     protected void configure() {
-        Stream.of(Property.values()).forEach(p ->
-                bindConstant().annotatedWith(new PropImpl(p)).to(p.getValue()));
+        final IPropertySet propSet = new ConfigPropertySet();
+        if (testPropEnabled) {
+            Stream.of(Property.values()).forEach(p ->
+                    bindConstant().annotatedWith(new PropImpl(p)).to(propSet.get(p)));
+        } else {
+            Stream.of(Property.values()).filter(p -> !p.isTestProperty()).forEach(p ->
+                    bindConstant().annotatedWith(new PropImpl(p)).to(propSet.get(p)));
+        }
     }
 }

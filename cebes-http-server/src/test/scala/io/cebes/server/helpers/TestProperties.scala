@@ -9,19 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 09/09/16.
+ * Created by phvu on 20/09/16.
  */
 
-package io.cebes.server.inject
+package io.cebes.server.helpers
 
-import com.google.inject.{Guice, Stage}
-import io.cebes.prop.PropertyModule
-import io.cebes.spark.CebesSparkDependencyModule
+import com.google.inject.Inject
+import io.cebes.prop.Property
+import io.cebes.prop.Prop
 
-object InjectorService {
+class TestProperties @Inject()
+(@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
+@Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String) {
 
-  lazy val injector = Guice.createInjector(Stage.PRODUCTION,
-    new PropertyModule(false),
-    new CebesHttpDependencyModule,
-    new CebesSparkDependencyModule)
 }
