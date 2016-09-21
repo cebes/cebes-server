@@ -9,19 +9,12 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 09/09/16.
+ * Created by phvu on 20/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.helpers
 
-import com.google.inject.{Guice, Stage}
-import io.cebes.prop.PropertyModule
-import io.cebes.spark.CebesSparkDependencyModule
+trait HasTestProperties {
 
-object InjectorService {
-
-  lazy val injector = Guice.createInjector(Stage.PRODUCTION,
-    new PropertyModule,
-    new CebesHttpDependencyModule,
-    new CebesSparkDependencyModule)
+  val properties = TestInjector.injector.getInstance(classOf[TestProperties])
 }

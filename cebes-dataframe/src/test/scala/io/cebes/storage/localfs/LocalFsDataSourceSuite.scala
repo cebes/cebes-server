@@ -24,7 +24,7 @@ class LocalFsDataSourceSuite extends FunSuite {
 
   test("open and write a file") {
     val pTmp = Files.createTempFile("cebes", "fsdatasource")
-    val src = new LocalFsDataSource(pTmp.toAbsolutePath.toString, DataFormat.Csv)
+    val src = new LocalFsDataSource(pTmp.toAbsolutePath.toString, DataFormat.CSV)
     intercept[FileAlreadyExistsException] {
       src.open(false)
     }
@@ -43,7 +43,7 @@ class LocalFsDataSourceSuite extends FunSuite {
 
   test("open and write a file in a directory") {
     val pTmp = Files.createTempDirectory("cebes")
-    val src = new LocalFsDataSource(pTmp.toAbsolutePath.toString, DataFormat.Csv)
+    val src = new LocalFsDataSource(pTmp.toAbsolutePath.toString, DataFormat.CSV)
     val writer = src.open(false)
     val arrData = Array(10, 20, 30, 40, 50).map(_.toByte)
     assert(writer.isInstanceOf[LocalFsDataWriter])

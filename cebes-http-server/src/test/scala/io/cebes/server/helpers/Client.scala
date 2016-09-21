@@ -14,30 +14,32 @@
 
 package io.cebes.server.helpers
 
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
+import com.typesafe.scalalogging.slf4j.StrictLogging
+import io.cebes.server.models.{FailResponse, FutureResult, RequestStatus, SerializableResult}
+import spray.json.JsonFormat
 
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success, Try}
 
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
   */
-class Client {
+class Client extends StrictLogging {
 
-  implicit val system = ActorSystem("CebesClientApp")
-  implicit val materializer = ActorMaterializer()
+  implicit val actorSystem = Client.system
+  implicit val actorMaterializer = Client.materializer
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
@@ -62,8 +64,59 @@ class Client {
 
 
   /**
+    * Implements Exponential backoff to wait for a FutureResult
+    *
+    * @param futureResult FutureResult object
+    */
+  def wait(futureResult: FutureResult)
+          (implicit ma: ToEntityMarshaller[String],
+           ua: FromEntityUnmarshaller[SerializableResult],
+           uaFail: FromEntityUnmarshaller[FailResponse],
+           jfFail: JsonFormat[FailResponse],
+           ec: ExecutionContext): SerializableResult = {
+    var cnt = 0
+    val MAX_COUNT = 4
+    val DELTA = 500 // in milliseconds
+
+    while (cnt < 100) {
+      val result = Try(request[String, SerializableResult](HttpMethods.POST, s"request/${futureResult.requestId}", ""))
+      result match {
+        case Success(serializableResult) =>
+          serializableResult.status match {
+            case RequestStatus.FAILED =>
+              // TODO: decide on whether we should throw exception here
+              // try to throw an exception if it is a FailResponse
+              serializableResult.response match {
+                case Some(responseEntity) =>
+                  Try(responseEntity.convertTo[FailResponse]) match {
+                    case Success(fr) =>
+                      throw ServerException(Some(serializableResult.requestId),
+                        fr.message, Some(fr.stackTrace))
+                    case Failure(_) =>
+                      // throw it as it is
+                      throw ServerException(Some(serializableResult.requestId),
+                        responseEntity.toString(), None)
+                  }
+                case None =>
+                  throw ServerException(Some(serializableResult.requestId),
+                    "Unknown server error", None)
+              }
+            case RequestStatus.FINISHED =>
+              return serializableResult
+            case _ =>
+              cnt += 1
+              Thread.sleep(DELTA * ((1 << Random.nextInt(math.min(cnt, MAX_COUNT))) - 1))
+          }
+        case Failure(e) => throw e
+      }
+    }
+    throw new IllegalArgumentException(s"Timed out after 100 trials " +
+      s"getting result of request ${futureResult.requestId}")
+  }
+
+  /**
     * Post a message and block until the response is available
-    * See the doc of [[Client.postAsync()]] for important notices regarding how to use this function.
+    * See the doc of [[Client.requestAsync()]] for important notices regarding how to use this function.
     *
     * @param uri     the URI of the Cebes server, without address and API version
     * @param content the message sent along this request
@@ -71,11 +124,12 @@ class Client {
     * @tparam ResponseType type of the expected response
     * @return the response
     */
-  def post[RequestType, ResponseType](uri: String, content: RequestType)
-                                     (implicit ma: ToEntityMarshaller[RequestType],
-                                      ua: FromEntityUnmarshaller[ResponseType],
-                                      ec: ExecutionContext): ResponseType = {
-    val futureResult = postAsync(uri, content)(ma, ua, ec)
+  def request[RequestType, ResponseType](method: HttpMethod, uri: String, content: RequestType)
+                                        (implicit ma: ToEntityMarshaller[RequestType],
+                                         ua: FromEntityUnmarshaller[ResponseType],
+                                         uaFail: FromEntityUnmarshaller[FailResponse],
+                                         ec: ExecutionContext): ResponseType = {
+    val futureResult = requestAsync(method, uri, content)(ma, ua, uaFail, ec)
     Await.result(futureResult, Duration(10, TimeUnit.SECONDS))
   }
 
@@ -89,36 +143,51 @@ class Client {
     * import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     * import io.cebes.server.models.CebesJsonProtocol._
     *
+    * @param method  the HTTP method to be used
     * @param uri     the URI of the Cebes server, without address and API version
     * @param content the message sent along this request
     * @tparam RequestType  type of the request message
     * @tparam ResponseType type of the expected response
     * @return a Future.
     */
-  def postAsync[RequestType, ResponseType](uri: String, content: RequestType)
-                                          (implicit ma: ToEntityMarshaller[RequestType],
-                                           ua: FromEntityUnmarshaller[ResponseType],
-                                           ec: ExecutionContext): Future[ResponseType] = {
+  def requestAsync[RequestType, ResponseType](method: HttpMethod, uri: String, content: RequestType)
+                                             (implicit ma: ToEntityMarshaller[RequestType],
+                                              ua: FromEntityUnmarshaller[ResponseType],
+                                              uaFail: FromEntityUnmarshaller[FailResponse],
+                                              ec: ExecutionContext): Future[ResponseType] = {
 
-    val request = RequestBuilding.Post(s"/${Client.apiVersion}/$uri", content).withHeaders(requestHeaders)
+    val request = new RequestBuilder(method).apply(s"/${Client.apiVersion}/$uri", content).withHeaders(requestHeaders)
 
     cebesRequest(request).flatMap { response =>
       response.status match {
         case StatusCodes.OK =>
-          // always update request headers
-          this.requestHeaders = response.headers.filter(_.name().startsWith("Set-")).flatMap {
-            case headers.`Set-Cookie`(c) => c.name.toUpperCase() match {
-              case "XSRF-TOKEN" =>
-                Seq(headers.RawHeader("X-XSRF-TOKEN", c.value), headers.Cookie(c.name, c.value))
-              case _ => Seq(headers.Cookie(c.name, c.value))
-            }
-            case h =>
-              Seq(headers.RawHeader(h.name().substring(4), h.value()))
+          response.headers.filter(_.name().startsWith("Set-")) match {
+            case x: Seq[HttpHeader] if x.nonEmpty =>
+              this.requestHeaders = x.flatMap {
+                case headers.`Set-Cookie`(c) => c.name.toUpperCase() match {
+                  case "XSRF-TOKEN" =>
+                    Seq(headers.RawHeader("X-XSRF-TOKEN", c.value), headers.Cookie(c.name, c.value))
+                  case _ => Seq(headers.Cookie(c.name, c.value))
+                }
+                case h =>
+                  Seq(headers.RawHeader(h.name().substring(4), h.value()))
+              }
+            case _ =>
           }
           Unmarshal(response.entity).to[ResponseType]
         case _ =>
-          val msg = Await.result(Unmarshal(response.entity).to[String], Duration(10, TimeUnit.SECONDS))
-          Future.failed(new IOException(s"FAILED: ${response.status}: $msg"))
+          Unmarshal(response.entity).to[FailResponse].flatMap { failResponse =>
+            logger.error(s"Failed result for request ${request.uri}")
+            logger.error(s"Response: ${response.status} - ${failResponse.message}")
+            Future.failed(ServerException(None, failResponse.message, Some(failResponse.stackTrace)))
+          }.recoverWith {
+            case _ =>
+              Unmarshal(response.entity).to[String].flatMap { msg =>
+                logger.error(s"Failed result for request ${request.uri}")
+                logger.error(s"Response: ${response.status} - $msg")
+                Future.failed(ServerException(None, msg, None))
+              }
+          }
       }
     }
   }
@@ -127,4 +196,7 @@ class Client {
 object Client {
 
   val apiVersion = "v1"
+
+  implicit val system = ActorSystem("CebesClientApp")
+  implicit val materializer = ActorMaterializer()
 }

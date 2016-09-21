@@ -15,18 +15,38 @@
 package io.cebes.spark.storage.s3
 
 import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.regions.{Region, Regions}
 import com.amazonaws.services.s3.AmazonS3Client
 import io.cebes.storage.DataFormat.DataFormatEnum
 import io.cebes.storage.{DataSource, DataWriter}
+import org.apache.spark.SparkContext
 
 class S3DataSource(val awsAccessKey: String, val awsSecretKey: String,
+                   val regionName: Option[String],
                    val bucketName: String, val key: String,
                    val format: DataFormatEnum) extends DataSource {
 
-  private val s3client = new AmazonS3Client(new BasicAWSCredentials(awsAccessKey, awsSecretKey))
+  private val s3client = new AmazonS3Client(
+    new BasicAWSCredentials(awsAccessKey, awsSecretKey))
+  regionName.foreach(s => s3client.setRegion(Region.getRegion(Regions.fromName(s))))
 
-  def fullUrl: String = {
-    s3client.getResourceUrl(bucketName, key)
+  val s3Protocol = "s3n"
+
+  def fullUrl: String = s"$s3Protocol://$bucketName/$key"
+
+  def endpoint: Option[String] = regionName.map(s => s"s3.$s.amazonaws.com")
+
+  def setUpSparkContext(sparkContext: SparkContext): Unit = {
+    endpoint.map(_.toLowerCase()).foreach { ep =>
+      sparkContext.hadoopConfiguration.set(s"spark.hadoop.fs.$s3Protocol.endpoint", ep)
+      //ep match {
+      //  case "eu-central-1" =>
+      //    System.setProperty(SDKGlobalConfiguration.ENABLE_S3_SIGV4_SYSTEM_PROPERTY, "true")
+      //  case _ =>
+      //}
+    }
+    sparkContext.hadoopConfiguration.set(s"fs.$s3Protocol.awsAccessKeyId", awsAccessKey)
+    sparkContext.hadoopConfiguration.set(s"fs.$s3Protocol.awsSecretAccessKey", awsSecretKey)
   }
 
   /**

@@ -14,8 +14,8 @@
 
 package io.cebes.server.helpers
 
-import io.cebes.server.InjectorService
 import io.cebes.server.http.HttpServer
+import io.cebes.server.inject.InjectorService
 
 object HttpServerTest {
 

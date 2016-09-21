@@ -9,21 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 07/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.routes.auth
 
-import io.cebes.server.http.HttpServer
-import io.cebes.server.inject.InjectorService
+import com.typesafe.scalalogging.slf4j.StrictLogging
+import io.cebes.server.helpers.HasClient
 
 
-object Main {
+class AuthHandlerSuite extends HasClient with StrictLogging {
 
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
-    server.stop()
+  test("login") {
+    Thread.sleep(1000)
+    assert((3 + 1) !== 2)
   }
 }

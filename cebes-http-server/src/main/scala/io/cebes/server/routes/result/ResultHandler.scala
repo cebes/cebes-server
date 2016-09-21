@@ -9,26 +9,28 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 05/09/16.
+ * Created by phvu on 19/09/16.
  */
 
-package io.cebes.server.storage
+package io.cebes.server.routes.result
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models._
-import io.cebes.storage.StorageService
+import io.cebes.server.result.ResultStorage
 
-trait StorageHandler extends SecuredSession {
+trait ResultHandler extends SecuredSession {
 
-  val storageService: StorageService
+  val resultStorage: ResultStorage
 
-  val storageApi = pathPrefix("storage") {
-    myRequiredSession { session =>
-      myInvalidateSession { ctx =>
-        ctx.complete(OkResponse("ok"))
+  val resultApi = pathPrefix("request") {
+    (path(JavaUUID) & post) { requestId =>
+      myRequiredSession { session =>
+        resultStorage.get(requestId) match {
+          case Some(result) => complete(result)
+          case None => throw new NoSuchElementException(s"Request ID not found: ${requestId.toString}")
+        }
       }
     }
   }

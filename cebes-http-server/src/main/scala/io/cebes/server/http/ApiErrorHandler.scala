@@ -14,21 +14,43 @@
 
 package io.cebes.server.http
 
+import java.io.{PrintWriter, StringWriter}
+
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.ExceptionHandler
+import io.cebes.server.models.CebesJsonProtocol._
+import io.cebes.server.models.FailResponse
+
+import scala.concurrent.ExecutionContext
 
 trait ApiErrorHandler {
+
+  implicit def actorExecutor: ExecutionContext
+
   implicit def myExceptionHandler: ExceptionHandler = ExceptionHandler {
     case e: NoSuchElementException =>
-      extractUri { uri =>
-        complete(HttpResponse(NotFound, entity = s"Invalid id: ${e.getMessage}"))
-      }
+      complete(ApiErrorHandler.getHttpResponse(NotFound, s"No such element: ${e.getMessage}", e))
     case e: IllegalArgumentException =>
-      complete(HttpResponse(StatusCodes.BadRequest, entity = FormData(Map(
-        "error" -> "Illegal argument",
-        "message" -> e.getMessage
-      )).toEntity))
+      complete(ApiErrorHandler.getHttpResponse(BadRequest, s"Illegal argument: ${e.getMessage}", e))
+    case e =>
+      complete(ApiErrorHandler.getHttpResponse(InternalServerError, e.getMessage, e))
+  }
+}
+
+object ApiErrorHandler {
+
+  def getHttpResponse(statusCode: StatusCode, message: String, ex: Throwable)
+                     (implicit ec: ExecutionContext) = {
+    val sw = new StringWriter()
+    val pw = new PrintWriter(sw)
+    ex.printStackTrace(pw)
+
+    Marshal(FailResponse(message, sw.toString)).to[ResponseEntity].map { entity =>
+      HttpResponse(statusCode, entity = entity.withContentType(ContentTypes.`application/json`))
+    }
   }
 }

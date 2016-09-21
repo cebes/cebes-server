@@ -12,29 +12,22 @@
  * Created by phvu on 24/08/16.
  */
 
-package io.cebes.server.df
+package io.cebes.server.routes
 
 import akka.http.scaladsl.server.Directives._
-import io.cebes.df.DataframeService
-import io.cebes.server.http.SecuredSession
+import io.cebes.server.http.ApiErrorHandler
+import io.cebes.server.routes.auth.AuthHandler
+import io.cebes.server.routes.df.DataframeHandler
+import io.cebes.server.routes.result.ResultHandler
+import io.cebes.server.routes.storage.StorageHandler
 
-/**
-  * Handle all requests related to dataframe
-  */
-trait DataframeHandler extends SecuredSession {
-
-  val dfService: DataframeService
-
-  val dataframeApi = pathPrefix("df") {
-    path("tmp") {
-      post {
-        myRequiredSession { session =>
-          myInvalidateSession { ctx =>
-            logger.info(s"Logging out $session")
-            ctx.complete("ok")
-          }
-        }
-      }
-    }
-  }
+trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler
+  with StorageHandler with ResultHandler {
+  val routes =
+    pathPrefix("v1") {
+      authApi ~
+      dataframeApi ~
+      storageApi ~
+      resultApi
+    } ~ path("")(getFromResource("public/index.html"))
 }

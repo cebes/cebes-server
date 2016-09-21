@@ -14,9 +14,12 @@
 
 package io.cebes.df
 
+import java.util.UUID
+
 /**
   * Cebes Dataframe
   */
 trait Dataframe {
 
+  val id: UUID
 }

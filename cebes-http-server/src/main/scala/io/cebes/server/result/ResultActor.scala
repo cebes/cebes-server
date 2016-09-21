@@ -9,21 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 18/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.result
 
-import io.cebes.server.http.HttpServer
-import io.cebes.server.inject.InjectorService
+import akka.actor.Actor
+import com.google.inject.Inject
+import io.cebes.server.models.SerializableResult
 
+class ResultActor @Inject()(resultHandler: ResultStorage) extends Actor {
 
-object Main {
-
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
-    server.stop()
+  override def receive: Receive = {
+    case x: SerializableResult => resultHandler.save(x)
+    case _ => throw new IllegalArgumentException("Cannot handle message")
   }
 }

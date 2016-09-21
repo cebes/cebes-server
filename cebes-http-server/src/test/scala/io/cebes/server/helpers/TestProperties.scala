@@ -9,21 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 20/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.helpers
 
-import io.cebes.server.http.HttpServer
-import io.cebes.server.inject.InjectorService
+import com.google.inject.Inject
+import io.cebes.prop.Property
+import io.cebes.prop.Prop
 
+class TestProperties @Inject()
+(@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
+@Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String) {
 
-object Main {
-
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
-    server.stop()
-  }
 }

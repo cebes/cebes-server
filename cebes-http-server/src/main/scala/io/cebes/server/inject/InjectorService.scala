@@ -9,21 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 09/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.inject
 
-import io.cebes.server.http.HttpServer
-import io.cebes.server.inject.InjectorService
+import com.google.inject.{Guice, Stage}
+import io.cebes.prop.PropertyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
+object InjectorService {
 
-object Main {
-
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
-    server.stop()
-  }
+  lazy val injector = Guice.createInjector(Stage.PRODUCTION,
+    new PropertyModule(false),
+    new CebesHttpDependencyModule,
+    new CebesSparkDependencyModule)
 }

@@ -9,21 +9,26 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 18/09/16.
  */
 
-package io.cebes.server
+package io.cebes.server.result
 
-import io.cebes.server.http.HttpServer
+import akka.actor.{IndirectActorProducer, Props}
 import io.cebes.server.inject.InjectorService
 
+class ResultActorProducer extends IndirectActorProducer {
 
-object Main {
+  override def actorClass = classOf[ResultActor]
+  override def produce = InjectorService.injector.getInstance(classOf[ResultActor])
+}
 
-  def main(args: Array[String]) {
-    val server = InjectorService.injector.getInstance(classOf[HttpServer])
-    server.start()
-    server.waitServer()
-    server.stop()
-  }
+object ResultActorProducer {
+
+  /** Used by clients:
+    * val actorRef = system.actorOf(ResultActorProducer.props, "resultHandler")
+    *
+    * @return the Props to be used to create new actor
+    */
+  def props = Props(classOf[ResultActorProducer])
 }

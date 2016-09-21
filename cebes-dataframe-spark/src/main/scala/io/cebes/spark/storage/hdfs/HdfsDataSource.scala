@@ -33,18 +33,27 @@ class HdfsDataSource(val path: String,
     * @return a [[DataWriter]] object
     */
   override def open(overwrite: Boolean): DataWriter = {
-    val conf = new Configuration()
-    if (uri.isDefined) {
-      conf.set("fs.defaultFS", uri.get)
-    }
-    val fs = FileSystem.get(conf)
+    val fs = HdfsDataSource.getFileSystem(uri)
     val p = new Path(path)
-
     val fp = DataSource.validateFileName(path,
       s => fs.exists(new Path(s)),
       fs.isFile(p), fs.isDirectory(p), overwrite)
 
     new HdfsDataWriter(HdfsDataSource.getFullUrl(uri, fp), fs.create(new Path(fp)))
+  }
+
+  def ensureDirectoryExists(): Unit = {
+    val fs = HdfsDataSource.getFileSystem(uri)
+    val p = new Path(path)
+    if (fs.exists(p)) {
+      if (!fs.isDirectory(p)) {
+        throw new IllegalArgumentException(s"Invalid directory at $path")
+      }
+    } else {
+      if (!fs.mkdirs(p)) {
+        throw new IllegalArgumentException(s"Could not create directory at $path")
+      }
+    }
   }
 }
 
@@ -58,5 +67,11 @@ object HdfsDataSource {
       s"hdfs://$host"
     }
     s"$protocolHost/$path"
+  }
+
+  def getFileSystem(uri: Option[String]): FileSystem = {
+    val conf = new Configuration()
+    uri.foreach(conf.set("fs.defaultFS", _))
+    FileSystem.get(conf)
   }
 }

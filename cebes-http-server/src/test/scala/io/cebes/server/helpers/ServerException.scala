@@ -9,17 +9,26 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 31/08/16.
+ * Created by phvu on 21/09/16.
  */
 
-package io.cebes.spark.df
+package io.cebes.server.helpers
 
 import java.util.UUID
 
-import io.cebes.df.Dataframe
-import org.apache.spark.sql.DataFrame
+case class ServerException(requestId: Option[UUID],
+                           message: String,
+                           serverStacktrace: Option[String]) extends Exception(message) {
 
-class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
-
-  override val id: UUID = UUID.randomUUID()
+  override def toString: String = {
+    val s = getClass.getName
+    val result = Option(getLocalizedMessage) match {
+      case Some(msg) => s"$s: $msg"
+      case None => s
+    }
+    serverStacktrace match {
+      case Some(str) => s"$result\nServer Stacktrace: $str"
+      case None => result
+    }
+  }
 }

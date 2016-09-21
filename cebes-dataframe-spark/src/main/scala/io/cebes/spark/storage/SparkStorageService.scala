@@ -61,15 +61,16 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
           case hdfsSource: HdfsDataSource =>
             hdfsSource.fullUrl
           case s3Source: S3DataSource =>
+            s3Source.setUpSparkContext(sparkSession.sparkContext)
             s3Source.fullUrl
         }
         dataSource.format match {
-          case DataFormat.Csv => sparkDf.write.csv(srcPath)
-          case DataFormat.Json => sparkDf.write.json(srcPath)
-          case DataFormat.Orc => sparkDf.write.orc(srcPath)
-          case DataFormat.Parquet => sparkDf.write.parquet(srcPath)
-          case DataFormat.Text => sparkDf.write.text(srcPath)
-          case DataFormat.Unknown => sparkDf.write.save(srcPath)
+          case DataFormat.CSV => sparkDf.write.csv(srcPath)
+          case DataFormat.JSON => sparkDf.write.json(srcPath)
+          case DataFormat.ORC => sparkDf.write.orc(srcPath)
+          case DataFormat.PARQUET => sparkDf.write.parquet(srcPath)
+          case DataFormat.TEXT => sparkDf.write.text(srcPath)
+          case DataFormat.UNKNOWN => sparkDf.write.save(srcPath)
         }
     }
   }
@@ -98,15 +99,16 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
           case hdfsSource: HdfsDataSource =>
             hdfsSource.fullUrl
           case s3Source: S3DataSource =>
+            s3Source.setUpSparkContext(sparkSession.sparkContext)
             s3Source.fullUrl
         }
         dataSource.format match {
-          case DataFormat.Csv => sparkSession.read.csv(srcPath)
-          case DataFormat.Json => sparkSession.read.json(srcPath)
-          case DataFormat.Orc => sparkSession.read.orc(srcPath)
-          case DataFormat.Parquet => sparkSession.read.parquet(srcPath)
-          case DataFormat.Text => sparkSession.read.text(srcPath)
-          case DataFormat.Unknown => sparkSession.read.load(srcPath)
+          case DataFormat.CSV => sparkSession.read.csv(srcPath)
+          case DataFormat.JSON => sparkSession.read.json(srcPath)
+          case DataFormat.ORC => sparkSession.read.orc(srcPath)
+          case DataFormat.PARQUET => sparkSession.read.parquet(srcPath)
+          case DataFormat.TEXT => sparkSession.read.text(srcPath)
+          case DataFormat.UNKNOWN => sparkSession.read.load(srcPath)
         }
     }
     new SparkDataframe(sparkDf)
