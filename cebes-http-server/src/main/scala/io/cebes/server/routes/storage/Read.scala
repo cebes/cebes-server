@@ -35,7 +35,7 @@ class Read(storageService: StorageService)
       case ReadRequest(Some(localFs), None, None, None, None) =>
         new LocalFsDataSource(localFs.path, localFs.format)
       case ReadRequest(None, Some(s3), None, None, None) =>
-        new S3DataSource(s3.accessKey, s3.secretKey,
+        new S3DataSource(s3.accessKey, s3.secretKey, s3.regionName,
           s3.bucketName, s3.key, s3.format)
       case ReadRequest(None, None, Some(hdfs), None, None) =>
         new HdfsDataSource(hdfs.path, hdfs.uri, hdfs.format)

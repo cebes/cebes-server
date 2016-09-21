@@ -61,6 +61,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
           case hdfsSource: HdfsDataSource =>
             hdfsSource.fullUrl
           case s3Source: S3DataSource =>
+            s3Source.setUpSparkContext(sparkSession.sparkContext)
             s3Source.fullUrl
         }
         dataSource.format match {
@@ -98,6 +99,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
           case hdfsSource: HdfsDataSource =>
             hdfsSource.fullUrl
           case s3Source: S3DataSource =>
+            s3Source.setUpSparkContext(sparkSession.sparkContext)
             s3Source.fullUrl
         }
         dataSource.format match {

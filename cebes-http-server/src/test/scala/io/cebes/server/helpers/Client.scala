@@ -14,7 +14,6 @@
 
 package io.cebes.server.helpers
 
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
@@ -25,7 +24,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
+import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.server.models.{FailResponse, FutureResult, RequestStatus, SerializableResult}
+import spray.json.JsonFormat
 
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
@@ -35,7 +36,7 @@ import scala.util.{Failure, Random, Success, Try}
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
   */
-class Client {
+class Client extends StrictLogging {
 
   implicit val actorSystem = Client.system
   implicit val actorMaterializer = Client.materializer
@@ -71,17 +72,36 @@ class Client {
           (implicit ma: ToEntityMarshaller[String],
            ua: FromEntityUnmarshaller[SerializableResult],
            uaFail: FromEntityUnmarshaller[FailResponse],
+           jfFail: JsonFormat[FailResponse],
            ec: ExecutionContext): SerializableResult = {
     var cnt = 0
     val MAX_COUNT = 4
     val DELTA = 500 // in milliseconds
 
     while (cnt < 100) {
-      val result = Try(request[String, SerializableResult](HttpMethods.POST, s"result/${futureResult.requestId}", ""))
+      val result = Try(request[String, SerializableResult](HttpMethods.POST, s"request/${futureResult.requestId}", ""))
       result match {
         case Success(serializableResult) =>
           serializableResult.status match {
-            case RequestStatus.FAILED | RequestStatus.FINISHED =>
+            case RequestStatus.FAILED =>
+              // TODO: decide on whether we should throw exception here
+              // try to throw an exception if it is a FailResponse
+              serializableResult.response match {
+                case Some(responseEntity) =>
+                  Try(responseEntity.convertTo[FailResponse]) match {
+                    case Success(fr) =>
+                      throw ServerException(Some(serializableResult.requestId),
+                        fr.message, Some(fr.stackTrace))
+                    case Failure(_) =>
+                      // throw it as it is
+                      throw ServerException(Some(serializableResult.requestId),
+                        responseEntity.toString(), None)
+                  }
+                case None =>
+                  throw ServerException(Some(serializableResult.requestId),
+                    "Unknown server error", None)
+              }
+            case RequestStatus.FINISHED =>
               return serializableResult
             case _ =>
               cnt += 1
@@ -141,25 +161,32 @@ class Client {
     cebesRequest(request).flatMap { response =>
       response.status match {
         case StatusCodes.OK =>
-          // always update request headers
-          this.requestHeaders = response.headers.filter(_.name().startsWith("Set-")).flatMap {
-            case headers.`Set-Cookie`(c) => c.name.toUpperCase() match {
-              case "XSRF-TOKEN" =>
-                Seq(headers.RawHeader("X-XSRF-TOKEN", c.value), headers.Cookie(c.name, c.value))
-              case _ => Seq(headers.Cookie(c.name, c.value))
-            }
-            case h =>
-              Seq(headers.RawHeader(h.name().substring(4), h.value()))
+          response.headers.filter(_.name().startsWith("Set-")) match {
+            case x: Seq[HttpHeader] if x.nonEmpty =>
+              this.requestHeaders = x.flatMap {
+                case headers.`Set-Cookie`(c) => c.name.toUpperCase() match {
+                  case "XSRF-TOKEN" =>
+                    Seq(headers.RawHeader("X-XSRF-TOKEN", c.value), headers.Cookie(c.name, c.value))
+                  case _ => Seq(headers.Cookie(c.name, c.value))
+                }
+                case h =>
+                  Seq(headers.RawHeader(h.name().substring(4), h.value()))
+              }
+            case _ =>
           }
           Unmarshal(response.entity).to[ResponseType]
         case _ =>
           Unmarshal(response.entity).to[FailResponse].flatMap { failResponse =>
-            Future.failed(new IOException(s"FAILED: ${response.status}: ${failResponse.message}" +
-              s"\n${failResponse.stackTrace}"))
-          }.fallbackTo {
-            Unmarshal(response.entity).to[String].flatMap { msg =>
-              Future.failed(new IOException(s"FAILED: $msg"))
-            }
+            logger.error(s"Failed result for request ${request.uri}")
+            logger.error(s"Response: ${response.status} - ${failResponse.message}")
+            Future.failed(ServerException(None, failResponse.message, Some(failResponse.stackTrace)))
+          }.recoverWith {
+            case _ =>
+              Unmarshal(response.entity).to[String].flatMap { msg =>
+                logger.error(s"Failed result for request ${request.uri}")
+                logger.error(s"Response: ${response.status} - $msg")
+                Future.failed(ServerException(None, msg, None))
+              }
           }
       }
     }

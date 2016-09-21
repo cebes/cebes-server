@@ -30,7 +30,7 @@ class StorageHandlerSuite extends HasClient with HasTestProperties with StrictLo
     val futureResult = client.request[ReadRequest, FutureResult](HttpMethods.POST, "storage/read",
       ReadRequest(None,
         Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
-          "cebes-data", "cylinder_bands.csv", DataFormat.CSV)), None, None, None))
+          Some("us-west-1"), "cebes-data-test", "cylinder_bands.csv", DataFormat.CSV)), None, None, None))
 
     val result = client.wait(futureResult)
     println(result.requestId.toString)

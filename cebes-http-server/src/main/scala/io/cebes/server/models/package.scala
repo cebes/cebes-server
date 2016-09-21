@@ -42,6 +42,7 @@ package object models {
   case class LocalFsReadRequest(path: String, format: DataFormatEnum)
 
   case class S3ReadRequest(accessKey: String, secretKey: String,
+                           regionName: Option[String],
                            bucketName: String, key: String,
                            format: DataFormatEnum)
 
@@ -130,7 +131,7 @@ package object models {
     implicit val userLoginFormat = jsonFormat2(UserLogin)
 
     implicit val localFsReadRequestFormat = jsonFormat2(LocalFsReadRequest)
-    implicit val s3ReadRequestFormat = jsonFormat5(S3ReadRequest)
+    implicit val s3ReadRequestFormat = jsonFormat6(S3ReadRequest)
     implicit val hdfsReadRequestFormat = jsonFormat3(HdfsReadRequest)
     implicit val jdbcReadRequestFormat = jsonFormat4(JdbcReadRequest)
     implicit val hiveReadRequestFormat = jsonFormat1(HiveReadRequest)

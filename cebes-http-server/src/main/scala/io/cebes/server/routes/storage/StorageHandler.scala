@@ -31,16 +31,20 @@ trait StorageHandler extends SecuredSession {
   val storageService: StorageService
 
   implicit def actorSystem: ActorSystem
+
   implicit def actorExecutor: ExecutionContext
+
   implicit def actorMaterializer: Materializer
 
   val storageApi = pathPrefix("storage") {
-    myRequiredSession { session =>
-      (path("read") & post) {
+    (path("read") & post) {
+      myRequiredSession { session =>
         entity(as[ReadRequest]) { readRequest =>
           implicit ctx => ctx.complete(new Read(storageService).run(readRequest))
         }
-      } ~ (path("upload") & put) {
+      }
+    } ~ (path("upload") & put) {
+      myRequiredSession { session =>
         entity(as[Multipart.FormData]) { formData =>
           complete(new Upload().run(formData))
         }
