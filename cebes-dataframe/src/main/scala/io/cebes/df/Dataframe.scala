@@ -14,12 +14,26 @@
 
 package io.cebes.df
 
-import java.util.UUID
+import io.cebes.common.HasId
+import io.cebes.df.schema.{HasSchema, Schema}
 
 /**
   * Cebes Dataframe
   */
-trait Dataframe {
+trait Dataframe extends HasSchema with HasId {
 
-  val id: UUID
+  /**
+    * Number of rows
+    *
+    * @return a long
+    */
+  def numRows: Long
+
+  /**
+    * Apply a new schema to this data frame
+    *
+    * @param newSchema the new Schema
+    * @return a new dataframe with the new Schema
+    */
+  def applySchema(newSchema: Schema): Dataframe
 }

@@ -20,7 +20,7 @@ import com.typesafe.config.ConfigFactory;
 /**
  * Implementation of IPropertySet using Typesafe's Config
  */
-public class ConfigPropertySet implements IPropertySet {
+class ConfigPropertySet implements IPropertySet {
 
     private Config conf = ConfigFactory.load();
 
