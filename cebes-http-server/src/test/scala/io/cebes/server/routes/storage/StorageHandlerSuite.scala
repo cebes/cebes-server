@@ -19,7 +19,7 @@ import akka.http.scaladsl.model.HttpMethods
 import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.server.helpers.{HasClient, HasTestProperties}
 import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.{FutureResult, ReadRequest, S3ReadRequest}
+import io.cebes.server.models.{ReadRequest, S3ReadRequest, DataframeResponse}
 import io.cebes.storage.DataFormat
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,14 +27,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class StorageHandlerSuite extends HasClient with HasTestProperties with StrictLogging {
 
   test("read data from S3") {
-    val futureResult = client.request[ReadRequest, FutureResult](HttpMethods.POST, "storage/read",
-      ReadRequest(None,
-        Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
-          Some("us-west-1"), "cebes-data-test", "cylinder_bands.csv", DataFormat.CSV)), None, None, None))
-
-    val result = client.wait(futureResult)
-    println(result.requestId.toString)
-    println(result.status.toString)
-    println(result.response.map(_.prettyPrint))
+    val result = client.requestAndWait[ReadRequest, DataframeResponse](HttpMethods.POST, "storage/read",
+      ReadRequest(None, Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
+        Some("us-west-1"), "cebes-data-test", "cylinder_bands.csv", DataFormat.CSV)),
+        None, None, None))
+    assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
   }
 }

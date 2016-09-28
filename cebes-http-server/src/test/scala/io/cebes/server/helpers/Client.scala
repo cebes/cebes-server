@@ -64,6 +64,36 @@ class Client extends StrictLogging {
 
 
   /**
+    * Send an asynchronous request, and wait for a result
+    *
+    * @param method  HTTP method to use
+    * @param uri     the URI of the Cebes server, without address and API version
+    * @param content the message sent along this request
+    * @tparam RequestType  type of the request message
+    * @tparam ResponseType type of the expected response
+    * @return
+    */
+  def requestAndWait[RequestType, ResponseType](method: HttpMethod, uri: String,
+                                                content: RequestType)
+                                               (implicit ma: ToEntityMarshaller[RequestType],
+                                                ua: FromEntityUnmarshaller[FutureResult],
+                                                uaSerializableResult: FromEntityUnmarshaller[SerializableResult],
+                                                uaFail: FromEntityUnmarshaller[FailResponse],
+                                                jfResponse: JsonFormat[ResponseType],
+                                                jfFail: JsonFormat[FailResponse],
+                                                ec: ExecutionContext): Option[ResponseType] = {
+    val futureResult = request[RequestType, FutureResult](method, uri, content)
+
+    val result = wait(futureResult)
+    result.status match {
+      case RequestStatus.FINISHED =>
+        result.response.map(_.convertTo[ResponseType])
+      case s =>
+        throw new RuntimeException(s"Request status: $s")
+    }
+  }
+
+  /**
     * Implements Exponential backoff to wait for a FutureResult
     *
     * @param futureResult FutureResult object
@@ -118,6 +148,7 @@ class Client extends StrictLogging {
     * Post a message and block until the response is available
     * See the doc of [[Client.requestAsync()]] for important notices regarding how to use this function.
     *
+    * @param method  HTTP method to be used
     * @param uri     the URI of the Cebes server, without address and API version
     * @param content the message sent along this request
     * @tparam RequestType  type of the request message
