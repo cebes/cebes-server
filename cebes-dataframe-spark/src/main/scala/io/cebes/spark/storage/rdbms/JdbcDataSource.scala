@@ -16,7 +16,7 @@ package io.cebes.spark.storage.rdbms
 
 import java.nio.charset.StandardCharsets
 
-import io.cebes.storage.DataFormat.DataFormatEnum
+import io.cebes.storage.DataFormats.DataFormat
 import io.cebes.storage.{DataSource, DataWriter}
 
 /**
@@ -32,7 +32,7 @@ class JdbcDataSource(val url: String,
                      val tableName: String,
                      val userName: String,
                      val passwordBase64: String,
-                     val format: DataFormatEnum) extends DataSource {
+                     val format: DataFormat) extends DataSource {
 
   def rawPassword: String =
     new String(java.util.Base64.getDecoder.decode(

@@ -37,14 +37,18 @@ class HasSparkSessionProvider @Inject()
 
 @Singleton class HasSparkSessionLocal extends HasSparkSession {
 
-  lazy val session = SparkSession.builder().
-    appName("Cebes service on Spark (local)").
-    master("local[4]").getOrCreate()
+  lazy val session = SparkSession.builder()
+    .appName("Cebes service on Spark (local)")
+    .config("spark.sql.warehouse.dir",
+      s"file:${System.getProperty("java.io.tmpdir", "/tmp")}/spark-warehouse")
+    .enableHiveSupport()
+    .master("local[4]").getOrCreate()
 }
 
 @Singleton class HasSparkSessionYarn extends HasSparkSession {
 
-  lazy val session = SparkSession.builder().
-    appName("Cebes service on Spark (YARN)").
-    master("yarn").getOrCreate()
+  lazy val session = SparkSession.builder()
+    .appName("Cebes service on Spark (YARN)")
+    .enableHiveSupport()
+    .master("yarn").getOrCreate()
 }

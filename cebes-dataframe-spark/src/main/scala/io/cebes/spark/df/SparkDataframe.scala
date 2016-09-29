@@ -40,6 +40,15 @@ class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
   override def numRows: Long = sparkDf.count()
 
   /**
+    * Create a temporary view of this Dataframe,
+    * so you can run SQL commands against
+    * @param name name of the view
+    */
+  override def createTempView(name: String) = {
+    sparkDf.createTempView(name)
+  }
+
+  /**
     * Apply a new schema to this data frame
     *
     * @param newSchema the new Schema

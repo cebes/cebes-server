@@ -17,14 +17,14 @@ package io.cebes.spark.storage.s3
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.{Region, Regions}
 import com.amazonaws.services.s3.AmazonS3Client
-import io.cebes.storage.DataFormat.DataFormatEnum
+import io.cebes.storage.DataFormats.DataFormat
 import io.cebes.storage.{DataSource, DataWriter}
 import org.apache.spark.SparkContext
 
 class S3DataSource(val awsAccessKey: String, val awsSecretKey: String,
                    val regionName: Option[String],
                    val bucketName: String, val key: String,
-                   val format: DataFormatEnum) extends DataSource {
+                   val format: DataFormat) extends DataSource {
 
   private val s3client = new AmazonS3Client(
     new BasicAWSCredentials(awsAccessKey, awsSecretKey))
@@ -65,5 +65,43 @@ class S3DataSource(val awsAccessKey: String, val awsSecretKey: String,
       isFile = true, isDirectory = false, overwrite)
     s3client.getResourceUrl(bucketName, key)
     new S3DataWriter(s3client, bucketName, newKey)
+  }
+
+  /**
+    * Delete this key in this bucket
+    */
+  def delete(): Unit = {
+    s3client.deleteObject(bucketName, key)
+  }
+
+  /**
+    * Generate a new key from this given bucket
+    * The returned [[S3DataSource]] will use the same access key, secret key, region and bucket name
+    * with the current [[S3DataSource]].
+    *
+    * @param keyPrefix  the prefix for the generated key
+    * @param dataFormat [[DataFormat]] for the new data source
+    * @return a new [[S3DataSource]] object, can be used to store data to S3.
+    */
+  private def generateNewKey(keyPrefix: String, dataFormat: DataFormat): S3DataSource = {
+    val newKey = DataSource.validateFileName(keyPrefix,
+      s3client.doesObjectExist(bucketName, _),
+      isFile = false, isDirectory = true, overwrite = false)
+    // s3client.getResourceUrl(bucketName, key)
+    new S3DataSource(awsAccessKey, awsSecretKey, regionName, bucketName, newKey, dataFormat)
+  }
+
+  def isExisted: Boolean = s3client.doesObjectExist(bucketName, key)
+}
+
+object S3DataSource {
+
+  /**
+    * Create a new S3DataSource by generating new key
+    */
+  def newKey(awsAccessKey: String, awsSecretKey: String,
+             regionName: Option[String],
+             bucketName: String, format: DataFormat, keyPrefix: String): S3DataSource = {
+    new S3DataSource(awsAccessKey, awsSecretKey, regionName, bucketName, "", format).generateNewKey(keyPrefix, format)
   }
 }

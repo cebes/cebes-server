@@ -16,5 +16,12 @@ package io.cebes.df
 
 trait DataframeService {
 
+  /**
+    * Executes a SQL query, returning the result as a [[Dataframe]].
+    *
+    * @param sqlText the SQL command to run
+    * @return a [[Dataframe]] object
+    */
+  def sql(sqlText: String): Dataframe
 
 }

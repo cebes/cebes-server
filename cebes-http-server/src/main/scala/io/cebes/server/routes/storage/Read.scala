@@ -21,7 +21,7 @@ import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
 import io.cebes.storage.localfs.LocalFsDataSource
-import io.cebes.storage.{DataFormat, StorageService}
+import io.cebes.storage.{DataFormats, StorageService}
 
 class Read(storageService: StorageService)
   extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
@@ -40,9 +40,9 @@ class Read(storageService: StorageService)
       case ReadRequest(None, None, Some(hdfs), None, None) =>
         new HdfsDataSource(hdfs.path, hdfs.uri, hdfs.format)
       case ReadRequest(None, None, None, Some(jdbc), None) =>
-        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbc.passwordBase64, DataFormat.UNKNOWN)
+        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbc.passwordBase64, DataFormats.UNKNOWN)
       case ReadRequest(None, None, None, None, Some(hive)) =>
-        new HiveDataSource(hive.tableName, DataFormat.UNKNOWN)
+        new HiveDataSource(hive.tableName, DataFormats.UNKNOWN)
       case _ => throw new IllegalArgumentException("Invalid read request")
     }
     storageService.read(dataSrc)
