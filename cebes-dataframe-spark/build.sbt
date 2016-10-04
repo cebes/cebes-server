@@ -12,5 +12,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-hive" % Common.sparkVersion % "provided",
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.22",
 
-  "com.google.inject" % "guice" % Common.guiceVersion
+  "com.google.inject" % "guice" % Common.guiceVersion,
+
+  "org.postgresql" % "postgresql" % "9.4.1211"
 )

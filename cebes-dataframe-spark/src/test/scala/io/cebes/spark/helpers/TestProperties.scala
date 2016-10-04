@@ -19,7 +19,14 @@ import io.cebes.prop.{Prop, Property}
 
 class TestProperties @Inject()
 (@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
- @Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String) {
+ @Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String,
 
+ @Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
+ @Prop(Property.TEST_JDBC_USERNAME) val jdbcUsername: String,
+ @Prop(Property.TEST_JDBC_PASSWORD) val jdbcPassword: String) {
+
+  def hasS3Credentials = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
+
+  def hasJdbcCredentials = !jdbcUrl.isEmpty && !jdbcUsername.isEmpty && !jdbcPassword.isEmpty
 }
 

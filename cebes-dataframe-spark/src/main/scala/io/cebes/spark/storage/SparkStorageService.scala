@@ -52,7 +52,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
       case jdbcSource: JdbcDataSource =>
         val prop = new Properties()
         prop.setProperty("user", jdbcSource.userName)
-        prop.setProperty("password", jdbcSource.rawPassword)
+        prop.setProperty("password", jdbcSource.password)
         sparkDf.write.jdbc(jdbcSource.url, jdbcSource.tableName, prop)
       case hiveSource: HiveDataSource =>
         sparkDf.write.saveAsTable(hiveSource.tableName)
@@ -90,7 +90,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
       case jdbcSource: JdbcDataSource =>
         val prop = new Properties()
         prop.setProperty("user", jdbcSource.userName)
-        prop.setProperty("password", jdbcSource.rawPassword)
+        prop.setProperty("password", jdbcSource.password)
         sparkSession.read.jdbc(jdbcSource.url, jdbcSource.tableName, prop)
       case hiveSource: HiveDataSource =>
         sparkSession.read.table(hiveSource.tableName)

@@ -23,7 +23,7 @@ import io.cebes.util.ResourceUtil
 /**
   * Helper trait for all the test, containing the services
   */
-trait TestHelper {
+trait TestDataHelper {
 
   val sparkStorageService = CebesSparkTestInjector.injector.getInstance(classOf[SparkStorageService])
 
@@ -35,9 +35,9 @@ trait TestHelper {
     sparkDataframeService.sql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
   }
 
-  def createOrReplaceCylinderBands() = {
+  def createOrReplaceCylinderBands(tableName: String = "cylinder_bands") = {
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
-    createOrReplaceHiveTable("cylinder_bands",
+    createOrReplaceHiveTable(tableName,
       "timestamp TIMESTAMP, cylinder_number: STRING, " +
         "customer: STRING, job_number STRING, grain_screened STRING, ink_color STRING, " +
         "proof_on_ctd_ink STRING, blade_mfg STRING, cylinder_division STRING, paper_type STRING, " +
