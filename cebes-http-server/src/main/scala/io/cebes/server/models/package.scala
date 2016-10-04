@@ -17,8 +17,8 @@ package io.cebes.server
 import java.util.UUID
 
 import io.cebes.server.models.RequestStatus.RequestStatusEnum
-import io.cebes.storage.DataFormat
-import io.cebes.storage.DataFormat.DataFormatEnum
+import io.cebes.storage.DataFormats
+import io.cebes.storage.DataFormats.DataFormat
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, deserializationError}
 
 package object models {
@@ -39,14 +39,14 @@ package object models {
   // Objects in requests
   case class UserLogin(userName: String, passwordHash: String)
 
-  case class LocalFsReadRequest(path: String, format: DataFormatEnum)
+  case class LocalFsReadRequest(path: String, format: DataFormat)
 
   case class S3ReadRequest(accessKey: String, secretKey: String,
                            regionName: Option[String],
                            bucketName: String, key: String,
-                           format: DataFormatEnum)
+                           format: DataFormat)
 
-  case class HdfsReadRequest(path: String, uri: Option[String], format: DataFormatEnum)
+  case class HdfsReadRequest(path: String, uri: Option[String], format: DataFormat)
 
   case class JdbcReadRequest(url: String, tableName: String,
                              userName: String, passwordBase64: String)
@@ -104,11 +104,11 @@ package object models {
       }
     }
 
-    implicit object DataFormatEnumFormat extends JsonFormat[DataFormatEnum] {
-      override def write(obj: DataFormatEnum): JsValue = JsString(obj.name)
+    implicit object DataFormatEnumFormat extends JsonFormat[DataFormat] {
+      override def write(obj: DataFormat): JsValue = JsString(obj.name)
 
-      override def read(json: JsValue): DataFormatEnum = json match {
-        case JsString(fmtName) => DataFormat.fromString(fmtName) match {
+      override def read(json: JsValue): DataFormat = json match {
+        case JsString(fmtName) => DataFormats.fromString(fmtName) match {
           case Some(fmt) => fmt
           case None => deserializationError(s"Unrecognized Data format: $fmtName")
         }

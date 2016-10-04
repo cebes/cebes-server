@@ -14,14 +14,14 @@
 
 package io.cebes.spark.storage.hdfs
 
-import io.cebes.storage.DataFormat.DataFormatEnum
+import io.cebes.storage.DataFormats.DataFormat
 import io.cebes.storage.{DataSource, DataWriter}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 class HdfsDataSource(val path: String,
                      val uri: Option[String],
-                     val format: DataFormatEnum) extends DataSource {
+                     val format: DataFormat) extends DataSource {
 
   def fullUrl: String = HdfsDataSource.getFullUrl(uri, path)
 

@@ -15,7 +15,13 @@
 package io.cebes.spark.helpers
 
 import io.cebes.spark.CebesSparkTestInjector
+import org.scalatest.{Ignore, Tag}
 
-trait HasTestProperties {
+trait TestPropertyHelper {
+
   val properties = CebesSparkTestInjector.injector.getInstance(classOf[TestProperties])
+
+  object S3TestsEnabled extends Tag(if (properties.hasS3Credentials) "" else classOf[Ignore].getName)
+
+  object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
 }

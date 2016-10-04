@@ -20,7 +20,7 @@ import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.server.helpers.{HasClient, HasTestProperties}
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.{ReadRequest, S3ReadRequest, DataframeResponse}
-import io.cebes.storage.DataFormat
+import io.cebes.storage.DataFormats
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -29,7 +29,7 @@ class StorageHandlerSuite extends HasClient with HasTestProperties with StrictLo
   test("read data from S3") {
     val result = client.requestAndWait[ReadRequest, DataframeResponse](HttpMethods.POST, "storage/read",
       ReadRequest(None, Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
-        Some("us-west-1"), "cebes-data-test", "cylinder_bands.csv", DataFormat.CSV)),
+        Some("us-west-1"), "cebes-data-test", "read/cylinder_bands.csv", DataFormats.CSV)),
         None, None, None))
     assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
   }

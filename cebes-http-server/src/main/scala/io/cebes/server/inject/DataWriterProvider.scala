@@ -18,7 +18,7 @@ import com.google.inject.{Inject, Provider}
 import io.cebes.prop.{Prop, Property}
 import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.storage.localfs.LocalFsDataSource
-import io.cebes.storage.{DataFormat, DataWriter}
+import io.cebes.storage.{DataFormats, DataWriter}
 
 class DataWriterProvider @Inject()
 (@Prop(Property.SPARK_MODE) val sparkMode: String,
@@ -28,9 +28,9 @@ class DataWriterProvider @Inject()
     sparkMode.toLowerCase match {
       case "local" =>
         LocalFsDataSource.ensureDirectoryExists(uploadPath)
-        new LocalFsDataSource(uploadPath, DataFormat.CSV).open(false)
+        new LocalFsDataSource(uploadPath, DataFormats.CSV).open(false)
       case "yarn" =>
-        val ds = new HdfsDataSource(uploadPath, None, DataFormat.CSV)
+        val ds = new HdfsDataSource(uploadPath, None, DataFormats.CSV)
         ds.ensureDirectoryExists()
         ds.open(false)
       case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")

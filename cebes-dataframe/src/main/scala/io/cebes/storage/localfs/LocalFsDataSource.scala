@@ -16,11 +16,11 @@ package io.cebes.storage.localfs
 
 import java.io.File
 
-import io.cebes.storage.DataFormat.DataFormatEnum
+import io.cebes.storage.DataFormats.DataFormat
 import io.cebes.storage.{DataSource, DataWriter}
 
 
-class LocalFsDataSource(val path: String, val format: DataFormatEnum) extends DataSource {
+class LocalFsDataSource(val path: String, val format: DataFormat) extends DataSource {
 
   /**
     * Open a data writer on this source, normally a file

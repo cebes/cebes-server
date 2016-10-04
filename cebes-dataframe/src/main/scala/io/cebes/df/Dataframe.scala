@@ -29,6 +29,19 @@ trait Dataframe extends HasSchema with HasId {
     */
   def numRows: Long
 
+
+  /**
+    * Create a temporary view of this Dataframe,
+    * so you can run SQL commands against
+    * @param name name of the view
+    */
+  def createTempView(name: String)
+
+  /**
+    * Data exploration
+    */
+
+
   /**
     * Apply a new schema to this data frame
     *

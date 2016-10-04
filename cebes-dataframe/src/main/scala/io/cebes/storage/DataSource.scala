@@ -16,13 +16,13 @@ package io.cebes.storage
 
 import java.nio.file.FileAlreadyExistsException
 
-import io.cebes.storage.DataFormat.DataFormatEnum
+import io.cebes.storage.DataFormats.DataFormat
 
 import scala.util.Random
 
 trait DataSource {
 
-  val format: DataFormatEnum
+  val format: DataFormat
 
   /**
     * Open a data writer on this source, normally a file

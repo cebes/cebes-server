@@ -17,7 +17,7 @@ package io.cebes.spark.util
 import io.cebes.df.Dataframe
 import io.cebes.spark.df.SparkDataframe
 
-object CebesSparkUtil {
+trait CebesSparkUtil {
 
   /**
     * Utility function to make sure the [[Dataframe]] passed is a [[SparkDataframe]]
@@ -30,3 +30,5 @@ object CebesSparkUtil {
     case _ => throw new IllegalArgumentException("Only SparkDataframe can be handled")
   }
 }
+
+object CebesSparkUtil extends CebesSparkUtil

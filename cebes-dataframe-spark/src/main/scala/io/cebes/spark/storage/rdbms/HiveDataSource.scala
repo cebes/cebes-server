@@ -14,17 +14,20 @@
 
 package io.cebes.spark.storage.rdbms
 
-import io.cebes.storage.DataFormat.DataFormatEnum
-import io.cebes.storage.{DataSource, DataWriter}
+import io.cebes.storage.DataFormats.DataFormat
+import io.cebes.storage.{DataFormats, DataSource, DataWriter}
 
 /**
   * An internal Hive-based data source
   *
   * @param tableName name of the table
-  * @param format    Ignored. Data format doesn't play any role in this data source.
   */
-class HiveDataSource(val tableName: String,
-                     val format: DataFormatEnum) extends DataSource {
+class HiveDataSource(val tableName: String) extends DataSource {
+
+  /**
+    * Ignored. Data format doesn't play any role in this data source.
+    */
+  override val format: DataFormat = DataFormats.UNKNOWN
 
   /**
     * Open a data writer on this source, normally a file

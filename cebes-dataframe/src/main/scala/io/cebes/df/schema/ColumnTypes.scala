@@ -36,7 +36,7 @@ object ColumnTypes {
   case object DATE extends ColumnType("Date")
   case object TIMESTAMP extends ColumnType("Timestamp")
 
-  val values = Seq(STRING, BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, VECTOR, DATE)
+  val values = Seq(STRING, BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, VECTOR, BINARY, DATE, TIMESTAMP)
 
   def fromString(name: String): ColumnType = values.find(_.name == name) match {
     case Some(t) => t

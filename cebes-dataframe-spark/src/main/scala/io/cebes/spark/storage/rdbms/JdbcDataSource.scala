@@ -14,10 +14,8 @@
 
 package io.cebes.spark.storage.rdbms
 
-import java.nio.charset.StandardCharsets
-
-import io.cebes.storage.DataFormat.DataFormatEnum
-import io.cebes.storage.{DataSource, DataWriter}
+import io.cebes.storage.DataFormats.DataFormat
+import io.cebes.storage.{DataFormats, DataSource, DataWriter}
 
 /**
   * A JDBC data source
@@ -25,18 +23,17 @@ import io.cebes.storage.{DataSource, DataWriter}
   * @param url            JDBC URL
   * @param tableName      name of the table
   * @param userName       user name
-  * @param passwordBase64 password, encoded with base64 (with UTF-8 charset)
-  * @param format         Ignored. Data format doesn't play any role in this data source.
+  * @param password password, encoded with base64 (with UTF-8 charset)
   */
 class JdbcDataSource(val url: String,
                      val tableName: String,
                      val userName: String,
-                     val passwordBase64: String,
-                     val format: DataFormatEnum) extends DataSource {
+                     val password: String) extends DataSource {
 
-  def rawPassword: String =
-    new String(java.util.Base64.getDecoder.decode(
-      passwordBase64.getBytes(StandardCharsets.UTF_8)).map(_.toChar))
+  /**
+    * Ignored. Data format doesn't play any role in this data source.
+    */
+  override val format: DataFormat = DataFormats.UNKNOWN
 
   /**
     * Open a data writer on this source, normally a file

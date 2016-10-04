@@ -14,17 +14,17 @@
 
 package io.cebes.storage
 
-object DataFormat {
-  sealed abstract class DataFormatEnum(val name: String) {
+object DataFormats {
+  sealed abstract class DataFormat(val name: String) {
     override def toString: String = name
   }
 
-  case object UNKNOWN extends DataFormatEnum("unknown")
-  case object CSV extends DataFormatEnum("csv")
-  case object JSON extends DataFormatEnum("json")
-  case object PARQUET extends DataFormatEnum("parquet")
-  case object ORC extends DataFormatEnum("orc")
-  case object TEXT extends DataFormatEnum("text")
+  case object UNKNOWN extends DataFormat("unknown")
+  case object CSV extends DataFormat("csv")
+  case object JSON extends DataFormat("json")
+  case object PARQUET extends DataFormat("parquet")
+  case object ORC extends DataFormat("orc")
+  case object TEXT extends DataFormat("text")
 
   val values = Seq(UNKNOWN, CSV, JSON, PARQUET, ORC, TEXT)
 

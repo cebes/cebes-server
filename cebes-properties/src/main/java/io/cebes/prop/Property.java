@@ -30,7 +30,14 @@ public enum Property {
     TEST_AWS_ACCESSKEY("CEBES_TEST_AWS_ACCESSKEY", "cebes.test.aws.accesskey",
             "", "AWS access key used for tests", true),
     TEST_AWS_SECRETKEY("CEBES_TEST_AWS_SECRETKEY", "cebes.test.aws.secretkey",
-            "", "AWS secret key used for tests", true);
+            "", "AWS secret key used for tests", true),
+
+    TEST_JDBC_URL("CEBES_TEST_JDBC_URL", "cebes.test.jdbc.url",
+            "", "URL for JDBC data source for tests", true),
+    TEST_JDBC_USERNAME("CEBES_TEST_JDBC_USERNAME", "cebes.test.jdbc.username",
+            "", "Username for JDBC data source for tests", true),
+    TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password",
+            "", "Password for JDBC data source for tests", true);
 
     private String environmentVar;
     private String propertyKey;
