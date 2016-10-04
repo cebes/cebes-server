@@ -1,0 +1,12 @@
+akka {
+  loglevel = DEBUG
+}
+
+akka.http.session {
+  encrypt-data = true
+}
+
+cebes.test.aws {
+  accesskey = ""
+  secretkey = ""
+}

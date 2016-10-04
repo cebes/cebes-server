@@ -1,0 +1,12 @@
+cebes.test {
+  aws {
+    accesskey = ""
+    secretkey = ""
+  }
+
+  jdbc {
+    url = ""
+    username = ""
+    password = ""
+  }
+}

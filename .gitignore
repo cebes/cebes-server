@@ -25,3 +25,6 @@ spark/spark*
 # Hive
 metastore_db/
 spark-warehouse/
+
+cebes-dataframe-spark/src/test/resources/application.conf
+cebes-http-server/src/test/resources/application.conf
