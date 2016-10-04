@@ -29,7 +29,7 @@ class StorageHandlerSuite extends HasClient with HasTestProperties with StrictLo
   test("read data from S3") {
     val result = client.requestAndWait[ReadRequest, DataframeResponse](HttpMethods.POST, "storage/read",
       ReadRequest(None, Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
-        Some("us-west-1"), "cebes-data-test", "cylinder_bands.csv", DataFormats.CSV)),
+        Some("us-west-1"), "cebes-data-test", "read/cylinder_bands.csv", DataFormats.CSV)),
         None, None, None))
     assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
   }

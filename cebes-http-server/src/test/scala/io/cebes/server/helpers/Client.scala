@@ -161,7 +161,7 @@ class Client extends StrictLogging {
                                          uaFail: FromEntityUnmarshaller[FailResponse],
                                          ec: ExecutionContext): ResponseType = {
     val futureResult = requestAsync(method, uri, content)(ma, ua, uaFail, ec)
-    Await.result(futureResult, Duration(10, TimeUnit.SECONDS))
+    Await.result(futureResult, Duration(30, TimeUnit.SECONDS))
   }
 
   /**
@@ -230,4 +230,18 @@ object Client {
 
   implicit val system = ActorSystem("CebesClientApp")
   implicit val materializer = ActorMaterializer()
+
+  @volatile var counter = 0
+
+  def register(): Unit = {
+    counter += 1
+  }
+
+  def unregister() = {
+    counter -= 1
+    if (counter == 0) {
+      system.terminate()
+      Await.result(system.whenTerminated, Duration(30, TimeUnit.SECONDS))
+    }
+  }
 }

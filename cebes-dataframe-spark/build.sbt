@@ -10,6 +10,7 @@ libraryDependencies ++= Seq(
     exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),
   "org.apache.spark" %% "spark-hive" % Common.sparkVersion % "provided",
+
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.22",
 
   "com.google.inject" % "guice" % Common.guiceVersion,
