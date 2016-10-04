@@ -14,6 +14,8 @@
 
 package io.cebes.server.routes.storage
 
+import java.util.Base64
+
 import io.cebes.df.Dataframe
 import io.cebes.server.common.AsyncExecutor
 import io.cebes.server.models.{DataframeResponse, ReadRequest}
@@ -21,7 +23,7 @@ import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
 import io.cebes.storage.localfs.LocalFsDataSource
-import io.cebes.storage.{DataFormats, StorageService}
+import io.cebes.storage.StorageService
 
 class Read(storageService: StorageService)
   extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
@@ -40,9 +42,10 @@ class Read(storageService: StorageService)
       case ReadRequest(None, None, Some(hdfs), None, None) =>
         new HdfsDataSource(hdfs.path, hdfs.uri, hdfs.format)
       case ReadRequest(None, None, None, Some(jdbc), None) =>
-        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbc.passwordBase64, DataFormats.UNKNOWN)
+        val jdbcPwd = new String(Base64.getUrlDecoder.decode(jdbc.passwordBase64), "UTF-8")
+        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbcPwd)
       case ReadRequest(None, None, None, None, Some(hive)) =>
-        new HiveDataSource(hive.tableName, DataFormats.UNKNOWN)
+        new HiveDataSource(hive.tableName)
       case _ => throw new IllegalArgumentException("Invalid read request")
     }
     storageService.read(dataSrc)
