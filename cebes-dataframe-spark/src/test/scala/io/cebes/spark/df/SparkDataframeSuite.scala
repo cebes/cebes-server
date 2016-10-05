@@ -9,15 +9,15 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 29/09/16.
+ * Created by phvu on 06/10/16.
  */
 
 package io.cebes.spark.df
 
-import io.cebes.spark.helpers.{TestPropertyHelper, TestDataHelper}
+import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
+class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
   override def beforeAll(): Unit = {
@@ -25,11 +25,23 @@ class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
     createOrReplaceCylinderBands()
   }
 
-  test("Simple SQL") {
+  test("Type conversions in take()") {
+    //val df = sparkDataframeService.sql("SELECT customer, " +
+    //  " FROM cylinder_bands")
+    // TODO: implement this
+  }
+
+  test("Dataframe Sample") {
     val df = sparkDataframeService.sql("SELECT * FROM cylinder_bands")
     assert(df.numCols === 40)
     assert(df.numRows === 540)
-    val sample = df.take(10)
-    assert(sample.numCols === df.numCols)
+
+    val df2 = df.sample(withReplacement = false, 0.1, 42)
+    assert(df2.numCols === df.numCols)
+    assert(df2.numRows > 0)
+
+    val df3 = df.sample(withReplacement = true, 2.0, 42)
+    assert(df3.numCols === df.numCols)
+    assert(df3.numRows > df.numRows)
   }
 }
