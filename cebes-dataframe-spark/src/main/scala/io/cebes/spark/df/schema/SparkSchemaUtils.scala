@@ -26,7 +26,7 @@ object SparkSchemaUtils {
     * @return Schema object
     */
   def getSchema(sparkDf: DataFrame): Schema = {
-    Schema(sparkDf.schema.map(f => Column(f.name, sparkTypesToCebes(f.dataType))))
+    new Schema(sparkDf.schema.map(f => Column(f.name, sparkTypesToCebes(f.dataType))))
   }
 
   /**
@@ -72,4 +72,5 @@ object SparkSchemaUtils {
     case ColumnTypes.TIMESTAMP => types.TimestampType
     case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
   }
+
 }

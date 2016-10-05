@@ -31,14 +31,14 @@ trait TestDataHelper {
 
   def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): Dataframe = {
     sparkDataframeService.sql(s"DROP TABLE IF EXISTS $tableName")
-    sparkDataframeService.sql(s"CREATE TABLE $tableName ($schema)")
+    sparkDataframeService.sql(s"CREATE TABLE $tableName ($schema) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','")
     sparkDataframeService.sql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
   }
 
   def createOrReplaceCylinderBands(tableName: String = "cylinder_bands") = {
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
     createOrReplaceHiveTable(tableName,
-      "timestamp TIMESTAMP, cylinder_number: STRING, " +
+      "timestamp LONG, cylinder_number: STRING, " +
         "customer: STRING, job_number STRING, grain_screened STRING, ink_color STRING, " +
         "proof_on_ctd_ink STRING, blade_mfg STRING, cylinder_division STRING, paper_type STRING, " +
         "ink_type STRING, direct_steam STRING, solvent_type STRING, type_on_cylinder STRING, " +

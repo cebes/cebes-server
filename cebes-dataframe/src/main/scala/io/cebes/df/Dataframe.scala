@@ -15,6 +15,7 @@
 package io.cebes.df
 
 import io.cebes.common.HasId
+import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{HasSchema, Schema}
 
 /**
@@ -31,8 +32,33 @@ trait Dataframe extends HasSchema with HasId {
 
 
   /**
+    * Sampling functions
+    */
+
+  /**
+    * Get the first n rows. If the [[Dataframe]] has less than n rows, all rows will be returned.
+    * Since the data will be gathered to the memory of a single JVM process,
+    * calling this function with big n might cause [[OutOfMemoryError]]
+    *
+    * @param n number of rows to take
+    * @return a [[DataSample]] object containing the data.
+    */
+  def take(n: Int = 1): DataSample
+
+  /**
+    * Randomly sample n rows, return the result as a [[Dataframe]]
+    *
+    * @param withReplacement Sample with replacement or not.
+    * @param fraction        Fraction of rows to generate.
+    * @param seed            Seed for sampling.
+    * @return a [[Dataframe]] object containing the data.
+    */
+  def sample(withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
+
+  /**
     * Create a temporary view of this Dataframe,
     * so you can run SQL commands against
+    *
     * @param name name of the view
     */
   def createTempView(name: String)

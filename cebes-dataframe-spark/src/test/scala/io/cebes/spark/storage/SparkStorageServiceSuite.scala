@@ -40,14 +40,14 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
       Some("us-west-1"), "cebes-data-test", "read/cylinder_bands.csv", DataFormats.CSV)
     val df = sparkStorageService.read(s3ReadSrc)
     assert(df.numCols === 40)
-    assert(df.numRows === 541)
+    assert(df.numRows === 540)
   }
 
   test("Read/write data from/to local storage") {
     val file = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
     val df = sparkStorageService.read(new LocalFsDataSource(file.getAbsolutePath, DataFormats.CSV))
     assert(df.numCols === 40)
-    assert(df.numRows === 541)
+    assert(df.numRows === 540)
 
     val tmpDir = Files.createTempDirectory(s"cebes_test")
     Seq(DataFormats.CSV, DataFormats.JSON, DataFormats.PARQUET).foreach { fmt =>
@@ -70,18 +70,25 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
   test("Read/write data from/to Hive") {
     val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
     assert(df.numCols === 40)
-    assert(df.numRows === 541)
+    assert(df.numRows === 540)
 
-    // TODO: the results of this operation can only be tested once we have head() for Dataframe
-    //val newTableName = "cylinder_bands_new_table"
-    //sparkStorageService.write(df, new HiveDataSource(newTableName))
+    val newTableName = "cylinder_bands_new_table"
+    sparkDataframeService.sql(s"DROP TABLE IF EXISTS $newTableName")
+    assert(sparkDataframeService.sql(s"SHOW TABLES LIKE '$newTableName'").numRows === 0)
+    sparkStorageService.write(df, new HiveDataSource(newTableName))
+    assert(sparkDataframeService.sql(s"SHOW TABLES LIKE '$newTableName'").numRows === 1)
 
+    val dfNew = sparkStorageService.read(new HiveDataSource(newTableName))
+    assert(dfNew.numCols === 40)
+    assert(dfNew.numRows === 540)
+    sparkDataframeService.sql(s"DROP TABLE IF EXISTS $newTableName")
+    assert(sparkDataframeService.sql(s"SHOW TABLES LIKE '$newTableName'").numRows === 0)
   }
 
   test("Read/write data from/to JDBC", JdbcTestsEnabled) {
     val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
     assert(df.numCols === 40)
-    assert(df.numRows === 541)
+    assert(df.numRows === 540)
 
     val jdbcSrc = new JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
       properties.jdbcUsername, properties.jdbcPassword)
@@ -89,13 +96,13 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
     try {
       val df2 = sparkStorageService.read(jdbcSrc)
       assert(df2.numCols === 40)
-      assert(df2.numRows === 541)
+      assert(df2.numRows === 540)
     } catch {
       case ex: org.postgresql.util.PSQLException =>
         sparkStorageService.write(df, jdbcSrc)
         val df2 = sparkStorageService.read(jdbcSrc)
         assert(df2.numCols === 40)
-        assert(df2.numRows === 541)
+        assert(df2.numRows === 540)
     }
   }
 
