@@ -17,7 +17,8 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import io.cebes.df.Dataframe
-import io.cebes.df.schema.Schema
+import io.cebes.df.sample.DataSample
+import io.cebes.df.schema.{ColumnTypes, Schema}
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import org.apache.spark.sql.DataFrame
 
@@ -40,8 +41,70 @@ class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
   override def numRows: Long = sparkDf.count()
 
   /**
+    * Sampling functions
+    */
+
+  /**
+    * Get the first n rows. If the [[Dataframe]] has less than n rows, all rows will be returned.
+    * Since the data will be gathered to the memory of a single JVM process,
+    * calling this function with big n might cause [[OutOfMemoryError]]
+    *
+    * @param n number of rows to take
+    * @return a [[DataSample]] object containing the data.
+    */
+  def take(n: Int = 1): DataSample = {
+    val rows = sparkDf.take(n)
+    val cols = schema.columns.zipWithIndex.map {
+      case (c, idx) =>
+        rows.map { r =>
+          c.dataType match {
+            case ColumnTypes.STRING =>
+              if (r.isNullAt(idx)) None else r.getString(idx)
+            case ColumnTypes.BOOLEAN =>
+              if (r.isNullAt(idx)) None else r.getBoolean(idx)
+            case ColumnTypes.BYTE =>
+              if (r.isNullAt(idx)) None else r.getByte(idx)
+            case ColumnTypes.SHORT =>
+              if (r.isNullAt(idx)) None else r.getShort(idx)
+            case ColumnTypes.INT =>
+              if (r.isNullAt(idx)) None else r.getInt(idx)
+            case ColumnTypes.LONG =>
+              if (r.isNullAt(idx)) None else r.getLong(idx)
+            case ColumnTypes.FLOAT =>
+              if (r.isNullAt(idx)) None else r.getFloat(idx)
+            case ColumnTypes.DOUBLE =>
+              if (r.isNullAt(idx)) None else r.getDouble(idx)
+            case ColumnTypes.VECTOR =>
+              if (r.isNullAt(idx)) None else r.getSeq[Float](idx).toArray
+            case ColumnTypes.BINARY =>
+              if (r.isNullAt(idx)) None else r.getSeq[Byte](idx).toArray
+            case ColumnTypes.DATE =>
+              if (r.isNullAt(idx)) None else r.getDate(idx)
+            case ColumnTypes.TIMESTAMP =>
+              if (r.isNullAt(idx)) None else r.getTimestamp(idx)
+            case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
+          }
+        }.toSeq
+    }
+    new DataSample(schema.copy(), cols)
+  }
+
+  /**
+    * Randomly sample n rows, return the result as a [[Dataframe]]
+    *
+    * @param withReplacement Sample with replacement or not.
+    * @param fraction        Fraction of rows to generate.
+    * @param seed            Seed for sampling.
+    * @return a [[Dataframe]] object containing the data.
+    */
+  def sample(withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = {
+    new SparkDataframe(sparkDf.sample(withReplacement, fraction, seed))
+  }
+
+  /**
     * Create a temporary view of this Dataframe,
     * so you can run SQL commands against
+    *
     * @param name name of the view
     */
   override def createTempView(name: String) = {

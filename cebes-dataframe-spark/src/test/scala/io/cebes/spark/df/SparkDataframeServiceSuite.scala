@@ -28,6 +28,14 @@ class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
   test("Simple SQL") {
     val df = sparkDataframeService.sql("SELECT * FROM cylinder_bands")
     assert(df.numCols === 40)
-    assert(df.numRows === 541)
+    assert(df.numRows === 540)
+    val sample = df.take(10)
+    assert(sample.numCols === df.numCols)
+  }
+
+  test("Type conversions in take()") {
+    //val df = sparkDataframeService.sql("SELECT customer, " +
+    //  " FROM cylinder_bands")
+    // TODO: implement this
   }
 }

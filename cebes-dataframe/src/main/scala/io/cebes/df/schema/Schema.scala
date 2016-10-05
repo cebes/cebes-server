@@ -16,7 +16,7 @@ package io.cebes.df.schema
 
 
 
-case class Schema(columns: Seq[Column]) {
+class Schema(val columns: Seq[Column]) {
 
   /**
     * Number of columns
@@ -25,6 +25,9 @@ case class Schema(columns: Seq[Column]) {
   def numCols: Long = columns.length
 
   override def toString: String = columns.map(c => s"${c.name} ${c.dataType.toString}").mkString(", ")
+
+  def copy(): Schema = new Schema(columns.map(_.copy()))
+
 }
 
 object Schema {
@@ -36,6 +39,6 @@ object Schema {
         case t => throw new IllegalArgumentException(s"Unrecognized column specification: ${t.toString}")
       }
     }
-    Schema(cols)
+    new Schema(cols)
   }
 }
