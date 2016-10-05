@@ -38,4 +38,18 @@ class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
     //  " FROM cylinder_bands")
     // TODO: implement this
   }
+
+  test("Dataframe Sample") {
+    val df = sparkDataframeService.sql("SELECT * FROM cylinder_bands")
+    assert(df.numCols === 40)
+    assert(df.numRows === 540)
+
+    val df2 = df.sample(withReplacement = false, 0.1, 42)
+    assert(df2.numCols === df.numCols)
+    assert(df2.numRows > 0)
+
+    val df3 = df.sample(withReplacement = true, 2.0, 42)
+    assert(df3.numCols === df.numCols)
+    assert(df3.numRows > df.numRows)
+  }
 }
