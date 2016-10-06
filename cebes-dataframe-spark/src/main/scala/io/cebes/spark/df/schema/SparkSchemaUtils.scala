@@ -14,7 +14,7 @@
 
 package io.cebes.spark.df.schema
 
-import io.cebes.df.schema.{Column, ColumnTypes, Schema}
+import io.cebes.df.schema.{Column, StorageTypes, Schema}
 import org.apache.spark.sql.{DataFrame, types}
 
 object SparkSchemaUtils {
@@ -35,41 +35,41 @@ object SparkSchemaUtils {
     * @param dt spark data type
     * @return cebes column type
     */
-  def sparkTypesToCebes(dt: types.DataType): ColumnTypes.ColumnType = dt match {
-    case types.StringType => ColumnTypes.STRING
-    case types.BooleanType => ColumnTypes.BOOLEAN
-    case types.ByteType => ColumnTypes.BYTE
-    case types.ShortType => ColumnTypes.SHORT
-    case types.IntegerType => ColumnTypes.INT
-    case types.LongType => ColumnTypes.LONG
-    case types.FloatType => ColumnTypes.FLOAT
-    case types.DoubleType => ColumnTypes.DOUBLE
-    case types.ArrayType(types.DoubleType, true) => ColumnTypes.VECTOR
-    case types.BinaryType => ColumnTypes.BINARY
-    case types.DateType => ColumnTypes.DATE
-    case types.TimestampType => ColumnTypes.TIMESTAMP
+  def sparkTypesToCebes(dt: types.DataType): StorageTypes.StorageType = dt match {
+    case types.StringType => StorageTypes.STRING
+    case types.BooleanType => StorageTypes.BOOLEAN
+    case types.ByteType => StorageTypes.BYTE
+    case types.ShortType => StorageTypes.SHORT
+    case types.IntegerType => StorageTypes.INT
+    case types.LongType => StorageTypes.LONG
+    case types.FloatType => StorageTypes.FLOAT
+    case types.DoubleType => StorageTypes.DOUBLE
+    case types.ArrayType(types.DoubleType, true) => StorageTypes.VECTOR
+    case types.BinaryType => StorageTypes.BINARY
+    case types.DateType => StorageTypes.DATE
+    case types.TimestampType => StorageTypes.TIMESTAMP
     case t => throw new IllegalArgumentException(s"Unrecognized spark type: ${t.simpleString}")
   }
 
   /**
     * Convert Cebes type to Spark DataType
     *
-    * @param colType Cebes column type
+    * @param storageType Cebes column type
     * @return Spark data type
     */
-  def cebesTypesToSpark(colType: ColumnTypes.ColumnType): types.DataType = colType match {
-    case ColumnTypes.STRING => types.StringType
-    case ColumnTypes.BOOLEAN => types.BooleanType
-    case ColumnTypes.BYTE => types.ByteType
-    case ColumnTypes.SHORT => types.ShortType
-    case ColumnTypes.INT => types.IntegerType
-    case ColumnTypes.LONG => types.LongType
-    case ColumnTypes.FLOAT => types.FloatType
-    case ColumnTypes.DOUBLE => types.DoubleType
-    case ColumnTypes.VECTOR => types.ArrayType(types.DoubleType)
-    case ColumnTypes.BINARY => types.BinaryType
-    case ColumnTypes.DATE => types.DateType
-    case ColumnTypes.TIMESTAMP => types.TimestampType
+  def cebesTypesToSpark(storageType: StorageTypes.StorageType): types.DataType = storageType match {
+    case StorageTypes.STRING => types.StringType
+    case StorageTypes.BOOLEAN => types.BooleanType
+    case StorageTypes.BYTE => types.ByteType
+    case StorageTypes.SHORT => types.ShortType
+    case StorageTypes.INT => types.IntegerType
+    case StorageTypes.LONG => types.LongType
+    case StorageTypes.FLOAT => types.FloatType
+    case StorageTypes.DOUBLE => types.DoubleType
+    case StorageTypes.VECTOR => types.ArrayType(types.DoubleType)
+    case StorageTypes.BINARY => types.BinaryType
+    case StorageTypes.DATE => types.DateType
+    case StorageTypes.TIMESTAMP => types.TimestampType
     case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
   }
 

@@ -14,4 +14,4 @@
 
 package io.cebes.df.schema
 
-case class Column(name: String, dataType: ColumnTypes.ColumnType)
+case class Column(name: String, storageType: StorageTypes.StorageType)

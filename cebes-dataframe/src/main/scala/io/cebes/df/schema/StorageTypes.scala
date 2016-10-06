@@ -14,31 +14,31 @@
 
 package io.cebes.df.schema
 
-object ColumnTypes {
+object StorageTypes {
 
-  sealed abstract class ColumnType(val name: String) {
+  sealed abstract class StorageType(val name: String) {
     override def toString = name
   }
 
-  case object STRING extends ColumnType("String")
+  case object STRING extends StorageType("String")
 
-  case object BOOLEAN extends ColumnType("Boolean")
-  case object BYTE extends ColumnType("Byte")
-  case object SHORT extends ColumnType("Short")
-  case object INT extends ColumnType("Int")
-  case object LONG extends ColumnType("Long")
-  case object FLOAT extends ColumnType("Float")
-  case object DOUBLE extends ColumnType("Double")
+  case object BOOLEAN extends StorageType("Boolean")
+  case object BYTE extends StorageType("Byte")
+  case object SHORT extends StorageType("Short")
+  case object INT extends StorageType("Int")
+  case object LONG extends StorageType("Long")
+  case object FLOAT extends StorageType("Float")
+  case object DOUBLE extends StorageType("Double")
 
-  case object VECTOR extends ColumnType("Vector")
-  case object BINARY extends ColumnType("Binary")
+  case object VECTOR extends StorageType("Vector")
+  case object BINARY extends StorageType("Binary")
 
-  case object DATE extends ColumnType("Date")
-  case object TIMESTAMP extends ColumnType("Timestamp")
+  case object DATE extends StorageType("Date")
+  case object TIMESTAMP extends StorageType("Timestamp")
 
   val values = Seq(STRING, BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, VECTOR, BINARY, DATE, TIMESTAMP)
 
-  def fromString(name: String): ColumnType = values.find(_.name == name) match {
+  def fromString(name: String): StorageType = values.find(_.name == name) match {
     case Some(t) => t
     case None => throw new IllegalArgumentException(s"Unrecognized column type: $name")
   }

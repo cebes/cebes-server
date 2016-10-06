@@ -18,7 +18,7 @@ import java.util.UUID
 
 import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
-import io.cebes.df.schema.{ColumnTypes, Schema}
+import io.cebes.df.schema.{StorageTypes, Schema}
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import org.apache.spark.sql.DataFrame
 
@@ -57,30 +57,30 @@ class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
     val cols = schema.columns.zipWithIndex.map {
       case (c, idx) =>
         rows.map { r =>
-          c.dataType match {
-            case ColumnTypes.STRING =>
+          c.storageType match {
+            case StorageTypes.STRING =>
               if (r.isNullAt(idx)) null else r.getString(idx)
-            case ColumnTypes.BOOLEAN =>
+            case StorageTypes.BOOLEAN =>
               if (r.isNullAt(idx)) null else r.getBoolean(idx)
-            case ColumnTypes.BYTE =>
+            case StorageTypes.BYTE =>
               if (r.isNullAt(idx)) null else r.getByte(idx)
-            case ColumnTypes.SHORT =>
+            case StorageTypes.SHORT =>
               if (r.isNullAt(idx)) null else r.getShort(idx)
-            case ColumnTypes.INT =>
+            case StorageTypes.INT =>
               if (r.isNullAt(idx)) null else r.getInt(idx)
-            case ColumnTypes.LONG =>
+            case StorageTypes.LONG =>
               if (r.isNullAt(idx)) null else r.getLong(idx)
-            case ColumnTypes.FLOAT =>
+            case StorageTypes.FLOAT =>
               if (r.isNullAt(idx)) null else r.getFloat(idx)
-            case ColumnTypes.DOUBLE =>
+            case StorageTypes.DOUBLE =>
               if (r.isNullAt(idx)) null else r.getDouble(idx)
-            case ColumnTypes.VECTOR =>
+            case StorageTypes.VECTOR =>
               if (r.isNullAt(idx)) null else r.getSeq[Double](idx).toArray
-            case ColumnTypes.BINARY =>
+            case StorageTypes.BINARY =>
               if (r.isNullAt(idx)) null else r.getAs[Array[Byte]](idx)
-            case ColumnTypes.DATE =>
+            case StorageTypes.DATE =>
               if (r.isNullAt(idx)) null else r.getDate(idx)
-            case ColumnTypes.TIMESTAMP =>
+            case StorageTypes.TIMESTAMP =>
               if (r.isNullAt(idx)) None else r.getTimestamp(idx)
             case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
           }
@@ -123,7 +123,7 @@ class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
         s" but the new schema has ${newSchema.numCols} columns")
     }
     val sparkCols = schema.columns.zip(newSchema.columns).map { case (currentCol, newCol) =>
-      sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.dataType))
+      sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
     }
     new SparkDataframe(sparkDf.select(sparkCols: _*))
   }

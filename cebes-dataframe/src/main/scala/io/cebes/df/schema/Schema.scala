@@ -24,7 +24,7 @@ class Schema(val columns: Seq[Column]) {
     */
   def numCols: Long = columns.length
 
-  override def toString: String = columns.map(c => s"${c.name} ${c.dataType.toString}").mkString(", ")
+  override def toString: String = columns.map(c => s"${c.name} ${c.storageType.toString}").mkString(", ")
 
   def copy(): Schema = new Schema(columns.map(_.copy()))
 
@@ -35,7 +35,7 @@ object Schema {
   def fromString(schemaStr: String): Schema = {
     val cols = schemaStr.split(",").map { col =>
       col.stripPrefix(" ").stripSuffix(" ").split(" ").filter(_.length > 0) match {
-        case Array(colName, colType) => Column(colName, ColumnTypes.fromString(colType))
+        case Array(colName, colType) => Column(colName, StorageTypes.fromString(colType))
         case t => throw new IllegalArgumentException(s"Unrecognized column specification: ${t.toString}")
       }
     }
