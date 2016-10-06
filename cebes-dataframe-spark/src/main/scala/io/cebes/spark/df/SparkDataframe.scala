@@ -59,27 +59,27 @@ class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
         rows.map { r =>
           c.dataType match {
             case ColumnTypes.STRING =>
-              if (r.isNullAt(idx)) None else r.getString(idx)
+              if (r.isNullAt(idx)) null else r.getString(idx)
             case ColumnTypes.BOOLEAN =>
-              if (r.isNullAt(idx)) None else r.getBoolean(idx)
+              if (r.isNullAt(idx)) null else r.getBoolean(idx)
             case ColumnTypes.BYTE =>
-              if (r.isNullAt(idx)) None else r.getByte(idx)
+              if (r.isNullAt(idx)) null else r.getByte(idx)
             case ColumnTypes.SHORT =>
-              if (r.isNullAt(idx)) None else r.getShort(idx)
+              if (r.isNullAt(idx)) null else r.getShort(idx)
             case ColumnTypes.INT =>
-              if (r.isNullAt(idx)) None else r.getInt(idx)
+              if (r.isNullAt(idx)) null else r.getInt(idx)
             case ColumnTypes.LONG =>
-              if (r.isNullAt(idx)) None else r.getLong(idx)
+              if (r.isNullAt(idx)) null else r.getLong(idx)
             case ColumnTypes.FLOAT =>
-              if (r.isNullAt(idx)) None else r.getFloat(idx)
+              if (r.isNullAt(idx)) null else r.getFloat(idx)
             case ColumnTypes.DOUBLE =>
-              if (r.isNullAt(idx)) None else r.getDouble(idx)
+              if (r.isNullAt(idx)) null else r.getDouble(idx)
             case ColumnTypes.VECTOR =>
-              if (r.isNullAt(idx)) None else r.getSeq[Float](idx).toArray
+              if (r.isNullAt(idx)) null else r.getSeq[Double](idx).toArray
             case ColumnTypes.BINARY =>
-              if (r.isNullAt(idx)) None else r.getSeq[Byte](idx).toArray
+              if (r.isNullAt(idx)) null else r.getAs[Array[Byte]](idx)
             case ColumnTypes.DATE =>
-              if (r.isNullAt(idx)) None else r.getDate(idx)
+              if (r.isNullAt(idx)) null else r.getDate(idx)
             case ColumnTypes.TIMESTAMP =>
               if (r.isNullAt(idx)) None else r.getTimestamp(idx)
             case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")

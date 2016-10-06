@@ -26,9 +26,28 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("Type conversions in take()") {
-    //val df = sparkDataframeService.sql("SELECT customer, " +
-    //  " FROM cylinder_bands")
-    // TODO: implement this
+    val df = sparkDataframeService.sql("SELECT customer, " +
+      " customer IN ('TVGUIDE', 'MASSEY') AS my_customer_bool, " +
+      "CAST(unit_number AS BYTE) AS unit_number_byte, " +
+      "CAST(proof_cut AS SHORT) AS proof_cut_short, " +
+      "proof_cut AS proof_cut_int, " +
+      "CAST(proof_cut AS LONG) AS proof_cut_long, " +
+      "CAST(roughness AS FLOAT) AS roughness_float, " +
+      "CAST(roughness AS DOUBLE) as roughness_double, " +
+      "IF(roughness > 0.6, NULL, roughness) as roughness_double_null, " +
+      "ARRAY(CAST(proof_cut AS DOUBLE), CAST(viscosity AS DOUBLE), CAST(caliper AS DOUBLE)) AS arr_double, " +
+      "UNHEX(HEX(customer)) AS customer_unhex_binary, " +
+      "CURRENT_DATE(), " +
+      "CURRENT_TIMESTAMP() " +
+      "FROM cylinder_bands LIMIT 10")
+    assert(df.numCols === 13)
+
+    val sample = df.take(10)
+    assert(sample.numCols === 13)
+    sample.columns.foreach { c =>
+      assert(c.length === 10)
+      assert(!c.forall(_ === null))
+    }
   }
 
   test("Dataframe Sample") {
