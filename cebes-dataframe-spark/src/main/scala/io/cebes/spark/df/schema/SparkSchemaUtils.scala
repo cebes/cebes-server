@@ -44,7 +44,7 @@ object SparkSchemaUtils {
     case types.LongType => ColumnTypes.LONG
     case types.FloatType => ColumnTypes.FLOAT
     case types.DoubleType => ColumnTypes.DOUBLE
-    case types.ArrayType(types.FloatType, true) => ColumnTypes.VECTOR
+    case types.ArrayType(types.DoubleType, true) => ColumnTypes.VECTOR
     case types.BinaryType => ColumnTypes.BINARY
     case types.DateType => ColumnTypes.DATE
     case types.TimestampType => ColumnTypes.TIMESTAMP
@@ -66,7 +66,7 @@ object SparkSchemaUtils {
     case ColumnTypes.LONG => types.LongType
     case ColumnTypes.FLOAT => types.FloatType
     case ColumnTypes.DOUBLE => types.DoubleType
-    case ColumnTypes.VECTOR => types.ArrayType(types.FloatType)
+    case ColumnTypes.VECTOR => types.ArrayType(types.DoubleType)
     case ColumnTypes.BINARY => types.BinaryType
     case ColumnTypes.DATE => types.DateType
     case ColumnTypes.TIMESTAMP => types.TimestampType
