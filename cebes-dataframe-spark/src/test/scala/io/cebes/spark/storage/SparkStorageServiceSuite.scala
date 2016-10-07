@@ -86,10 +86,6 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
   }
 
   test("Read/write data from/to JDBC", JdbcTestsEnabled) {
-    val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
-    assert(df.numCols === 40)
-    assert(df.numRows === 540)
-
     val jdbcSrc = new JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
       properties.jdbcUsername, properties.jdbcPassword)
 
@@ -99,6 +95,11 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
       assert(df2.numRows === 540)
     } catch {
       case ex: org.postgresql.util.PSQLException =>
+
+        val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
+        assert(df.numCols === 40)
+        assert(df.numRows === 540)
+
         sparkStorageService.write(df, jdbcSrc)
         val df2 = sparkStorageService.read(jdbcSrc)
         assert(df2.numCols === 40)

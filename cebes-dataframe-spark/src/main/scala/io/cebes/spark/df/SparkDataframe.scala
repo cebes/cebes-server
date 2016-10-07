@@ -27,11 +27,13 @@ import org.apache.spark.sql.DataFrame
   *
   * @param sparkDf the spark's DataFrame object
   */
-class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
+class SparkDataframe(val sparkDf: DataFrame,
+                     override val schema: Schema,
+                     override val id: UUID) extends Dataframe {
 
-  override lazy val schema: Schema = SparkSchemaUtils.getSchema(sparkDf)
-
-  override val id: UUID = UUID.randomUUID()
+  def this(sparkDf: DataFrame) = {
+    this(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
+  }
 
   /**
     * Number of rows
@@ -57,33 +59,10 @@ class SparkDataframe(val sparkDf: DataFrame) extends Dataframe {
     val cols = schema.columns.zipWithIndex.map {
       case (c, idx) =>
         rows.map { r =>
-          c.storageType match {
-            case StorageTypes.STRING =>
-              if (r.isNullAt(idx)) null else r.getString(idx)
-            case StorageTypes.BOOLEAN =>
-              if (r.isNullAt(idx)) null else r.getBoolean(idx)
-            case StorageTypes.BYTE =>
-              if (r.isNullAt(idx)) null else r.getByte(idx)
-            case StorageTypes.SHORT =>
-              if (r.isNullAt(idx)) null else r.getShort(idx)
-            case StorageTypes.INT =>
-              if (r.isNullAt(idx)) null else r.getInt(idx)
-            case StorageTypes.LONG =>
-              if (r.isNullAt(idx)) null else r.getLong(idx)
-            case StorageTypes.FLOAT =>
-              if (r.isNullAt(idx)) null else r.getFloat(idx)
-            case StorageTypes.DOUBLE =>
-              if (r.isNullAt(idx)) null else r.getDouble(idx)
-            case StorageTypes.VECTOR =>
-              if (r.isNullAt(idx)) null else r.getSeq[Double](idx).toArray
-            case StorageTypes.BINARY =>
-              if (r.isNullAt(idx)) null else r.getAs[Array[Byte]](idx)
-            case StorageTypes.DATE =>
-              if (r.isNullAt(idx)) null else r.getDate(idx)
-            case StorageTypes.TIMESTAMP =>
-              if (r.isNullAt(idx)) None else r.getTimestamp(idx)
-            case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
+          if (!StorageTypes.values.contains(c.storageType)) {
+            throw new IllegalArgumentException(s"Unrecognized storage type: ${c.storageType}")
           }
+          r.get(idx)
         }.toSeq
     }
     new DataSample(schema.copy(), cols)

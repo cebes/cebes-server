@@ -14,4 +14,8 @@
 
 package io.cebes.df.schema
 
-case class Column(name: String, storageType: StorageTypes.StorageType)
+class Column(val name: String, val storageType: StorageTypes.StorageType,
+             @volatile var variableType: VariableTypes.VariableType) {
+
+  def copy(): Column = new Column(name, storageType, variableType)
+}

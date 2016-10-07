@@ -40,6 +40,6 @@ object StorageTypes {
 
   def fromString(name: String): StorageType = values.find(_.name == name) match {
     case Some(t) => t
-    case None => throw new IllegalArgumentException(s"Unrecognized column type: $name")
+    case None => throw new IllegalArgumentException(s"Unrecognized storage type: $name")
   }
 }

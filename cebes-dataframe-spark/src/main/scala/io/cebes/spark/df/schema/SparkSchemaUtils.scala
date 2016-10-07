@@ -14,7 +14,7 @@
 
 package io.cebes.spark.df.schema
 
-import io.cebes.df.schema.{Column, StorageTypes, Schema}
+import io.cebes.df.schema.{Column, Schema, StorageTypes, VariableTypes}
 import org.apache.spark.sql.{DataFrame, types}
 
 object SparkSchemaUtils {
@@ -26,7 +26,10 @@ object SparkSchemaUtils {
     * @return Schema object
     */
   def getSchema(sparkDf: DataFrame): Schema = {
-    new Schema(sparkDf.schema.map(f => Column(f.name, sparkTypesToCebes(f.dataType))))
+    new Schema(sparkDf.schema.map(f => {
+      val storageType = sparkTypesToCebes(f.dataType)
+      new Column(f.name, storageType, VariableTypes.fromStorageType(storageType))
+    }))
   }
 
   /**

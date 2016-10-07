@@ -35,7 +35,9 @@ object Schema {
   def fromString(schemaStr: String): Schema = {
     val cols = schemaStr.split(",").map { col =>
       col.stripPrefix(" ").stripSuffix(" ").split(" ").filter(_.length > 0) match {
-        case Array(colName, colType) => Column(colName, StorageTypes.fromString(colType))
+        case Array(colName, colType) =>
+          val storageType = StorageTypes.fromString(colType)
+          new Column(colName, storageType, VariableTypes.fromStorageType(storageType))
         case t => throw new IllegalArgumentException(s"Unrecognized column specification: ${t.toString}")
       }
     }
