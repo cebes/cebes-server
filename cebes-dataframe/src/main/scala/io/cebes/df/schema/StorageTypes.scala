@@ -30,13 +30,14 @@ object StorageTypes {
   case object FLOAT extends StorageType("Float")
   case object DOUBLE extends StorageType("Double")
 
-  case object VECTOR extends StorageType("Vector")
-  case object BINARY extends StorageType("Binary")
-
   case object DATE extends StorageType("Date")
   case object TIMESTAMP extends StorageType("Timestamp")
 
-  val values = Seq(STRING, BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, VECTOR, BINARY, DATE, TIMESTAMP)
+  case object VECTOR extends StorageType("Vector")
+  case object BINARY extends StorageType("Binary")
+
+  val values = Seq(STRING, BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE,
+    DATE, TIMESTAMP, VECTOR, BINARY)
 
   def fromString(name: String): StorageType = values.find(_.name == name) match {
     case Some(t) => t

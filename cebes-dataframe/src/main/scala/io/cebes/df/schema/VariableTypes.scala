@@ -38,9 +38,9 @@ object VariableTypes {
 
   case object DATETIME extends VariableType("DateTime", false, false)
 
-  case object COMPLEX extends VariableType("Complex", false, false)
+  case object ARRAY extends VariableType("Array", false, false)
 
-  val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, COMPLEX)
+  val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY)
 
   def fromString(name: String): VariableType = values.find(_.name == name) match {
     case Some(t) => t
@@ -56,7 +56,7 @@ object VariableTypes {
   def fromStorageType(storageType: StorageTypes.StorageType): VariableType = {
     storageType match {
       case StorageTypes.BINARY | StorageTypes.VECTOR =>
-        VariableTypes.COMPLEX
+        VariableTypes.ARRAY
       case StorageTypes.TIMESTAMP | StorageTypes.DATE  =>
         VariableTypes.DATETIME
       case StorageTypes.BOOLEAN => VariableTypes.NOMINAL

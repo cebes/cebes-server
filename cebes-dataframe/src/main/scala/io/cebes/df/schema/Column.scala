@@ -17,5 +17,16 @@ package io.cebes.df.schema
 class Column(val name: String, val storageType: StorageTypes.StorageType,
              @volatile var variableType: VariableTypes.VariableType) {
 
-  def copy(): Column = new Column(name, storageType, variableType)
+  /**
+    * Construct a column based on the name and the storage type
+    * Variable type will be inferred automatically.
+    *
+    * @param name        name of the column
+    * @param storageType storage type of the column
+    */
+  def this(name: String, storageType: StorageTypes.StorageType) = {
+    this(name, storageType, VariableTypes.fromStorageType(storageType))
+  }
+
+  def copy(): Column = new Column(this.name, this.storageType, this.variableType)
 }
