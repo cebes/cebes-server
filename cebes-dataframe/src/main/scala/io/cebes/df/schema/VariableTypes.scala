@@ -16,29 +16,44 @@ package io.cebes.df.schema
 
 object VariableTypes {
 
-  sealed abstract class VariableType(val name: String, val isNumeric: Boolean, val isCategorical: Boolean) {
+  sealed abstract class VariableType(val name: String, val isNumeric: Boolean,
+                                     val isCategorical: Boolean,
+                                     val validStorageTypes: Seq[StorageTypes.StorageType]) {
     override def toString: String = name
   }
 
-  case object DISCRETE extends VariableType("Discrete", true, false)
+  case object DISCRETE extends VariableType("Discrete", true, false,
+    Seq(StorageTypes.BYTE, StorageTypes.SHORT, StorageTypes.INT, StorageTypes.LONG))
 
-  case object CONTINUOUS extends VariableType("Continuous", true, false)
+  case object CONTINUOUS extends VariableType("Continuous", true, false,
+    Seq(StorageTypes.FLOAT, StorageTypes.DOUBLE))
 
   /**
     * Categorical variable without rank
     */
-  case object NOMINAL extends VariableType("Nominal", false, true)
+  case object NOMINAL extends VariableType("Nominal", false, true,
+    Seq(StorageTypes.STRING, StorageTypes.BOOLEAN,
+      StorageTypes.BYTE, StorageTypes.SHORT, StorageTypes.INT, StorageTypes.LONG,
+      StorageTypes.FLOAT, StorageTypes.DOUBLE,
+      StorageTypes.DATE, StorageTypes.TIMESTAMP))
 
   /**
     * Categorical variable with a rank, an order
     */
-  case object ORDINAL extends VariableType("Ordinal", false, true)
+  case object ORDINAL extends VariableType("Ordinal", false, true,
+    Seq(StorageTypes.STRING, StorageTypes.BOOLEAN,
+      StorageTypes.BYTE, StorageTypes.SHORT, StorageTypes.INT, StorageTypes.LONG,
+      StorageTypes.FLOAT, StorageTypes.DOUBLE,
+      StorageTypes.DATE, StorageTypes.TIMESTAMP))
 
-  case object TEXT extends VariableType("Text", false, false)
+  case object TEXT extends VariableType("Text", false, false,
+    Seq(StorageTypes.STRING))
 
-  case object DATETIME extends VariableType("DateTime", false, false)
+  case object DATETIME extends VariableType("DateTime", false, false,
+    Seq(StorageTypes.DATE, StorageTypes.TIMESTAMP))
 
-  case object ARRAY extends VariableType("Array", false, false)
+  case object ARRAY extends VariableType("Array", false, false,
+    Seq(StorageTypes.VECTOR, StorageTypes.BINARY))
 
   val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY)
 

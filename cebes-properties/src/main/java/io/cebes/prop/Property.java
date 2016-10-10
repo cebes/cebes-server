@@ -26,6 +26,14 @@ public enum Property {
     UPLOAD_PATH("CEBES_UPLOAD_PATH", "cebes.upload.path", "/tmp/upload/",
             "The directory to upload data to"),
 
+    // for Hive metastore
+    HIVE_METASTORE_URL("CEBES_HIVE_METASTORE_URL", "cebes.hive.metastore.url", "",
+            "URL for the hive metastore"),
+    HIVE_METASTORE_USERNAME("CEBES_HIVE_METASTORE_USERNAME", "cebes.hive.metastore.username", "",
+            "Username for the hive metastore"),
+    HIVE_METASTORE_PASSWORD("CEBES_HIVE_METASTORE_PASSWORD", "cebes.hive.metastore.password", "",
+            "Password for the hive metastore"),
+
     // test-only properties
     TEST_AWS_ACCESSKEY("CEBES_TEST_AWS_ACCESSKEY", "cebes.test.aws.accesskey",
             "", "AWS access key used for tests", true),

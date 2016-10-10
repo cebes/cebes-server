@@ -14,8 +14,17 @@
 
 package io.cebes.df.schema
 
+/**
+  * Represent a column of a [[io.cebes.df.Dataframe]]
+  *
+  * @param name Name of the column
+  * @param storageType Storage type
+  * @param variableType Variable type. Variable type is just a meta-data annotation
+  *                     on the columns, so changing the variable types (with [[setVariableType()]])
+  *                     does not generate new [[io.cebes.df.Dataframe]] object.
+  */
 class Column(val name: String, val storageType: StorageTypes.StorageType,
-             @volatile var variableType: VariableTypes.VariableType) {
+             @volatile private var variableType: VariableTypes.VariableType) {
 
   /**
     * Construct a column based on the name and the storage type
@@ -29,4 +38,17 @@ class Column(val name: String, val storageType: StorageTypes.StorageType,
   }
 
   def copy(): Column = new Column(this.name, this.storageType, this.variableType)
+
+  def getVariableType = this.variableType
+
+  def setVariableType(newType: VariableTypes.VariableType): Unit = {
+    if (variableType == newType) {
+      return
+    }
+    if (!newType.validStorageTypes.contains(storageType)) {
+      throw new IllegalArgumentException(s"Storage type $storageType cannot be set as variable type $newType")
+    }
+    variableType = newType
+  }
+
 }

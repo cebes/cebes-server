@@ -1,2 +1,3 @@
 # cebes-server
-Cebes servers
+Cebes - The Data Scientist's toolbox for Big Data
+

@@ -27,18 +27,18 @@ object HttpServerTest {
   lazy val httpPort = server.httpPort
 
   def register(): Unit = {
-    if (counter <= 0) {
-      synchronized {
+    synchronized {
+      if (counter <= 0) {
         server.start()
       }
+      counter += 1
     }
-    counter += 1
   }
 
   def unregister(): Unit = {
-    counter -= 1
-    if (counter <= 0) {
-      synchronized {
+    synchronized {
+      counter -= 1
+      if (counter <= 0) {
         server.stop()
       }
     }

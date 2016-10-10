@@ -14,15 +14,18 @@
 
 package io.cebes.spark.df
 
+import io.cebes.df.schema.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
+  val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
+
   override def beforeAll(): Unit = {
     super.beforeAll()
-    createOrReplaceCylinderBands()
+    createOrReplaceCylinderBands(cylinderBandsTableName)
   }
 
   test("Type conversions in take()") {
@@ -39,7 +42,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
       "UNHEX(HEX(customer)) AS customer_unhex_binary, " +
       "CURRENT_DATE(), " +
       "CURRENT_TIMESTAMP() " +
-      "FROM cylinder_bands LIMIT 10")
+      s"FROM $cylinderBandsTableName LIMIT 10")
     assert(df.numCols === 13)
 
     val sample = df.take(10)
@@ -51,7 +54,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("Dataframe Sample") {
-    val df = sparkDataframeService.sql("SELECT * FROM cylinder_bands")
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
     assert(df.numCols === 40)
     assert(df.numRows === 540)
 
@@ -62,5 +65,22 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     val df3 = df.sample(withReplacement = true, 2.0, 42)
     assert(df3.numCols === df.numCols)
     assert(df3.numRows > df.numRows)
+  }
+
+  test("Dataframe variable types") {
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    assert(df.schema.getColumn("customer").storageType === StorageTypes.STRING)
+    assert(df.schema.getColumn("customer").getVariableType === VariableTypes.TEXT)
+
+    val df2 = df.inferVariableTypes()
+    assert(df2.id === df.id)
+    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df.schema.getColumn("customer").getVariableType))
+    assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.ORDINAL)
+
+    val df3 = df.updateVariableTypes(Map("customer" -> VariableTypes.ORDINAL,
+      "Job_Number" -> VariableTypes.DISCRETE))
+    assert(df3.id === df.id)
+    assert(df.schema.getColumn("customer").getVariableType === VariableTypes.ORDINAL)
+    assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.DISCRETE)
   }
 }

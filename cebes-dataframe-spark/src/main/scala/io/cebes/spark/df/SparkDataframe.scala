@@ -18,9 +18,11 @@ import java.util.UUID
 
 import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
-import io.cebes.df.schema.{StorageTypes, Schema}
+import io.cebes.df.schema.VariableTypes.VariableType
+import io.cebes.df.schema.{Schema, StorageTypes, VariableTypes}
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.DataTypes
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -43,8 +45,44 @@ class SparkDataframe(val sparkDf: DataFrame,
   override def numRows: Long = sparkDf.count()
 
   /**
-    * Sampling functions
+    * Automatically infer variable types, using various heuristics based on data
+    *
+    * @return the same [[Dataframe]]
+    * @group Schema manipulation
     */
+  override def inferVariableTypes(): Dataframe = {
+    val sample = take(1000)
+    schema.columns.zip(sample.columns).foreach { case (c, data) =>
+      c.setVariableType(SparkDataframe.inferVariableType(c.storageType, data))
+    }
+    this
+  }
+
+  /**
+    * Manually update variable types for each column. Column names are case-insensitive.
+    * Sanity checks will be performed. If new variable type doesn't conform with its storage type,
+    * [[IllegalArgumentException]] will be thrown.
+    *
+    * @param newTypes map from column name -> new [[VariableType]]
+    * @return the same [[Dataframe]]
+    * @group Schema manipulation
+    */
+  override def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe = {
+    newTypes.foreach { case (name, newType) =>
+      schema.getColumnOptional(name).foreach { c =>
+        if (!newType.validStorageTypes.contains(c.storageType)) {
+          throw new IllegalArgumentException(s"Column ${c.name}: storage type ${c.storageType} cannot " +
+            s"be casted as variable type $newType")
+        }
+      }
+    }
+
+    // no exception, we are good to go
+    newTypes.foreach { case (name, newType) =>
+      schema.getColumnOptional(name).foreach(_.setVariableType(newType))
+    }
+    this
+  }
 
   /**
     * Get the first n rows. If the [[Dataframe]] has less than n rows, all rows will be returned.
@@ -105,5 +143,43 @@ class SparkDataframe(val sparkDf: DataFrame,
       sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
     }
     new SparkDataframe(sparkDf.select(sparkCols: _*))
+  }
+}
+
+object SparkDataframe {
+
+  private val UNIQUE_RATIO = 0.6
+
+  def inferVariableType(storageType: StorageTypes.StorageType, sample: Seq[Any]): VariableType = {
+    storageType match {
+      case StorageTypes.BINARY | StorageTypes.VECTOR =>
+        VariableTypes.fromStorageType(storageType)
+      case StorageTypes.DATE | StorageTypes.TIMESTAMP =>
+        VariableTypes.fromStorageType(storageType)
+      case StorageTypes.BOOLEAN =>
+        VariableTypes.fromStorageType(storageType)
+      case StorageTypes.BYTE | StorageTypes.SHORT |
+           StorageTypes.INT | StorageTypes.LONG =>
+        val ratio = sample.distinct.length.toFloat / sample.length
+        if (ratio > UNIQUE_RATIO) {
+          VariableTypes.DISCRETE
+        } else {
+          VariableTypes.ORDINAL
+        }
+      case StorageTypes.FLOAT | StorageTypes.DOUBLE =>
+        val ratio = sample.distinct.length.toFloat / sample.length
+        if (ratio > UNIQUE_RATIO) {
+          VariableTypes.CONTINUOUS
+        } else {
+          VariableTypes.ORDINAL
+        }
+      case StorageTypes.STRING =>
+        val ratio = sample.distinct.length.toFloat / sample.length
+        if (ratio > UNIQUE_RATIO) {
+          VariableTypes.TEXT
+        } else {
+          VariableTypes.NOMINAL
+        }
+    }
   }
 }

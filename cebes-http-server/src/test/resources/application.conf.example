@@ -1,12 +1,18 @@
 akka {
-  loglevel = DEBUG
+  loglevel = WARNING
+
+  http.session {
+    encrypt-data = true
+  }
 }
 
-akka.http.session {
-  encrypt-data = true
-}
+cebes {
+  http {
+    port = 21001
+  }
 
-cebes.test.aws {
-  accesskey = ""
-  secretkey = ""
+  test.aws {
+    accesskey = ""
+    secretkey = ""
+  }
 }

@@ -15,14 +15,38 @@
 package io.cebes.df.schema
 
 
-
 class Schema(val columns: Seq[Column]) {
 
   /**
     * Number of columns
+    *
     * @return a Long
     */
   def numCols: Long = columns.length
+
+  /**
+    * Get the column as an Option[Column]
+    *
+    * @param name name of the column to get, case-insensitive
+    * @return Option[Column]
+    */
+  def getColumnOptional(name: String): Option[Column] = {
+    columns.find(_.name.equalsIgnoreCase(name))
+  }
+
+  /**
+    * Get the column object. To get the column as an Option[Column], use [[getColumnOptional()]].
+    *
+    * @param name name of the column to get, case-insensitive
+    * @return [[Column]] object if found, or [[IllegalArgumentException]] otherwise
+    */
+  def getColumn(name: String): Column = {
+    val col = getColumnOptional(name)
+    if (col.isEmpty) {
+      throw new IllegalArgumentException(s"Column name not found: $name")
+    }
+    col.get
+  }
 
   override def toString: String = columns.map(c => s"${c.name} ${c.storageType.toString}").mkString(", ")
 

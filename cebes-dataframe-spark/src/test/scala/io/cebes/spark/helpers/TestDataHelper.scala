@@ -35,9 +35,15 @@ trait TestDataHelper {
     sparkDataframeService.sql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
   }
 
-  def createOrReplaceCylinderBands(tableName: String = "cylinder_bands") = {
+  def createOrReplaceCylinderBands(tableName: String = "") = {
+    val normalizedTableName = if (tableName.isEmpty) {
+      s"cylinder_bands_${this.getClass.getCanonicalName.replace(".", "_").toLowerCase}"
+    } else {
+      tableName
+    }
+
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
-    createOrReplaceHiveTable(tableName,
+    createOrReplaceHiveTable(normalizedTableName,
       "timestamp LONG, cylinder_number STRING, " +
         "customer STRING, job_number INT, grain_screened STRING, ink_color STRING, " +
         "proof_on_ctd_ink STRING, blade_mfg STRING, cylinder_division STRING, paper_type STRING, " +

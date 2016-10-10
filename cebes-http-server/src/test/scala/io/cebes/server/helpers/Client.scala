@@ -106,9 +106,9 @@ class Client extends StrictLogging {
            ec: ExecutionContext): SerializableResult = {
     var cnt = 0
     val MAX_COUNT = 4
-    val DELTA = 500 // in milliseconds
+    val DELTA = 1000 // in milliseconds
 
-    while (cnt < 100) {
+    while (cnt < 200) {
       val result = Try(request[String, SerializableResult](HttpMethods.POST, s"request/${futureResult.requestId}", ""))
       result match {
         case Success(serializableResult) =>
@@ -230,18 +230,4 @@ object Client {
 
   implicit val system = ActorSystem("CebesClientApp")
   implicit val materializer = ActorMaterializer()
-
-  @volatile var counter = 0
-
-  def register(): Unit = {
-    counter += 1
-  }
-
-  def unregister() = {
-    counter -= 1
-    if (counter == 0) {
-      system.terminate()
-      Await.result(system.whenTerminated, Duration(30, TimeUnit.SECONDS))
-    }
-  }
 }

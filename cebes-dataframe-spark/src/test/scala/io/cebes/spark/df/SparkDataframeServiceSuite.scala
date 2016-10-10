@@ -20,13 +20,14 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
+  val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
   override def beforeAll(): Unit = {
     super.beforeAll()
     createOrReplaceCylinderBands()
   }
 
   test("Simple SQL") {
-    val df = sparkDataframeService.sql("SELECT * FROM cylinder_bands")
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
     assert(df.numCols === 40)
     assert(df.numRows === 540)
     val sample = df.take(10)
