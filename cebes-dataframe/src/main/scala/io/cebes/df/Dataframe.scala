@@ -16,6 +16,7 @@ package io.cebes.df
 
 import io.cebes.common.HasId
 import io.cebes.df.sample.DataSample
+import io.cebes.df.schema.VariableTypes.VariableType
 import io.cebes.df.schema.{HasSchema, Schema}
 
 /**
@@ -30,10 +31,24 @@ trait Dataframe extends HasSchema with HasId {
     */
   def numRows: Long
 
+  /**
+    * Automatically infer variable types, using various heuristics based on data
+    *
+    * @return the same [[Dataframe]]
+    * @group Schema manipulation
+    */
+  def inferVariableTypes(): Dataframe
 
   /**
-    * Sampling functions
+    * Manually update variable types for each column. Column names are case-insensitive.
+    * Sanity checks will be performed. If new variable type doesn't conform with its storage type,
+    * an exception will be thrown.
+    *
+    * @param newTypes map from column name -> new [[VariableType]]
+    * @return the same [[Dataframe]]
+    * @group Schema manipulation
     */
+  def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe
 
   /**
     * Get the first n rows. If the [[Dataframe]] has less than n rows, all rows will be returned.
@@ -42,6 +57,7 @@ trait Dataframe extends HasSchema with HasId {
     *
     * @param n number of rows to take
     * @return a [[DataSample]] object containing the data.
+    * @group Sampling functions
     */
   def take(n: Int = 1): DataSample
 
@@ -52,6 +68,7 @@ trait Dataframe extends HasSchema with HasId {
     * @param fraction        Fraction of rows to generate.
     * @param seed            Seed for sampling.
     * @return a [[Dataframe]] object containing the data.
+    * @group Sampling functions
     */
   def sample(withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
 

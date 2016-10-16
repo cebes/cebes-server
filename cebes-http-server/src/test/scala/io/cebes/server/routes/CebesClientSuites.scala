@@ -9,23 +9,30 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 07/09/16.
+ * Created by phvu on 10/10/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.server.routes
 
 import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-
+import io.cebes.server.helpers.{Client, HttpServerTest}
+import io.cebes.server.models._
 import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.{OkResponse, UserLogin}
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.server.routes.auth.AuthHandlerSuite
+import io.cebes.server.routes.storage.StorageHandlerSuite
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.immutable.IndexedSeq
 
-trait HasClient extends FunSuite with BeforeAndAfterAll {
+class CebesClientSuites extends Suite with BeforeAndAfterAll {
 
   val client = new Client
+
+  override def nestedSuites: IndexedSeq[Suite] = IndexedSeq(
+    new AuthHandlerSuite(client),
+    new StorageHandlerSuite(client))
 
   /**
     * Before and after all
@@ -34,14 +41,12 @@ trait HasClient extends FunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     super.beforeAll()
     HttpServerTest.register()
-    Client.register()
     assert("ok" === client.request[UserLogin, OkResponse](HttpMethods.POST,
       "auth/login", UserLogin("foo", "bar")).message)
   }
 
   override def afterAll(): Unit = {
     assert("ok" === client.request[String, OkResponse](HttpMethods.POST, "auth/logout", "").message)
-    Client.unregister()
     HttpServerTest.unregister()
     super.afterAll()
   }

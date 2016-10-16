@@ -1,12 +1,23 @@
 akka {
-  loglevel = DEBUG
+  loglevel = WARNING
+
+  http.session {
+    encrypt-data = true
+  }
 }
 
-akka.http.session {
-  encrypt-data = true
-}
-
-cebes.test.aws {
-  accesskey = ""
-  secretkey = ""
+cebes {
+  hive.metastore {
+    url = ""
+    driver = ""
+    username = ""
+    password = ""
+  }
+  http {
+    port = 21001
+  }
+  test.aws {
+    accesskey = ""
+    secretkey = ""
+  }
 }

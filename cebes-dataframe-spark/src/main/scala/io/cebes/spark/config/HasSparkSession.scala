@@ -24,25 +24,46 @@ trait HasSparkSession {
 }
 
 class HasSparkSessionProvider @Inject()
-(@Prop(Property.SPARK_MODE) val sparkMode: String) extends Provider[HasSparkSession] {
+(@Prop(Property.SPARK_MODE) val sparkMode: String,
+ @Prop(Property.HIVE_METASTORE_URL) val hiveMetastoreUrl: String,
+ @Prop(Property.HIVE_METASTORE_DRIVER) val hiveMetastoreDriver: String,
+ @Prop(Property.HIVE_METASTORE_USERNAME) val hiveMetastoreUserName: String,
+ @Prop(Property.HIVE_METASTORE_PASSWORD) val hiveMetastorePwd: String) extends Provider[HasSparkSession] {
 
   override def get(): HasSparkSession = {
     sparkMode.toLowerCase match {
-      case "local" => new HasSparkSessionLocal()
+      case "local" => new HasSparkSessionLocal(hiveMetastoreUrl, hiveMetastoreDriver,
+        hiveMetastoreUserName, hiveMetastorePwd)
       case "yarn" => new HasSparkSessionYarn()
       case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")
     }
   }
 }
 
-@Singleton class HasSparkSessionLocal extends HasSparkSession {
+@Singleton class HasSparkSessionLocal(hiveMetastoreUrl: String,
+                                      hiveMetastoreDriver: String,
+                                      hiveMetastoreUser: String,
+                                      hiveMetastorePwd: String) extends HasSparkSession {
 
-  lazy val session = SparkSession.builder()
-    .appName("Cebes service on Spark (local)")
-    .config("spark.sql.warehouse.dir",
-      s"file:${System.getProperty("java.io.tmpdir", "/tmp")}/spark-warehouse")
-    .enableHiveSupport()
-    .master("local[4]").getOrCreate()
+  lazy val session = getLocalSession.getOrCreate()
+
+  def getLocalSession: SparkSession.Builder = {
+    val builder = SparkSession.builder()
+      .appName("Cebes service on Spark (local)")
+      .master("local[4]")
+      .config("spark.sql.warehouse.dir",
+        s"file:${System.getProperty("java.io.tmpdir", "/tmp")}/spark-warehouse")
+
+    if (!hiveMetastoreUser.isEmpty && !hiveMetastoreUrl.isEmpty && !hiveMetastorePwd.isEmpty) {
+      builder.config("javax.jdo.option.ConnectionURL", hiveMetastoreUrl)
+        .config("javax.jdo.option.ConnectionDriverName", hiveMetastoreDriver)
+        .config("javax.jdo.option.ConnectionUserName", hiveMetastoreUser)
+        .config("javax.jdo.option.ConnectionPassword", hiveMetastorePwd)
+        .enableHiveSupport()
+    } else {
+      builder.enableHiveSupport()
+    }
+  }
 }
 
 @Singleton class HasSparkSessionYarn extends HasSparkSession {

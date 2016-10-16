@@ -14,7 +14,11 @@
 
 package io.cebes.server.helpers
 
-trait HasTestProperties {
+import org.scalatest.{Ignore, Tag}
+
+trait TestPropertyHelper {
 
   val properties = TestInjector.injector.getInstance(classOf[TestProperties])
+
+  object S3TestsEnabled extends Tag(if (properties.hasS3Credentials) "" else classOf[Ignore].getName)
 }

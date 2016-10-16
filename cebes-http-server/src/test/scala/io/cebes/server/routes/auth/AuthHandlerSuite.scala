@@ -15,10 +15,11 @@
 package io.cebes.server.routes.auth
 
 import com.typesafe.scalalogging.slf4j.StrictLogging
-import io.cebes.server.helpers.HasClient
+import io.cebes.server.helpers.Client
+import org.scalatest.FunSuite
 
 
-class AuthHandlerSuite extends HasClient with StrictLogging {
+class AuthHandlerSuite(val client: Client) extends FunSuite with StrictLogging {
 
   test("login") {
     Thread.sleep(1000)
