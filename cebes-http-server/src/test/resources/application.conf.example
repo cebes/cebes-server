@@ -7,10 +7,15 @@ akka {
 }
 
 cebes {
+  hive.metastore {
+    url = ""
+    driver = ""
+    username = ""
+    password = ""
+  }
   http {
     port = 21001
   }
-
   test.aws {
     accesskey = ""
     secretkey = ""

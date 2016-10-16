@@ -1,12 +1,22 @@
-cebes.test {
-  aws {
-    accesskey = ""
-    secretkey = ""
-  }
+cebes {
 
-  jdbc {
+  hive.metastore {
     url = ""
+    driver = ""
     username = ""
     password = ""
   }
+
+  test {
+    aws {
+      accesskey = ""
+      secretkey = ""
+    }
+    jdbc {
+      url = ""
+      username = ""
+      password = ""
+    }
+  }
+
 }

@@ -26,12 +26,14 @@ trait HasSparkSession {
 class HasSparkSessionProvider @Inject()
 (@Prop(Property.SPARK_MODE) val sparkMode: String,
  @Prop(Property.HIVE_METASTORE_URL) val hiveMetastoreUrl: String,
+ @Prop(Property.HIVE_METASTORE_DRIVER) val hiveMetastoreDriver: String,
  @Prop(Property.HIVE_METASTORE_USERNAME) val hiveMetastoreUserName: String,
  @Prop(Property.HIVE_METASTORE_PASSWORD) val hiveMetastorePwd: String) extends Provider[HasSparkSession] {
 
   override def get(): HasSparkSession = {
     sparkMode.toLowerCase match {
-      case "local" => new HasSparkSessionLocal(hiveMetastoreUrl, hiveMetastoreUserName, hiveMetastorePwd)
+      case "local" => new HasSparkSessionLocal(hiveMetastoreUrl, hiveMetastoreDriver,
+        hiveMetastoreUserName, hiveMetastorePwd)
       case "yarn" => new HasSparkSessionYarn()
       case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")
     }
@@ -39,6 +41,7 @@ class HasSparkSessionProvider @Inject()
 }
 
 @Singleton class HasSparkSessionLocal(hiveMetastoreUrl: String,
+                                      hiveMetastoreDriver: String,
                                       hiveMetastoreUser: String,
                                       hiveMetastorePwd: String) extends HasSparkSession {
 
@@ -53,7 +56,7 @@ class HasSparkSessionProvider @Inject()
 
     if (!hiveMetastoreUser.isEmpty && !hiveMetastoreUrl.isEmpty && !hiveMetastorePwd.isEmpty) {
       builder.config("javax.jdo.option.ConnectionURL", hiveMetastoreUrl)
-          .config("javax.jdo.option.ConnectionDriverName", "org.postgresql.Driver")
+        .config("javax.jdo.option.ConnectionDriverName", hiveMetastoreDriver)
         .config("javax.jdo.option.ConnectionUserName", hiveMetastoreUser)
         .config("javax.jdo.option.ConnectionPassword", hiveMetastorePwd)
         .enableHiveSupport()
