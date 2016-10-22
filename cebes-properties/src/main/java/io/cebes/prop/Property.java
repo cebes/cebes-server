@@ -44,6 +44,8 @@ public enum Property {
 
     TEST_JDBC_URL("CEBES_TEST_JDBC_URL", "cebes.test.jdbc.url",
             "", "URL for JDBC data source for tests", true),
+    TEST_JDBC_DRIVER("CEBES_TEST_JDBC_DRIVER", "cebes.test.jdbc.driver",
+            "", "Driver for JDBC data source for tests", true),
     TEST_JDBC_USERNAME("CEBES_TEST_JDBC_USERNAME", "cebes.test.jdbc.username",
             "", "Username for JDBC data source for tests", true),
     TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password",

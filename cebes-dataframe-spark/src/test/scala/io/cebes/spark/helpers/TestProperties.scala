@@ -22,6 +22,7 @@ class TestProperties @Inject()
  @Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String,
 
  @Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
+ @Prop(Property.TEST_JDBC_DRIVER) val jdbcDriver: String,
  @Prop(Property.TEST_JDBC_USERNAME) val jdbcUsername: String,
  @Prop(Property.TEST_JDBC_PASSWORD) val jdbcPassword: String) {
 

@@ -43,7 +43,7 @@ class Read(storageService: StorageService)
         new HdfsDataSource(hdfs.path, hdfs.uri, hdfs.format)
       case ReadRequest(None, None, None, Some(jdbc), None) =>
         val jdbcPwd = new String(Base64.getUrlDecoder.decode(jdbc.passwordBase64), "UTF-8")
-        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbcPwd)
+        new JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbcPwd, jdbc.driver)
       case ReadRequest(None, None, None, None, Some(hive)) =>
         new HiveDataSource(hive.tableName)
       case _ => throw new IllegalArgumentException("Invalid read request")

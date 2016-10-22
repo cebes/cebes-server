@@ -89,7 +89,7 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
 
   test("Read/write data from/to JDBC", JdbcTestsEnabled) {
     val jdbcSrc = new JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
-      properties.jdbcUsername, properties.jdbcPassword)
+      properties.jdbcUsername, properties.jdbcPassword, Option(properties.jdbcDriver))
 
     try {
       val df2 = sparkStorageService.read(jdbcSrc)
