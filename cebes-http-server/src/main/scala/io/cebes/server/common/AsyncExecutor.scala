@@ -94,7 +94,7 @@ trait AsyncExecutor[E, T, R] {
 
         resultActor ! SerializableResult(
           requestObj.requestId, RequestStatus.FAILED,
-          Some(FailResponse(t.getMessage, sw.toString).toJson))
+          Some(FailResponse(Option(t.getMessage), Option(sw.toString)).toJson))
     }
     FutureResult(requestObj.requestId)
   }

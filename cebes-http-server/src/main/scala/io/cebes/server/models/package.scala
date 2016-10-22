@@ -78,7 +78,7 @@ package object models {
   /** **************************************************************************/
 
   // a request was failed for whatever reason
-  case class FailResponse(message: String, stackTrace: String)
+  case class FailResponse(message: Option[String], stackTrace: Option[String])
 
   // Results of synchronous commands will belong to following classes
   case class OkResponse(message: String)

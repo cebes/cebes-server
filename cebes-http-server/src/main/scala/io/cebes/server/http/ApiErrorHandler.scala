@@ -49,7 +49,7 @@ object ApiErrorHandler {
     val pw = new PrintWriter(sw)
     ex.printStackTrace(pw)
 
-    Marshal(FailResponse(message, sw.toString)).to[ResponseEntity].map { entity =>
+    Marshal(FailResponse(Option(message), Option(sw.toString))).to[ResponseEntity].map { entity =>
       HttpResponse(statusCode, entity = entity.withContentType(ContentTypes.`application/json`))
     }
   }

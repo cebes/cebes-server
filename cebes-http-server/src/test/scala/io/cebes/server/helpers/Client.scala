@@ -121,7 +121,7 @@ class Client extends StrictLogging {
                   Try(responseEntity.convertTo[FailResponse]) match {
                     case Success(fr) =>
                       throw ServerException(Some(serializableResult.requestId),
-                        fr.message, Some(fr.stackTrace))
+                        fr.message.getOrElse(""), fr.stackTrace)
                     case Failure(_) =>
                       // throw it as it is
                       throw ServerException(Some(serializableResult.requestId),
@@ -210,7 +210,7 @@ class Client extends StrictLogging {
           Unmarshal(response.entity).to[FailResponse].flatMap { failResponse =>
             logger.error(s"Failed result for request ${request.uri}")
             logger.error(s"Response: ${response.status} - ${failResponse.message}")
-            Future.failed(ServerException(None, failResponse.message, Some(failResponse.stackTrace)))
+            Future.failed(ServerException(None, failResponse.message.getOrElse(""), failResponse.stackTrace))
           }.recoverWith {
             case _ =>
               Unmarshal(response.entity).to[String].flatMap { msg =>
