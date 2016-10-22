@@ -94,7 +94,7 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
       assert(df2.numCols === 40)
       assert(df2.numRows === 540)
     } catch {
-      case ex: org.postgresql.util.PSQLException =>
+      case ex: Exception =>
 
         val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
         assert(df.numCols === 40)

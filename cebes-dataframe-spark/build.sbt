@@ -15,5 +15,6 @@ libraryDependencies ++= Seq(
 
   "com.google.inject" % "guice" % Common.guiceVersion,
 
-  "org.postgresql" % "postgresql" % "9.4.1211"
+  //"org.postgresql" % "postgresql" % "9.4.1211"
+  "mysql" % "mysql-connector-java" % "6.0.5"
 )
