@@ -14,8 +14,6 @@
 
 package io.cebes.spark.storage
 
-import java.util.Properties
-
 import com.google.inject.Inject
 import io.cebes.df.Dataframe
 import io.cebes.spark.config.HasSparkSession
@@ -50,10 +48,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
 
     dataSource match {
       case jdbcSource: JdbcDataSource =>
-        val prop = new Properties()
-        prop.setProperty("user", jdbcSource.userName)
-        prop.setProperty("password", jdbcSource.password)
-        sparkDf.write.jdbc(jdbcSource.url, jdbcSource.tableName, prop)
+        sparkDf.write.jdbc(jdbcSource.url, jdbcSource.tableName, jdbcSource.sparkProperties())
       case hiveSource: HiveDataSource =>
         sparkDf.write.saveAsTable(hiveSource.tableName)
       case _ =>
@@ -88,10 +83,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
   override def read(dataSource: DataSource): Dataframe = {
     val sparkDf = dataSource match {
       case jdbcSource: JdbcDataSource =>
-        val prop = new Properties()
-        prop.setProperty("user", jdbcSource.userName)
-        prop.setProperty("password", jdbcSource.password)
-        sparkSession.read.jdbc(jdbcSource.url, jdbcSource.tableName, prop)
+        sparkSession.read.jdbc(jdbcSource.url, jdbcSource.tableName, jdbcSource.sparkProperties())
       case hiveSource: HiveDataSource =>
         sparkSession.read.table(hiveSource.tableName)
       case _ =>

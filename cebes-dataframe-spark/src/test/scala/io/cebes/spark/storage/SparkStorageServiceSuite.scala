@@ -18,6 +18,7 @@ import java.nio.file.{FileVisitOption, Files, Path, Paths}
 import java.util.Comparator
 import java.util.function.Consumer
 
+import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
@@ -26,7 +27,8 @@ import io.cebes.storage.localfs.LocalFsDataSource
 import io.cebes.util.ResourceUtil
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with TestPropertyHelper with TestDataHelper {
+class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with TestPropertyHelper with TestDataHelper
+  with StrictLogging {
 
   val cylinderBandsTableName = "cylinder_bands_storage_test"
 
@@ -87,14 +89,15 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with Test
 
   test("Read/write data from/to JDBC", JdbcTestsEnabled) {
     val jdbcSrc = new JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
-      properties.jdbcUsername, properties.jdbcPassword)
+      properties.jdbcUsername, properties.jdbcPassword, Option(properties.jdbcDriver))
 
     try {
       val df2 = sparkStorageService.read(jdbcSrc)
       assert(df2.numCols === 40)
       assert(df2.numRows === 540)
     } catch {
-      case ex: org.postgresql.util.PSQLException =>
+      case ex: Exception =>
+        logger.error("Exception when reading from JDBC", ex)
 
         val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
         assert(df.numCols === 40)

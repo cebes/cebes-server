@@ -14,6 +14,8 @@
 
 package io.cebes.spark.storage.rdbms
 
+import java.util.Properties
+
 import io.cebes.storage.DataFormats.DataFormat
 import io.cebes.storage.{DataFormats, DataSource, DataWriter}
 
@@ -28,12 +30,21 @@ import io.cebes.storage.{DataFormats, DataSource, DataWriter}
 class JdbcDataSource(val url: String,
                      val tableName: String,
                      val userName: String,
-                     val password: String) extends DataSource {
+                     val password: String,
+                     val driver: Option[String]) extends DataSource {
 
   /**
     * Ignored. Data format doesn't play any role in this data source.
     */
   override val format: DataFormat = DataFormats.UNKNOWN
+
+  def sparkProperties() = {
+    val prop = new Properties()
+    prop.setProperty("user", userName)
+    prop.setProperty("password", password)
+    driver.foreach(prop.setProperty("driver", _))
+    prop
+  }
 
   /**
     * Open a data writer on this source, normally a file

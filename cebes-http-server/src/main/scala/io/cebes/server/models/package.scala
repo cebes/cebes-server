@@ -49,7 +49,8 @@ package object models {
   case class HdfsReadRequest(path: String, uri: Option[String], format: DataFormat)
 
   case class JdbcReadRequest(url: String, tableName: String,
-                             userName: String, passwordBase64: String)
+                             userName: String, passwordBase64: String,
+                             driver: Option[String])
 
   case class HiveReadRequest(tableName: String)
 
@@ -78,7 +79,7 @@ package object models {
   /** **************************************************************************/
 
   // a request was failed for whatever reason
-  case class FailResponse(message: String, stackTrace: String)
+  case class FailResponse(message: Option[String], stackTrace: Option[String])
 
   // Results of synchronous commands will belong to following classes
   case class OkResponse(message: String)
@@ -133,7 +134,7 @@ package object models {
     implicit val localFsReadRequestFormat = jsonFormat2(LocalFsReadRequest)
     implicit val s3ReadRequestFormat = jsonFormat6(S3ReadRequest)
     implicit val hdfsReadRequestFormat = jsonFormat3(HdfsReadRequest)
-    implicit val jdbcReadRequestFormat = jsonFormat4(JdbcReadRequest)
+    implicit val jdbcReadRequestFormat = jsonFormat5(JdbcReadRequest)
     implicit val hiveReadRequestFormat = jsonFormat1(HiveReadRequest)
     implicit val readRequestFormat = jsonFormat5(ReadRequest)
 
