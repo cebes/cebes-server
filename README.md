@@ -14,27 +14,37 @@ Since both `cebes-dataframe-spark` and `cebes-http-server` uses Spark
 with Hive enabled, by default both modules uses Hive with Derby metastore.
 
 When you run `sbt test` at the root project, both modules will use the 
-same Derby metastore, which then cause troubles, the tests won't be 
+same Derby metastore, which then causes troubles, and the tests won't be 
 able to finish.
 
-There are two ways to overcome this (until we figure out a proper solution):
+There are two ways to bypass this (until we figure out a proper solution):
 
-1. Configure cebes to use PostgreSQL for tests. The relevant configurations
+1. Configure cebes to use MySQL for tests. The relevant configurations
 are:
 
-        CEBES_HIVE_METASTORE_URL: jdbc:postgresql://<host>:<port>/<database_name>
-        CEBES_HIVE_METASTORE_DRIVER: org.postgresql.Driver
+        CEBES_HIVE_METASTORE_URL: jdbc:mysql://<host>:<port>/<database_name>
+        CEBES_HIVE_METASTORE_DRIVER: com.mysql.cj.jdbc.Driver
         CEBES_HIVE_METASTORE_USERNAME: Username for the metastore database
         CEBES_HIVE_METASTORE_PASSWORD: Password
     
     You can either export those variables when running tests, or put 
-    corresponding configurations in the `test/resources/application.conf`
+    corresponding configurations in the `test/resources/application.conf` file
     of `cebes-dataframe-spark` and `cebes-http-server`.
     
-    You can also use MySQL for the Hive metastore, but then you will need
-    to put MySQL jar files in the class path, since Cebes only includes
-    PostgreSQL in its jar by default.
+    You can also use Postgres for the Hive metastore, but then you will need
+    to put Postgresql jar files in the class path, since Cebes only includes
+    MySQL in its jar by default.
     
-    See [this](http://www.cloudera.com/documentation/archive/cdh/4-x/4-2-1/CDH4-Installation-Guide/cdh4ig_topic_18_4.html) to know how to use MySQL for Hive metastore.
+2. Run tests independently:
+
+        $ sbt testNoHttpServer
+        $ sbt cebesHttpServer/test
+        
+   where `testNoHttpServer` is a special sbt command which exclude `cebesHttpServer` tests.
+   
+   You can also run everything with the accompanying script:
+   
+        $ bin/test-all.sh
+
     
 
