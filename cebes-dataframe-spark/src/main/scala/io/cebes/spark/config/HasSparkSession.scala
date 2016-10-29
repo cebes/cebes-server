@@ -14,8 +14,11 @@
 
 package io.cebes.spark.config
 
+import java.util.Properties
+
 import com.google.inject.{Inject, Provider, Singleton}
 import io.cebes.prop.{Prop, Property}
+import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.sql.SparkSession
 
 trait HasSparkSession {
@@ -45,14 +48,21 @@ class HasSparkSessionProvider @Inject()
                                       hiveMetastoreUser: String,
                                       hiveMetastorePwd: String) extends HasSparkSession {
 
-  lazy val session = getLocalSession.getOrCreate()
+  lazy val session = localSessionBuilder.getOrCreate()
 
-  def getLocalSession: SparkSession.Builder = {
+  lazy val localSessionBuilder: SparkSession.Builder = {
     val builder = SparkSession.builder()
       .appName("Cebes service on Spark (local)")
       .master("local[4]")
       .config("spark.sql.warehouse.dir",
         s"file:${System.getProperty("java.io.tmpdir", "/tmp")}/spark-warehouse")
+
+    // update log4j configuration if there is some log4j.properties in the classpath
+    Option(getClass.getClassLoader.getResourceAsStream("log4j.properties")).foreach {f =>
+      val props = new Properties()
+      props.load(f)
+      PropertyConfigurator.configure(props)
+    }
 
     if (!hiveMetastoreUser.isEmpty && !hiveMetastoreUrl.isEmpty && !hiveMetastorePwd.isEmpty) {
       builder.config("javax.jdo.option.ConnectionURL", hiveMetastoreUrl)

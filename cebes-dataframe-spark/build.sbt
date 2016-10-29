@@ -5,7 +5,7 @@ scalastyleConfig := baseDirectory.value / "../build/scalastyle-config.xml"
 libraryDependencies ++= Seq(
 
   "com.typesafe.scala-logging" %% "scala-logging-slf4j" % Common.scalaLoggingSlf4jVersion,
-  "ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
+  // "ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
 
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")
