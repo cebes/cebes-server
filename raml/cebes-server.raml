@@ -1,0 +1,19 @@
+#%RAML 1.0
+
+title: cebes-server API
+baseUri: http://api.cebes.io/{version}
+version: v1
+
+/auth:
+  description: Authentication-related endpoints
+  /login:
+    description: Log in a user
+    post:
+      queryParameters:
+        userName: 
+          description: Username of the user to be logged in
+        passwordHash:
+          description: Hash of the user's password
+  /logout:
+    description: Log out a user
+    post:
