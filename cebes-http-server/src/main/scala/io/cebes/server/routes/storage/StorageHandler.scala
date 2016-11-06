@@ -22,31 +22,25 @@ import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.ReadRequest
-import io.cebes.storage.StorageService
+import io.cebes.server.routes.common.HandlerHelpers
 
 import scala.concurrent.ExecutionContext
 
-trait StorageHandler extends SecuredSession {
-
-  val storageService: StorageService
+trait StorageHandler extends SecuredSession with HandlerHelpers {
 
   implicit def actorSystem: ActorSystem
-
   implicit def actorExecutor: ExecutionContext
-
   implicit def actorMaterializer: Materializer
 
   val storageApi = pathPrefix("storage") {
-    (path("read") & post) {
-      myRequiredSession { session =>
+    myRequiredSession { session =>
+      (path("read") & post) {
         entity(as[ReadRequest]) { readRequest =>
-          implicit ctx => ctx.complete(new Read(storageService).run(readRequest))
+          implicit ctx => ctx.complete(instance(classOf[Read]).run(readRequest))
         }
-      }
-    } ~ (path("upload") & put) {
-      myRequiredSession { session =>
+      } ~ (path("upload") & put) {
         entity(as[Multipart.FormData]) { formData =>
-          complete(new Upload().run(formData))
+          implicit ctx => ctx.complete(instance(classOf[Upload]).run(formData))
         }
       }
     }

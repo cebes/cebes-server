@@ -22,14 +22,14 @@ import io.cebes.auth.AuthService
 import io.cebes.server.http.{SecuredSession, SessionData}
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.{OkResponse, UserLogin}
+import io.cebes.server.routes.common.HandlerHelpers
 
 /**
   * Handle all authentication requests
   */
-trait AuthHandler extends SecuredSession {
+trait AuthHandler extends SecuredSession with HandlerHelpers {
 
-  // to be overridden (possibly injected) by the class that pulls in this trait
-  val authService: AuthService
+  val authService: AuthService = instance(classOf[AuthService])
 
   val authApi = pathPrefix("auth") {
     (path("login") & post) {

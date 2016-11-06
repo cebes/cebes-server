@@ -16,17 +16,20 @@ package io.cebes.server.routes.storage
 
 import java.util.Base64
 
+import com.google.inject.Inject
 import io.cebes.df.Dataframe
-import io.cebes.server.common.AsyncExecutor
-import io.cebes.server.models.{DataframeResponse, ReadRequest}
+import io.cebes.server.models._
+import io.cebes.server.routes.common.AsyncExecutor
 import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
-import io.cebes.storage.localfs.LocalFsDataSource
 import io.cebes.storage.StorageService
+import io.cebes.storage.localfs.LocalFsDataSource
 
-class Read(storageService: StorageService)
+class Read @Inject()(storageService: StorageService)
   extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
+
+  //override def requestType: Class[ReadRequest] = classOf[ReadRequest]
 
   /**
     * Implement this to do the real work

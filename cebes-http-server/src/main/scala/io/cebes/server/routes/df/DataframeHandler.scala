@@ -23,8 +23,6 @@ import io.cebes.server.http.SecuredSession
   */
 trait DataframeHandler extends SecuredSession {
 
-  val dfService: DataframeService
-
   val dataframeApi = pathPrefix("df") {
     path("tmp") {
       post {

@@ -23,8 +23,11 @@ import io.cebes.server.routes.storage.StorageHandler
 
 trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler
   with StorageHandler with ResultHandler {
+
+  val API_VERSION = "v1"
+
   val routes =
-    pathPrefix("v1") {
+    pathPrefix(API_VERSION) {
       authApi ~
       dataframeApi ~
       storageApi ~
