@@ -19,10 +19,10 @@ import java.util.UUID
 import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.VariableTypes.VariableType
-import io.cebes.df.schema.{Schema, StorageTypes, VariableTypes}
+import io.cebes.df.schema.{Column, Schema, StorageTypes, VariableTypes}
 import io.cebes.spark.df.schema.SparkSchemaUtils
+import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.DataTypes
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -33,8 +33,17 @@ class SparkDataframe(val sparkDf: DataFrame,
                      override val schema: Schema,
                      override val id: UUID) extends Dataframe {
 
+  if (sparkDf.columns.length != schema.numCols) {
+    throw new IllegalArgumentException(s"Invalid schema: schema has ${schema.numCols} columns," +
+      s"while the data frame seems to has ${sparkDf.columns.length} columns")
+  }
+
   def this(sparkDf: DataFrame) = {
     this(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
+  }
+
+  def this(sparkDf: DataFrame, newSchema: Schema) = {
+    this(sparkDf, newSchema, UUID.randomUUID())
   }
 
   /**
@@ -52,7 +61,7 @@ class SparkDataframe(val sparkDf: DataFrame,
     */
   override def inferVariableTypes(): Dataframe = {
     val sample = take(1000)
-    schema.columns.zip(sample.columns).foreach { case (c, data) =>
+    schema.columns.zip(sample.data).foreach { case (c, data) =>
       c.setVariableType(SparkDataframe.inferVariableType(c.storageType, data))
     }
     this
@@ -127,6 +136,145 @@ class SparkDataframe(val sparkDf: DataFrame,
   override def createTempView(name: String) = {
     sparkDf.createTempView(name)
   }
+
+
+  /**
+    * Returns a new Dataframe sorted by the given expressions. This is an alias for `orderedBy`
+    *
+    * @group data-exploration
+    */
+  override def sort(sortExprs: Column*): Dataframe = ???
+
+  /**
+    * Returns a new Dataframe with columns dropped.
+    * This is a no-op if schema doesn't contain column name(s).
+    *
+    * The colName string is treated literally without further interpretation.
+    *
+    * @group data-exploration
+    */
+  def drop(colNames: Seq[String]): Dataframe = {
+    val droppedColNames = colNames.filter(schema.contains)
+    if (droppedColNames.isEmpty) {
+      this
+    } else {
+      new SparkDataframe(sparkDf.drop(droppedColNames: _*),
+        schema.drop(droppedColNames))
+    }
+  }
+
+  /**
+    * Returns a new Dataframe that contains only the unique rows from this Dataframe.
+    * This is an alias for [[distinct()]].
+    *
+    * Note that, equality checking is performed directly on the encoded representation of the data
+    * and thus is not affected by a custom `equals` function.
+    *
+    * @group data-exploration
+    */
+  override def dropDuplicates(colNames: Seq[String]): Dataframe = {
+    new SparkDataframe(sparkDf.dropDuplicates(colNames), schema.copy())
+  }
+
+  /**
+    * SQL-like APIs
+    */
+
+
+  /**
+    * Selects a set of columns based on expressions.
+    *
+    * @group sql-api
+    */
+  override def select(columns: Column*): Dataframe = ???
+
+  /**
+    * Filters rows using the given condition.
+    *
+    * @group sql-api
+    */
+  override def where(column: Column): Dataframe = ???
+
+  /**
+    * Returns a new Dataframe sorted by the given expressions. This is an alias for `sort`.
+    *
+    * @group sql-api
+    */
+  override def orderBy(sortExprs: Column*): Dataframe = ???
+
+  /**
+    * Selects column based on the column name and return it as a [[Column]].
+    *
+    * @group sql-api
+    */
+  override def col(colName: String): Column = ???
+
+  /**
+    * Returns a new Dataframe with an alias set.
+    *
+    * @group sql-api
+    */
+  override def alias(alias: String): Dataframe = {
+    new SparkDataframe(sparkDf.alias(alias), schema.copy())
+  }
+
+  /**
+    * Join with another [[Dataframe]], using the given join expression.
+    *
+    * {{{
+    *   // Scala:
+    *   df1.join(df2, df1.col("df1Key") === df2.col("df2Key"), "outer")
+    * }}}
+    *
+    * @param right     Right side of the join.
+    * @param joinExprs Join expression.
+    * @param joinType  One of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`.
+    * @group sql-api
+    */
+  override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = ???
+
+  /**
+    * Returns a new [[Dataframe]] by taking the first `n` rows.
+    *
+    * @group sql-api
+    */
+  override def limit(n: Int): Dataframe = {
+    new SparkDataframe(sparkDf.limit(n), schema.copy())
+  }
+
+  /**
+    * Returns a new Dataframe containing union of rows in this Dataframe and another Dataframe.
+    *
+    * To do a SQL-style set union (that does deduplication of elements), use this function followed
+    * by a [[distinct]].
+    *
+    * @group sql-api
+    */
+  override def union(other: Dataframe): Dataframe = {
+    val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
+    new SparkDataframe(sparkDf.union(otherDf), schema.copy())
+  }
+
+  /**
+    * Returns a new Dataframe containing rows only in both this Dataframe and another Dataframe.
+    *
+    * Note that, equality checking is performed directly on the encoded representation of the data
+    * and thus is not affected by a custom `equals` function.
+    *
+    * @group sql-api
+    */
+  override def intersect(other: Dataframe): Dataframe = ???
+
+  /**
+    * Returns a new Dataframe containing rows in this Dataframe but not in another Dataframe.
+    * This is equivalent to `EXCEPT` in SQL.
+    *
+    * Note that, equality checking is performed directly on the encoded representation of the data
+    * and thus is not affected by a custom `equals` function.
+    *
+    * @group sql-api
+    */
+  override def except(other: Dataframe): Dataframe = ???
 
   /**
     * Apply a new schema to this data frame

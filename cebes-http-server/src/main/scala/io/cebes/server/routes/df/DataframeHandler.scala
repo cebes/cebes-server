@@ -15,7 +15,6 @@
 package io.cebes.server.routes.df
 
 import akka.http.scaladsl.server.Directives._
-import io.cebes.df.DataframeService
 import io.cebes.server.http.SecuredSession
 
 /**

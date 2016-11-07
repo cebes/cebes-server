@@ -51,4 +51,10 @@ class Column(val name: String, val storageType: StorageTypes.StorageType,
     variableType = newType
   }
 
+  /**
+    * Check if this column has the name given by `anotherName`
+    * Use this function instead of comparing the `name` directly.
+    */
+  def compareName(anotherName: String): Boolean = name.equalsIgnoreCase(anotherName)
+
 }

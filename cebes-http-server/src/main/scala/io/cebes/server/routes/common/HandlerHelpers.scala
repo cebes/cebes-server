@@ -14,12 +14,9 @@
 
 package io.cebes.server.routes.common
 
-import io.cebes.server.inject.InjectorService
-
 /**
   * Some helpers for the handlers
   */
 trait HandlerHelpers {
 
-  def instance[T](t: Class[T]): T = InjectorService.injector.getInstance(t)
 }

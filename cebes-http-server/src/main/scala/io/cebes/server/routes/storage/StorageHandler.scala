@@ -20,27 +20,29 @@ import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
+import io.cebes.server.inject.InjectorService
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.ReadRequest
-import io.cebes.server.routes.common.HandlerHelpers
 
 import scala.concurrent.ExecutionContext
 
-trait StorageHandler extends SecuredSession with HandlerHelpers {
+trait StorageHandler extends SecuredSession {
 
   implicit def actorSystem: ActorSystem
+
   implicit def actorExecutor: ExecutionContext
+
   implicit def actorMaterializer: Materializer
 
   val storageApi = pathPrefix("storage") {
     myRequiredSession { session =>
       (path("read") & post) {
         entity(as[ReadRequest]) { readRequest =>
-          implicit ctx => ctx.complete(instance(classOf[Read]).run(readRequest))
+          implicit ctx => ctx.complete(InjectorService.instance(classOf[Read]).run(readRequest))
         }
       } ~ (path("upload") & put) {
         entity(as[Multipart.FormData]) { formData =>
-          implicit ctx => ctx.complete(instance(classOf[Upload]).run(formData))
+          implicit ctx => ctx.complete(InjectorService.instance(classOf[Upload]).run(formData))
         }
       }
     }

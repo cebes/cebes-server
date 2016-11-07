@@ -47,7 +47,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
 
     val sample = df.take(10)
     assert(sample.numCols === 13)
-    sample.columns.foreach { c =>
+    sample.data.foreach { c =>
       assert(c.length === 10)
       assert(!c.forall(_ === null))
     }
@@ -82,5 +82,52 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df3.id === df.id)
     assert(df.schema.getColumn("customer").getVariableType === VariableTypes.ORDINAL)
     assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.DISCRETE)
+  }
+
+  test("drop columns") {
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df2 = df.drop(Seq("random_columns"))
+    assert(df2.id === df.id)
+
+    val df3 = df.drop(Seq("customer", "job_number"))
+    assert(df3.numCols === df.numCols - 2)
+    assert(df3.numRows === df.numRows)
+  }
+
+  test("dropDuplicates") {
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName").limit(30)
+    val df2 = df.dropDuplicates(df.columns)
+    assert(df.id !== df2.id)
+    assert(df.numRows === df2.numRows)
+
+    val df3 = df2.union(df2)
+    assert(df3.numRows === 2 * df2.numRows)
+    assert(df3.numCols === df2.numCols)
+
+    val df4 = df3.dropDuplicates(df3.columns)
+    assert(df4.numCols === df3.numCols)
+    assert(df4.numRows === df2.numRows)
+  }
+
+  test("union") {
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName").limit(20)
+
+    val df2 = df.union(df)
+    assert(df2.numRows === 2 * df.numRows)
+    assert(df2.numCols === df.numCols)
+
+    val df3 = df.drop(Seq("customer", "job_number"))
+    assert(df3.numCols === df.numCols - 2)
+
+    //val df4 = df.union(df3)
+  }
+
+  test("limit") {
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df2 = df.limit(20)
+    assert(df2.columns === df.columns)
+    assert(df2.numRows === 20)
+
+    //val df3 = df.limit(-1)
   }
 }

@@ -27,4 +27,9 @@ trait HasSchema {
     * @return a long
     */
   def numCols: Long = schema.numCols
+
+  /**
+    * Returns all column names as an array.
+    */
+  def columns: Seq[String] = schema.columnNames
 }

@@ -24,4 +24,13 @@ object InjectorService {
     new PropertyModule(false),
     new CebesHttpDependencyModule,
     new CebesSparkDependencyModule)
+
+  /**
+    * Short-hand for getting an instance from the DI framework
+    *
+    * @param t normally classOf[T]
+    * @tparam T type of the class to obtain an instance
+    * @return instance of type T
+    */
+  def instance[T](t: Class[T]): T = injector.getInstance(t)
 }
