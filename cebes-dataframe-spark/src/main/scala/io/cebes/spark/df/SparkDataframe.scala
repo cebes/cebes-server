@@ -16,6 +16,7 @@ package io.cebes.spark.df
 
 import java.util.UUID
 
+import io.cebes.common.ArgumentChecks
 import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.VariableTypes.VariableType
@@ -31,12 +32,11 @@ import org.apache.spark.sql.DataFrame
   */
 class SparkDataframe(val sparkDf: DataFrame,
                      override val schema: Schema,
-                     override val id: UUID) extends Dataframe {
+                     override val id: UUID) extends Dataframe with ArgumentChecks {
 
-  if (sparkDf.columns.length != schema.numCols) {
-    throw new IllegalArgumentException(s"Invalid schema: schema has ${schema.numCols} columns," +
+  checkArguments(sparkDf.columns.length == schema.numCols,
+    s"Invalid schema: schema has ${schema.numCols} columns," +
       s"while the data frame seems to has ${sparkDf.columns.length} columns")
-  }
 
   def this(sparkDf: DataFrame) = {
     this(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
@@ -165,7 +165,6 @@ class SparkDataframe(val sparkDf: DataFrame,
 
   /**
     * Returns a new Dataframe that contains only the unique rows from this Dataframe.
-    * This is an alias for [[distinct()]].
     *
     * Note that, equality checking is performed directly on the encoded representation of the data
     * and thus is not affected by a custom `equals` function.
@@ -207,7 +206,13 @@ class SparkDataframe(val sparkDf: DataFrame,
     *
     * @group sql-api
     */
-  override def col(colName: String): Column = ???
+  override def col(colName: String): Column = colName match {
+    case "*" =>
+      throw new NotImplementedError("")
+    case _ =>
+      checkArguments(schema.contains(colName), s"Column name not found: $colName")
+      schema.getColumn(colName)
+  }
 
   /**
     * Returns a new Dataframe with an alias set.
@@ -239,6 +244,7 @@ class SparkDataframe(val sparkDf: DataFrame,
     * @group sql-api
     */
   override def limit(n: Int): Dataframe = {
+    checkArguments(n >= 0, s"The limit must be equal to or greater than 0, but got $n")
     new SparkDataframe(sparkDf.limit(n), schema.copy())
   }
 
@@ -251,6 +257,9 @@ class SparkDataframe(val sparkDf: DataFrame,
     * @group sql-api
     */
   override def union(other: Dataframe): Dataframe = {
+    checkArguments(other.numCols == numCols,
+      s"Unions only work for tables with the same number of columns, " +
+        s"but got ${this.numCols} and ${other.numCols} columns respectively")
     val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
     new SparkDataframe(sparkDf.union(otherDf), schema.copy())
   }
@@ -263,7 +272,13 @@ class SparkDataframe(val sparkDf: DataFrame,
     *
     * @group sql-api
     */
-  override def intersect(other: Dataframe): Dataframe = ???
+  override def intersect(other: Dataframe): Dataframe = {
+    checkArguments(other.numCols == numCols,
+      s"Intersects only work for tables with the same number of columns, " +
+        s"but got ${this.numCols} and ${other.numCols} columns respectively")
+    val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
+    new SparkDataframe(sparkDf.intersect(otherDf), schema.copy())
+  }
 
   /**
     * Returns a new Dataframe containing rows in this Dataframe but not in another Dataframe.
@@ -274,7 +289,13 @@ class SparkDataframe(val sparkDf: DataFrame,
     *
     * @group sql-api
     */
-  override def except(other: Dataframe): Dataframe = ???
+  override def except(other: Dataframe): Dataframe = {
+    checkArguments(other.numCols == numCols,
+      s"Excepts only work for tables with the same number of columns, " +
+        s"but got ${this.numCols} and ${other.numCols} columns respectively")
+    val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
+    new SparkDataframe(sparkDf.except(otherDf), schema.copy())
+  }
 
   /**
     * Apply a new schema to this data frame
@@ -283,10 +304,10 @@ class SparkDataframe(val sparkDf: DataFrame,
     * @return a new dataframe with the new Schema
     */
   override def applySchema(newSchema: Schema): Dataframe = {
-    if (schema.numCols != newSchema.numCols) {
-      throw new IllegalArgumentException(s"Incompatible schema: current schema has ${schema.numCols} columns," +
+    checkArguments(schema.numCols == newSchema.numCols,
+      s"Incompatible schema: current schema has ${schema.numCols} columns," +
         s" but the new schema has ${newSchema.numCols} columns")
-    }
+
     val sparkCols = schema.columns.zip(newSchema.columns).map { case (currentCol, newCol) =>
       sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
     }
