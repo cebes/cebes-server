@@ -15,24 +15,24 @@
 package io.cebes.server.routes.storage
 
 import akka.http.scaladsl.model.Multipart.FormData
-import akka.stream.Materializer
+import akka.http.scaladsl.server.RequestContext
 import akka.util.ByteString
-import io.cebes.server.inject.InjectorService
+import com.google.inject.Inject
 import io.cebes.server.models.UploadResponse
+import io.cebes.server.routes.common.SyncExecutor
 import io.cebes.storage.DataWriter
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Upload {
-
-  val dataWriter = InjectorService.injector.getInstance(classOf[DataWriter])
+class Upload @Inject()(dataWriter: DataWriter) extends SyncExecutor[FormData, Future[UploadResponse]] {
 
   /**
     * Implement this to do the real work
     */
   def run(requestEntity: FormData)
          (implicit ec: ExecutionContext,
-          materializer: Materializer): Future[UploadResponse] = {
+          ctx: RequestContext): Future[UploadResponse] = {
+    import ctx.materializer
 
     val v = requestEntity.parts.mapAsync(1) { bodyPart =>
       def writeFile(array: Array[Byte], byteString: ByteString): Array[Byte] = {

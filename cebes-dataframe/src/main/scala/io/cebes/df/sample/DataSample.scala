@@ -16,6 +16,6 @@ package io.cebes.df.sample
 
 import io.cebes.df.schema.{HasSchema, Schema}
 
-class DataSample(override val schema: Schema, val columns: Seq[Seq[Any]]) extends HasSchema {
+class DataSample(override val schema: Schema, val data: Seq[Seq[Any]]) extends HasSchema {
 
 }

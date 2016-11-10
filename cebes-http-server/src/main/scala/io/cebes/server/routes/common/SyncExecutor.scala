@@ -9,27 +9,27 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 05/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.server.routes.common
+
+import akka.http.scaladsl.server.RequestContext
+
+import scala.concurrent.ExecutionContext
 
 /**
-  * Trait with everything related to Dataframe's schema
+  * Trait designed for executors that need to be run synchronously
+  *
+  * @tparam E type of the request entity
+  * @tparam R type of the result
   */
-trait HasSchema {
-
-  def schema: Schema
+trait SyncExecutor[E, R] {
 
   /**
-    * Number of columns
-    *
-    * @return a long
+    * Implement this to do the real work
     */
-  def numCols: Long = schema.numCols
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.columnNames
+  def run(requestEntity: E)
+         (implicit ec: ExecutionContext,
+          ctx: RequestContext): R
 }

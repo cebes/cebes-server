@@ -17,20 +17,19 @@ package io.cebes.server.routes.result
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import io.cebes.server.http.SecuredSession
+import io.cebes.server.inject.InjectorService
 import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.result.ResultStorage
+
+import scala.concurrent.ExecutionContext
 
 trait ResultHandler extends SecuredSession {
 
-  val resultStorage: ResultStorage
+  implicit def actorExecutor: ExecutionContext
 
   val resultApi = pathPrefix("request") {
     (path(JavaUUID) & post) { requestId =>
       myRequiredSession { session =>
-        resultStorage.get(requestId) match {
-          case Some(result) => complete(result)
-          case None => throw new NoSuchElementException(s"Request ID not found: ${requestId.toString}")
-        }
+        implicit ctx => ctx.complete(InjectorService.instance(classOf[Result]).run(requestId))
       }
     }
   }

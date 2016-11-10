@@ -20,6 +20,7 @@ import com.softwaremill.session.CsrfDirectives._
 import com.softwaremill.session.CsrfOptions._
 import io.cebes.auth.AuthService
 import io.cebes.server.http.{SecuredSession, SessionData}
+import io.cebes.server.inject.InjectorService
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.{OkResponse, UserLogin}
 
@@ -28,8 +29,7 @@ import io.cebes.server.models.{OkResponse, UserLogin}
   */
 trait AuthHandler extends SecuredSession {
 
-  // to be overridden (possibly injected) by the class that pulls in this trait
-  val authService: AuthService
+  val authService: AuthService = InjectorService.instance(classOf[AuthService])
 
   val authApi = pathPrefix("auth") {
     (path("login") & post) {

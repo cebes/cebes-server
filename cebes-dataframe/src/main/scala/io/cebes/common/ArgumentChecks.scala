@@ -9,27 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 08/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.common
 
-/**
-  * Trait with everything related to Dataframe's schema
-  */
-trait HasSchema {
+trait ArgumentChecks {
 
-  def schema: Schema
-
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.numCols
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.columnNames
+  @inline def checkArguments(condition: Boolean, errorMsg: String) = {
+    if (!condition) {
+      throw new IllegalArgumentException(errorMsg)
+    }
+  }
 }

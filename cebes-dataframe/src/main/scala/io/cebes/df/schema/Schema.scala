@@ -19,10 +19,13 @@ class Schema(val columns: Seq[Column]) {
 
   /**
     * Number of columns
-    *
-    * @return a Long
     */
   def numCols: Long = columns.length
+
+  /**
+    * Names of all the columns as a sequence of Strings
+    */
+  def columnNames: Seq[String] = columns.map(_.name)
 
   /**
     * Get the column as an Option[Column]
@@ -31,7 +34,7 @@ class Schema(val columns: Seq[Column]) {
     * @return Option[Column]
     */
   def getColumnOptional(name: String): Option[Column] = {
-    columns.find(_.name.equalsIgnoreCase(name))
+    columns.find(_.compareName(name))
   }
 
   /**
@@ -48,10 +51,41 @@ class Schema(val columns: Seq[Column]) {
     col.get
   }
 
-  override def toString: String = columns.map(c => s"${c.name} ${c.storageType.toString}").mkString(", ")
+  /**
+    * Returns a new Schema with columns dropped.
+    * This is a no-op if schema doesn't contain column name(s).
+    *
+    * The colName string is treated literally without further interpretation.
+    */
+  def drop(colNames: Seq[String]): Schema = {
+    val droppedColNames = colNames.filter(this.contains)
+    if (droppedColNames.isEmpty) {
+      this
+    } else {
+      new Schema(columns.filterNot { c =>
+        droppedColNames.exists(c.compareName)
+      }.map(_.copy()))
+    }
+  }
 
+  /**
+    * Utilities
+    */
+
+  /**
+    * Whether this schema has a column with the given name
+    * Column names are compared using [[Column.compareName()]]
+    */
+  def contains(colName: String): Boolean = {
+    columns.exists(_.compareName(colName))
+  }
+
+  /**
+    * Clone this Schema object, by cloning all the columns
+    */
   def copy(): Schema = new Schema(columns.map(_.copy()))
 
+  override def toString: String = columns.map(c => s"${c.name} ${c.storageType.toString}").mkString(", ")
 }
 
 object Schema {

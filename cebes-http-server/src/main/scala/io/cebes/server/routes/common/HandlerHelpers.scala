@@ -9,27 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 05/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.server.routes.common
 
 /**
-  * Trait with everything related to Dataframe's schema
+  * Some helpers for the handlers
   */
-trait HasSchema {
+trait HandlerHelpers {
 
-  def schema: Schema
-
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.numCols
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.columnNames
 }

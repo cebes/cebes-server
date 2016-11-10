@@ -12,7 +12,7 @@
  * Created by phvu on 17/09/16.
  */
 
-package io.cebes.server.common
+package io.cebes.server.routes.common
 
 import java.io.{PrintWriter, StringWriter}
 
@@ -32,20 +32,14 @@ import scala.util.{Failure, Success}
   * - Hook onComplete to the Future, and store the results
   * - Returns a FutureResult, basically contains the request ID
   *
+  * Classes that extend this trait need to implement at least
+  * runImp() and transformResult()
+  *
   * @tparam E Type of the request entity
   * @tparam T Type of the actual result
   * @tparam R Type of the result will be returned to client
   */
 trait AsyncExecutor[E, T, R] {
-
-  def runImplWrapped(request: Request[E], resultActor: ActorRef)
-                    (implicit ec: ExecutionContext,
-                     jfE: JsonFormat[E],
-                     jfR: JsonFormat[R],
-                     jfResult: JsonFormat[Result[E, R]]): Future[T] = Future {
-    resultActor ! SerializableResult(request.requestId, RequestStatus.STARTED, None)
-    runImpl(request.entity)
-  }
 
   /**
     * Implement this to do the real work
@@ -99,4 +93,12 @@ trait AsyncExecutor[E, T, R] {
     FutureResult(requestObj.requestId)
   }
 
+  def runImplWrapped(request: Request[E], resultActor: ActorRef)
+                    (implicit ec: ExecutionContext,
+                     jfE: JsonFormat[E],
+                     jfR: JsonFormat[R],
+                     jfResult: JsonFormat[Result[E, R]]): Future[T] = Future {
+    resultActor ! SerializableResult(request.requestId, RequestStatus.STARTED, None)
+    runImpl(request.entity)
+  }
 }

@@ -15,15 +15,12 @@
 package io.cebes.server.routes.df
 
 import akka.http.scaladsl.server.Directives._
-import io.cebes.df.DataframeService
 import io.cebes.server.http.SecuredSession
 
 /**
   * Handle all requests related to dataframe
   */
 trait DataframeHandler extends SecuredSession {
-
-  val dfService: DataframeService
 
   val dataframeApi = pathPrefix("df") {
     path("tmp") {
