@@ -1,5 +1,5 @@
 # cebes-server
-[![Build Status](http://ec2-52-52-145-236.us-west-1.compute.amazonaws.com:8080/buildStatus/icon?job=cebes-server-pull-request)](http://ec2-52-53-151-47.us-west-1.compute.amazonaws.com:8080/job/cebes-server-pull-request)
+[![Build Status](http://ec2-52-52-145-236.us-west-1.compute.amazonaws.com:8080/buildStatus/icon?job=cebes-server-pull-request)](http://ec2-52-52-145-236.us-west-1.compute.amazonaws.com:8080/job/cebes-server-pull-request)
 
 Cebes - The Data Scientist's toolbox for Big Data
 
