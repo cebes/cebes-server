@@ -26,8 +26,6 @@ trait Dataframe extends HasSchema with HasId {
 
   /**
     * Number of rows
-    *
-    * @return a long
     */
   def numRows: Long
 
