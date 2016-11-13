@@ -14,7 +14,7 @@
 
 package io.cebes.spark.df
 
-import io.cebes.df.schema.{StorageTypes, VariableTypes}
+import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
@@ -69,7 +69,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
 
   test("Dataframe variable types") {
     val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
-    assert(df.schema.getColumn("customer").storageType === StorageTypes.STRING)
+    assert(df.schema.getColumn("customer").storageType === StorageTypes.StringType)
     assert(df.schema.getColumn("customer").getVariableType === VariableTypes.TEXT)
 
     val df2 = df.inferVariableTypes()

@@ -16,7 +16,7 @@ package io.cebes.df
 
 import io.cebes.common.HasId
 import io.cebes.df.sample.DataSample
-import io.cebes.df.schema.VariableTypes.VariableType
+import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.schema.{Column, HasSchema, Schema}
 
 /**

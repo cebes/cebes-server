@@ -14,6 +14,9 @@
 
 package io.cebes.df.schema
 
+import io.cebes.df.types.VariableTypes
+import io.cebes.df.types.storage.StorageType
+
 /**
   * Represent a column of a [[io.cebes.df.Dataframe]]
   *
@@ -23,7 +26,7 @@ package io.cebes.df.schema
   *                     on the columns, so changing the variable types (with [[setVariableType()]])
   *                     does not generate new [[io.cebes.df.Dataframe]] object.
   */
-class Column(val name: String, val storageType: StorageTypes.StorageType,
+class Column(val name: String, val storageType: StorageType,
              @volatile private var variableType: VariableTypes.VariableType) {
 
   /**
@@ -33,7 +36,7 @@ class Column(val name: String, val storageType: StorageTypes.StorageType,
     * @param name        name of the column
     * @param storageType storage type of the column
     */
-  def this(name: String, storageType: StorageTypes.StorageType) = {
+  def this(name: String, storageType: StorageType) = {
     this(name, storageType, VariableTypes.fromStorageType(storageType))
   }
 

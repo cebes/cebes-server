@@ -14,6 +14,8 @@
 
 package io.cebes.df.schema
 
+import io.cebes.df.types
+
 
 class Schema(val columns: Seq[Column]) {
 
@@ -93,7 +95,7 @@ object Schema {
   def fromString(schemaStr: String): Schema = {
     val cols = schemaStr.split(",").map { col =>
       col.stripPrefix(" ").stripSuffix(" ").split(" ").filter(_.length > 0) match {
-        case Array(colName, colType) => new Column(colName, StorageTypes.fromString(colType))
+        case Array(colName, colType) => new Column(colName, types.StorageTypes.fromString(colType))
         case t => throw new IllegalArgumentException(s"Unrecognized column specification: ${t.toString}")
       }
     }

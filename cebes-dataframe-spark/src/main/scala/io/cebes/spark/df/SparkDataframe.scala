@@ -19,8 +19,10 @@ import java.util.UUID
 import io.cebes.common.ArgumentChecks
 import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
-import io.cebes.df.schema.VariableTypes.VariableType
-import io.cebes.df.schema.{Column, Schema, StorageTypes, VariableTypes}
+import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.schema.{Column, Schema}
+import io.cebes.df.types.{StorageTypes, VariableTypes}
+import io.cebes.df.types.storage.StorageType
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.DataFrame
@@ -85,13 +87,7 @@ class SparkDataframe(val sparkDf: DataFrame,
   def take(n: Int = 1): DataSample = {
     val rows = sparkDf.take(n)
     val cols = schema.columns.zipWithIndex.map {
-      case (c, idx) =>
-        rows.map { r =>
-          if (!StorageTypes.values.contains(c.storageType)) {
-            throw new IllegalArgumentException(s"Unrecognized storage type: ${c.storageType}")
-          }
-          r.get(idx)
-        }.toSeq
+      case (c, idx) => rows.map(_.get(idx)).toSeq
     }
     new DataSample(schema.copy(), cols)
   }
@@ -190,30 +186,30 @@ object SparkDataframe {
 
   private val UNIQUE_RATIO = 0.6
 
-  def inferVariableType(storageType: StorageTypes.StorageType, sample: Seq[Any]): VariableType = {
+  def inferVariableType(storageType: StorageType, sample: Seq[Any]): VariableType = {
     storageType match {
-      case StorageTypes.BINARY | StorageTypes.VECTOR =>
+      case StorageTypes.BinaryType | StorageTypes.VectorType =>
         VariableTypes.fromStorageType(storageType)
-      case StorageTypes.DATE | StorageTypes.TIMESTAMP =>
+      case StorageTypes.DateType | StorageTypes.TimestampType | StorageTypes.CalendarIntervalType =>
         VariableTypes.fromStorageType(storageType)
-      case StorageTypes.BOOLEAN =>
+      case StorageTypes.BooleanType =>
         VariableTypes.fromStorageType(storageType)
-      case StorageTypes.BYTE | StorageTypes.SHORT |
-           StorageTypes.INT | StorageTypes.LONG =>
+      case StorageTypes.ByteType | StorageTypes.ShortType |
+           StorageTypes.IntegerType | StorageTypes.LongType =>
         val ratio = sample.distinct.length.toFloat / sample.length
         if (ratio > UNIQUE_RATIO) {
           VariableTypes.DISCRETE
         } else {
           VariableTypes.ORDINAL
         }
-      case StorageTypes.FLOAT | StorageTypes.DOUBLE =>
+      case StorageTypes.FloatType | StorageTypes.DoubleType =>
         val ratio = sample.distinct.length.toFloat / sample.length
         if (ratio > UNIQUE_RATIO) {
           VariableTypes.CONTINUOUS
         } else {
           VariableTypes.ORDINAL
         }
-      case StorageTypes.STRING =>
+      case StorageTypes.StringType =>
         val ratio = sample.distinct.length.toFloat / sample.length
         if (ratio > UNIQUE_RATIO) {
           VariableTypes.TEXT

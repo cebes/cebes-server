@@ -12,48 +12,50 @@
  * Created by phvu on 06/10/16.
  */
 
-package io.cebes.df.schema
+package io.cebes.df.types
+
+import io.cebes.df.types.storage.StorageType
 
 object VariableTypes {
 
   sealed abstract class VariableType(val name: String, val isNumeric: Boolean,
                                      val isCategorical: Boolean,
-                                     val validStorageTypes: Seq[StorageTypes.StorageType]) {
+                                     val validStorageTypes: Seq[StorageType]) {
     override def toString: String = name
   }
 
   case object DISCRETE extends VariableType("Discrete", true, false,
-    Seq(StorageTypes.BYTE, StorageTypes.SHORT, StorageTypes.INT, StorageTypes.LONG))
+    Seq(StorageTypes.ByteType, StorageTypes.ShortType, StorageTypes.IntegerType, StorageTypes.LongType))
 
   case object CONTINUOUS extends VariableType("Continuous", true, false,
-    Seq(StorageTypes.FLOAT, StorageTypes.DOUBLE))
+    Seq(StorageTypes.FloatType, StorageTypes.DoubleType))
 
   /**
     * Categorical variable without rank
     */
   case object NOMINAL extends VariableType("Nominal", false, true,
-    Seq(StorageTypes.STRING, StorageTypes.BOOLEAN,
-      StorageTypes.BYTE, StorageTypes.SHORT, StorageTypes.INT, StorageTypes.LONG,
-      StorageTypes.FLOAT, StorageTypes.DOUBLE,
-      StorageTypes.DATE, StorageTypes.TIMESTAMP))
+    Seq(StorageTypes.StringType, StorageTypes.BooleanType,
+      StorageTypes.ByteType, StorageTypes.ShortType, StorageTypes.IntegerType, StorageTypes.LongType,
+      StorageTypes.FloatType, StorageTypes.DoubleType,
+      StorageTypes.DateType, StorageTypes.TimestampType))
 
   /**
     * Categorical variable with a rank, an order
     */
   case object ORDINAL extends VariableType("Ordinal", false, true,
-    Seq(StorageTypes.STRING, StorageTypes.BOOLEAN,
-      StorageTypes.BYTE, StorageTypes.SHORT, StorageTypes.INT, StorageTypes.LONG,
-      StorageTypes.FLOAT, StorageTypes.DOUBLE,
-      StorageTypes.DATE, StorageTypes.TIMESTAMP))
+    Seq(StorageTypes.StringType, StorageTypes.BooleanType,
+      StorageTypes.ByteType, StorageTypes.ShortType, StorageTypes.IntegerType, StorageTypes.LongType,
+      StorageTypes.FloatType, StorageTypes.DoubleType,
+      StorageTypes.DateType, StorageTypes.TimestampType))
 
   case object TEXT extends VariableType("Text", false, false,
-    Seq(StorageTypes.STRING))
+    Seq(StorageTypes.StringType))
 
   case object DATETIME extends VariableType("DateTime", false, false,
-    Seq(StorageTypes.DATE, StorageTypes.TIMESTAMP))
+    Seq(StorageTypes.DateType, StorageTypes.TimestampType))
 
   case object ARRAY extends VariableType("Array", false, false,
-    Seq(StorageTypes.VECTOR, StorageTypes.BINARY))
+    Seq(StorageTypes.VectorType, StorageTypes.BinaryType))
 
   val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY)
 
@@ -68,19 +70,19 @@ object VariableTypes {
     * @param storageType storage type
     * @return variable types
     */
-  def fromStorageType(storageType: StorageTypes.StorageType): VariableType = {
+  def fromStorageType(storageType: StorageType): VariableType = {
     storageType match {
-      case StorageTypes.BINARY | StorageTypes.VECTOR =>
+      case StorageTypes.BinaryType | StorageTypes.VectorType =>
         VariableTypes.ARRAY
-      case StorageTypes.TIMESTAMP | StorageTypes.DATE  =>
+      case StorageTypes.TimestampType | StorageTypes.DateType  =>
         VariableTypes.DATETIME
-      case StorageTypes.BOOLEAN => VariableTypes.NOMINAL
-      case StorageTypes.BYTE | StorageTypes.SHORT |
-           StorageTypes.INT | StorageTypes.LONG =>
+      case StorageTypes.BooleanType => VariableTypes.NOMINAL
+      case StorageTypes.ByteType | StorageTypes.ShortType |
+           StorageTypes.IntegerType | StorageTypes.LongType =>
         VariableTypes.DISCRETE
-      case StorageTypes.FLOAT | StorageTypes.DOUBLE =>
+      case StorageTypes.FloatType | StorageTypes.DoubleType =>
         VariableTypes.CONTINUOUS
-      case StorageTypes.STRING => VariableTypes.TEXT
+      case StorageTypes.StringType => VariableTypes.TEXT
     }
   }
 }

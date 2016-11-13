@@ -14,7 +14,9 @@
 
 package io.cebes.spark.df.schema
 
-import io.cebes.df.schema.{Column, Schema, StorageTypes}
+import io.cebes.df.types.StorageTypes
+import io.cebes.df.schema.{Column, Schema}
+import io.cebes.df.types.storage.StorageType
 import org.apache.spark.sql.{DataFrame, types}
 
 object SparkSchemaUtils {
@@ -35,19 +37,21 @@ object SparkSchemaUtils {
     * @param dt spark data type
     * @return cebes column type
     */
-  def sparkTypesToCebes(dt: types.DataType): StorageTypes.StorageType = dt match {
-    case types.StringType => StorageTypes.STRING
-    case types.BooleanType => StorageTypes.BOOLEAN
-    case types.ByteType => StorageTypes.BYTE
-    case types.ShortType => StorageTypes.SHORT
-    case types.IntegerType => StorageTypes.INT
-    case types.LongType => StorageTypes.LONG
-    case types.FloatType => StorageTypes.FLOAT
-    case types.DoubleType => StorageTypes.DOUBLE
-    case types.ArrayType(types.DoubleType, true) => StorageTypes.VECTOR
-    case types.BinaryType => StorageTypes.BINARY
-    case types.DateType => StorageTypes.DATE
-    case types.TimestampType => StorageTypes.TIMESTAMP
+  def sparkTypesToCebes(dt: types.DataType): StorageType = dt match {
+    case types.StringType => StorageTypes.StringType
+    case types.BooleanType => StorageTypes.BooleanType
+    case types.ByteType => StorageTypes.ByteType
+    case types.ShortType => StorageTypes.ShortType
+    case types.IntegerType => StorageTypes.IntegerType
+    case types.LongType => StorageTypes.LongType
+    case types.FloatType => StorageTypes.FloatType
+    case types.DoubleType => StorageTypes.DoubleType
+    case types.ArrayType(types.DoubleType, true) => StorageTypes.VectorType
+    case types.ArrayType(c, _) => StorageTypes.arrayType(sparkTypesToCebes(c))
+    case types.BinaryType => StorageTypes.BinaryType
+    case types.DateType => StorageTypes.DateType
+    case types.TimestampType => StorageTypes.TimestampType
+    case types.CalendarIntervalType => StorageTypes.CalendarIntervalType
     case t => throw new IllegalArgumentException(s"Unrecognized spark type: ${t.simpleString}")
   }
 
@@ -57,19 +61,20 @@ object SparkSchemaUtils {
     * @param storageType Cebes column type
     * @return Spark data type
     */
-  def cebesTypesToSpark(storageType: StorageTypes.StorageType): types.DataType = storageType match {
-    case StorageTypes.STRING => types.StringType
-    case StorageTypes.BOOLEAN => types.BooleanType
-    case StorageTypes.BYTE => types.ByteType
-    case StorageTypes.SHORT => types.ShortType
-    case StorageTypes.INT => types.IntegerType
-    case StorageTypes.LONG => types.LongType
-    case StorageTypes.FLOAT => types.FloatType
-    case StorageTypes.DOUBLE => types.DoubleType
-    case StorageTypes.VECTOR => types.ArrayType(types.DoubleType)
-    case StorageTypes.BINARY => types.BinaryType
-    case StorageTypes.DATE => types.DateType
-    case StorageTypes.TIMESTAMP => types.TimestampType
+  def cebesTypesToSpark(storageType: StorageType): types.DataType = storageType match {
+    case StorageTypes.StringType => types.StringType
+    case StorageTypes.BooleanType => types.BooleanType
+    case StorageTypes.ByteType => types.ByteType
+    case StorageTypes.ShortType => types.ShortType
+    case StorageTypes.IntegerType => types.IntegerType
+    case StorageTypes.LongType => types.LongType
+    case StorageTypes.FloatType => types.FloatType
+    case StorageTypes.DoubleType => types.DoubleType
+    case StorageTypes.VectorType => types.ArrayType(types.DoubleType)
+    case StorageTypes.BinaryType => types.BinaryType
+    case StorageTypes.DateType => types.DateType
+    case StorageTypes.TimestampType => types.TimestampType
+    case StorageTypes.CalendarIntervalType => types.CalendarIntervalType
     case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
   }
 
