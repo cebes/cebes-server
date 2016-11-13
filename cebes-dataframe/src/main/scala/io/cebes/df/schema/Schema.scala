@@ -93,6 +93,7 @@ class Schema(val columns: Seq[Column]) {
 object Schema {
 
   def fromString(schemaStr: String): Schema = {
+    //TODO: replace this by a proper parser (issue #45)
     val cols = schemaStr.split(",").map { col =>
       col.stripPrefix(" ").stripSuffix(" ").split(" ").filter(_.length > 0) match {
         case Array(colName, colType) => new Column(colName, types.StorageTypes.fromString(colType))

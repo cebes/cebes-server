@@ -9,7 +9,10 @@ lazy val commonSettings = Seq(
   // generate test reports (likely for jenkins to pickup, once we have jenkins...)
   (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-report"),
 
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value
+  )
 )
 
 lazy val cebesProperties = project.in(file("cebes-properties")).
@@ -35,12 +38,6 @@ lazy val cebesServer = project.in(file(".")).
 
 // test in all other sub-projects, except cebesHttpServer
 // http://stackoverflow.com/questions/9856204/sbt-skip-tests-in-subproject-unless-running-from-within-that-project
-
-// TODO: cebesHttpServer and cebesDataframeSpark can't run test in the same command
-// because both of them use the same Derby metastore for Hive.
-// Figure out a way to do this properly
-// http://www.cloudera.com/documentation/archive/cdh/4-x/4-2-1/CDH4-Installation-Guide/cdh4ig_topic_18_4.html
-
 val testNoHttpServer = TaskKey[Unit]("testNoHttpServer")
 testNoHttpServer <<= Seq(
   test in (cebesProperties, Test),
