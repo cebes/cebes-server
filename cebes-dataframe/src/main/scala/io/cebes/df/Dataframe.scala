@@ -15,9 +15,10 @@
 package io.cebes.df
 
 import io.cebes.common.HasId
+import io.cebes.df.expressions.Column
 import io.cebes.df.sample.DataSample
+import io.cebes.df.schema.{HasSchema, Schema}
 import io.cebes.df.types.VariableTypes.VariableType
-import io.cebes.df.schema.{Column, HasSchema, Schema}
 
 /**
   * Cebes Dataframe
@@ -32,7 +33,7 @@ trait Dataframe extends HasSchema with HasId {
   /**
     * Automatically infer variable types, using various heuristics based on data
     *
-    * @return the same [[Dataframe]]
+    * @return a new [[Dataframe]]
     * @group Schema manipulation
     */
   def inferVariableTypes(): Dataframe
@@ -47,6 +48,14 @@ trait Dataframe extends HasSchema with HasId {
     * @group Schema manipulation
     */
   def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe
+
+  /**
+    * Apply a new schema to this data frame
+    *
+    * @param newSchema the new Schema
+    * @return a new dataframe with the new Schema
+    */
+  def applySchema(newSchema: Schema): Dataframe
 
   /**
     * Get the first n rows. If the [[Dataframe]] has less than n rows, all rows will be returned.
@@ -78,9 +87,9 @@ trait Dataframe extends HasSchema with HasId {
     */
   def createTempView(name: String)
 
-  /**
-    * Data exploration
-    */
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
 
   /**
     * Returns a new Dataframe sorted by the given expressions. This is an alias for `orderedBy`
@@ -108,10 +117,9 @@ trait Dataframe extends HasSchema with HasId {
     */
   def dropDuplicates(colNames: Seq[String]): Dataframe
 
-  /**
-    * SQL-related functions
-    */
-
+  ////////////////////////////////////////////////////////////////////////////////////
+  // SQL-related functions
+  ////////////////////////////////////////////////////////////////////////////////////
 
   /**
     * Selects a set of columns based on expressions.
@@ -213,12 +221,4 @@ trait Dataframe extends HasSchema with HasId {
     * @group sql-api
     */
   def distinct(): Dataframe = dropDuplicates(this.columns)
-
-  /**
-    * Apply a new schema to this data frame
-    *
-    * @param newSchema the new Schema
-    * @return a new dataframe with the new Schema
-    */
-  def applySchema(newSchema: Schema): Dataframe
 }

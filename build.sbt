@@ -6,12 +6,11 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
   test in assembly := {},
 
-  // generate test reports (likely for jenkins to pickup, once we have jenkins...)
+  // generate test reports (likely for jenkins to pickup)
   (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-report"),
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
   )
 )
 

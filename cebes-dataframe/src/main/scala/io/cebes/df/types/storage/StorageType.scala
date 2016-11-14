@@ -93,7 +93,39 @@ object VectorType extends ArrayType(DoubleType)
 
 case class MapType(keyType: StorageType, valueType: StorageType) extends StorageType
 
-case class StructField(name: String, storageType: StorageType)
+case class StructField(name: String, storageType: StorageType, metadata: Metadata = Metadata.empty)
 
-case class StructType(fields: Array[StructField]) extends StorageType
+case class StructType(fields: Array[StructField]) extends StorageType with Seq[StructField] {
+
+  override def length: Int = fields.length
+
+  override def iterator: Iterator[StructField] = fields.iterator
+
+  override def apply(fieldIndex: Int): StructField = fields(fieldIndex)
+
+  /**
+    * Return all field names in an array
+    */
+  def fieldNames: Array[String] = fields.map(_.name)
+
+  /**
+    * Creates a new [[StructType]] by adding a new field.
+    * {{{
+    * val struct = (new StructType)
+    *   .add(StructField("a", IntegerType))
+    *   .add(StructField("b", LongType))
+    *}}}
+    */
+  def add(field: StructField): StructType = StructType(fields :+ field)
+
+  /**
+    * Creates a new [[StructType]] by adding a new field.
+    * {{{
+    * val struct = (new StructType)
+    *   .add("a", IntegerType)
+    *   .add("b", LongType)
+    *}}}
+    */
+  def add(fieldName: String, storageType: StorageType): StructType = add(StructField(fieldName, storageType))
+}
 

@@ -12,24 +12,16 @@
  * Created by phvu on 26/09/16.
  */
 
-package io.cebes.df.schema
+package io.cebes.df.expressions
+
+import io.cebes.df.types.VariableTypes
+import io.cebes.df.types.storage.StorageType
 
 /**
-  * Trait with everything related to Dataframe's schema
+  * Represent a column of a [[io.cebes.df.Dataframe]], backed by an expression.
+  *
+  * @param expr Expression behind this column
   */
-trait HasSchema {
+class Column(val expr: Expression) {
 
-  def schema: Schema
-
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.length
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.fieldNames
 }

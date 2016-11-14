@@ -18,9 +18,10 @@ import java.util.UUID
 
 import io.cebes.common.ArgumentChecks
 import io.cebes.df.Dataframe
+import io.cebes.df.expressions.Column
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.VariableTypes.VariableType
-import io.cebes.df.schema.{Column, Schema}
+import io.cebes.df.schema.Schema
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.types.storage.StorageType
 import io.cebes.spark.df.schema.SparkSchemaUtils
@@ -32,68 +33,67 @@ import org.apache.spark.sql.DataFrame
   *
   * @param sparkDf the spark's DataFrame object
   */
-class SparkDataframe(val sparkDf: DataFrame,
-                     override val schema: Schema,
-                     override val id: UUID) extends Dataframe with ArgumentChecks {
+class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) extends Dataframe with ArgumentChecks {
 
-  checkArguments(sparkDf.columns.length == schema.numCols,
-    s"Invalid schema: schema has ${schema.numCols} columns," +
-      s"while the data frame seems to has ${sparkDf.columns.length} columns")
+  def this(sparkDf: DataFrame, schema: Schema) = {
+    this(sparkDf, schema, UUID.randomUUID())
+  }
 
   def this(sparkDf: DataFrame) = {
     this(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
   }
 
-  def this(sparkDf: DataFrame, newSchema: Schema) = {
-    this(sparkDf, newSchema, UUID.randomUUID())
-  }
-
   override def numRows: Long = sparkDf.count()
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Variable types
+  ////////////////////////////////////////////////////////////////////////////////////
 
   override def inferVariableTypes(): Dataframe = {
     val sample = take(1000)
-    schema.columns.zip(sample.data).foreach { case (c, data) =>
-      c.setVariableType(SparkDataframe.inferVariableType(c.storageType, data))
-    }
-    this
+    val fields = schema.zip(sample.data).map { case (c, data) =>
+      c.copy(variableType = SparkDataframe.inferVariableType(c.storageType, data))
+    }.toArray
+    new SparkDataframe(sparkDf, Schema(fields))
   }
 
-  /**
-    * Manually update variable types for each column. Column names are case-insensitive.
-    * Sanity checks will be performed. If new variable type doesn't conform with its storage type,
-    * [[IllegalArgumentException]] will be thrown.
-    *
-    * @param newTypes map from column name -> new [[VariableType]]
-    * @return the same [[Dataframe]]
-    * @group Schema manipulation
-    */
   override def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe = {
-    newTypes.foreach { case (name, newType) =>
-      schema.getColumnOptional(name).foreach { c =>
-        if (!newType.validStorageTypes.contains(c.storageType)) {
-          throw new IllegalArgumentException(s"Column ${c.name}: storage type ${c.storageType} cannot " +
-            s"be casted as variable type $newType")
-        }
+    val fields = schema.map { f =>
+      newTypes.find(_._1.equalsIgnoreCase(f.name)).map(_._2) match {
+        case Some(n) if n.validStorageTypes.contains(f.storageType) => f.copy(variableType = n)
+        case Some(n) => throw new IllegalArgumentException(s"Column ${f.name} has storage type ${f.storageType} " +
+          s"but is assigned variable type $n")
+        case None => f.copy()
       }
     }
-
-    // no exception, we are good to go
-    newTypes.foreach { case (name, newType) =>
-      schema.getColumnOptional(name).foreach(_.setVariableType(newType))
-    }
-    this
+    new SparkDataframe(sparkDf, Schema(fields.toArray))
   }
+
+  override def applySchema(newSchema: Schema): Dataframe = {
+    checkArguments(schema.length == newSchema.length,
+      s"Incompatible schema: current schema has ${schema.length} columns," +
+        s" but the new schema has ${newSchema.length} columns")
+
+    val sparkCols = schema.fields.zip(newSchema.fields).map { case (currentCol, newCol) =>
+      sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
+    }
+    new SparkDataframe(sparkDf.select(sparkCols: _*), newSchema)
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Sampling
+  ////////////////////////////////////////////////////////////////////////////////////
 
   def take(n: Int = 1): DataSample = {
     val rows = sparkDf.take(n)
-    val cols = schema.columns.zipWithIndex.map {
+    val cols = schema.fieldNames.zipWithIndex.map {
       case (c, idx) => rows.map(_.get(idx)).toSeq
     }
     new DataSample(schema.copy(), cols)
   }
 
   def sample(withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = {
-    new SparkDataframe(sparkDf.sample(withReplacement, fraction, seed))
+    new SparkDataframe(sparkDf.sample(withReplacement, fraction, seed), schema.copy())
   }
 
   override def createTempView(name: String) = {
@@ -108,8 +108,7 @@ class SparkDataframe(val sparkDf: DataFrame,
     if (droppedColNames.isEmpty) {
       this
     } else {
-      new SparkDataframe(sparkDf.drop(droppedColNames: _*),
-        schema.drop(droppedColNames))
+      new SparkDataframe(sparkDf.drop(droppedColNames: _*), schema.remove(colNames))
     }
   }
 
@@ -117,9 +116,9 @@ class SparkDataframe(val sparkDf: DataFrame,
     new SparkDataframe(sparkDf.dropDuplicates(colNames), schema.copy())
   }
 
-  /**
-    * SQL-like APIs
-    */
+  ////////////////////////////////////////////////////////////////////////////////////
+  // SQL-like APIs
+  ////////////////////////////////////////////////////////////////////////////////////
 
   override def select(columns: Column*): Dataframe = ???
 
@@ -132,7 +131,7 @@ class SparkDataframe(val sparkDf: DataFrame,
       throw new NotImplementedError("")
     case _ =>
       checkArguments(schema.contains(colName), s"Column name not found: $colName")
-      schema.getColumn(colName)
+      throw new NotImplementedError("")
   }
 
   override def alias(alias: String): Dataframe = {
@@ -168,17 +167,6 @@ class SparkDataframe(val sparkDf: DataFrame,
         s"but got ${this.numCols} and ${other.numCols} columns respectively")
     val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
     new SparkDataframe(sparkDf.except(otherDf), schema.copy())
-  }
-
-  override def applySchema(newSchema: Schema): Dataframe = {
-    checkArguments(schema.numCols == newSchema.numCols,
-      s"Incompatible schema: current schema has ${schema.numCols} columns," +
-        s" but the new schema has ${newSchema.numCols} columns")
-
-    val sparkCols = schema.columns.zip(newSchema.columns).map { case (currentCol, newCol) =>
-      sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
-    }
-    new SparkDataframe(sparkDf.select(sparkCols: _*))
   }
 }
 

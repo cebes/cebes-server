@@ -69,19 +69,19 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
 
   test("Dataframe variable types") {
     val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
-    assert(df.schema.getColumn("customer").storageType === StorageTypes.StringType)
-    assert(df.schema.getColumn("customer").getVariableType === VariableTypes.TEXT)
+    assert(df.schema("customer").storageType === StorageTypes.StringType)
+    assert(df.schema("customer").variableType === VariableTypes.TEXT)
 
     val df2 = df.inferVariableTypes()
-    assert(df2.id === df.id)
-    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df.schema.getColumn("customer").getVariableType))
-    assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.ORDINAL)
+    assert(df2.id !== df.id)
+    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df2.schema("customer").variableType))
+    assert(df2.schema("job_number").variableType === VariableTypes.ORDINAL)
 
     val df3 = df.updateVariableTypes(Map("customer" -> VariableTypes.ORDINAL,
       "Job_Number" -> VariableTypes.DISCRETE))
-    assert(df3.id === df.id)
-    assert(df.schema.getColumn("customer").getVariableType === VariableTypes.ORDINAL)
-    assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.DISCRETE)
+    assert(df3.id !== df.id)
+    assert(df3.schema("customer").variableType === VariableTypes.ORDINAL)
+    assert(df3.schema("job_number").variableType === VariableTypes.DISCRETE)
   }
 
   test("drop columns") {
