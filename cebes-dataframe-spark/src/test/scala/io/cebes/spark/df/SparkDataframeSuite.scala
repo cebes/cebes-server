@@ -21,11 +21,9 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
-  val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
-
   override def beforeAll(): Unit = {
     super.beforeAll()
-    createOrReplaceCylinderBands(cylinderBandsTableName)
+    createOrReplaceCylinderBands()
   }
 
   test("Type conversions in take()") {

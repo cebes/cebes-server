@@ -14,12 +14,23 @@
 
 package io.cebes.spark.df.expressions
 
-import org.scalatest.FunSuite
+import io.cebes.spark.helpers.TestDataHelper
+import org.apache.spark.sql.Column
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkExpressionParserSuite extends FunSuite {
+class SparkExpressionParserSuite extends FunSuite with BeforeAndAfterAll with TestDataHelper {
 
-  test("tmp") {
-    val m = new SparkExpressionParser()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createOrReplaceCylinderBands()
+  }
 
+  test("parser simple case") {
+    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val sparkCol = SparkExpressionParser.toSparkColumn(df.col("timestamp"))
+    assert(sparkCol.isInstanceOf[Column])
+
+    val sparkCols = SparkExpressionParser.toSparkColumns(df.col("Timestamp"), df.col("cylinder_number"))
+    assert(sparkCols.length === 2)
   }
 }

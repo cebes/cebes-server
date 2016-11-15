@@ -30,11 +30,9 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with TestPropertyHelper with TestDataHelper
   with StrictLogging {
 
-  val cylinderBandsTableName = "cylinder_bands_storage_test"
-
   override def beforeAll(): Unit = {
     super.beforeAll()
-    createOrReplaceCylinderBands(cylinderBandsTableName)
+    createOrReplaceCylinderBands()
   }
 
   test("Read CSV from S3", S3TestsEnabled) {
