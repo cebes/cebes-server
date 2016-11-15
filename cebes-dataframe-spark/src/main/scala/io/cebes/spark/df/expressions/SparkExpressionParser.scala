@@ -14,11 +14,39 @@
 
 package io.cebes.spark.df.expressions
 
-import io.cebes.df.expressions.AbstractExpressionParser
+import io.cebes.df.expressions.{AbstractExpressionParser, Column => CebesColumn}
+import org.apache.spark.sql.{Column => SparkColumn}
+
+import scala.collection.mutable
+
+object SparkExpressionParser {
+
+  /**
+    * Transform a cebes Column into a Spark column
+    */
+  def toSparkColumn(column: CebesColumn): SparkColumn = {
+    val parser = new SparkExpressionParser()
+    parser.parse(column.expr)
+    parser.getResult
+  }
+
+  def toSparkColumns(columns: CebesColumn*): Seq[SparkColumn] = columns.map(toSparkColumn)
+}
+
 
 class SparkExpressionParser extends AbstractExpressionParser {
 
-  def visitSparkPrimitiveExpression(expr: SparkPrimitiveExpression): Unit = {
+  private val resultStack = mutable.Stack[SparkColumn]()
 
+  def getResult: SparkColumn = {
+    if (resultStack.size != 1) {
+      throw new IllegalArgumentException("There is an error when parsing the expression, " +
+        "or you haven't called parse() yet?")
+    }
+    resultStack.head
+  }
+
+  def visitSparkPrimitiveExpression(expr: SparkPrimitiveExpression): Unit = {
+    resultStack.push(expr.sparkCol)
   }
 }

@@ -24,7 +24,7 @@ import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.schema.Schema
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.types.storage.StorageType
-import io.cebes.spark.df.expressions.SparkPrimitiveExpression
+import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.DataFrame
@@ -34,7 +34,8 @@ import org.apache.spark.sql.DataFrame
   *
   * @param sparkDf the spark's DataFrame object
   */
-class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) extends Dataframe with ArgumentChecks {
+class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) extends Dataframe
+  with ArgumentChecks with CebesSparkUtil {
 
   def this(sparkDf: DataFrame, schema: Schema) = {
     this(sparkDf, schema, UUID.randomUUID())
@@ -45,6 +46,14 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   }
 
   override def numRows: Long = sparkDf.count()
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Private helpers
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  @inline private def toSparkColumn(column: Column) = SparkExpressionParser.toSparkColumn(column)
+
+  @inline private def toSparkColumns(columns: Seq[Column]) = SparkExpressionParser.toSparkColumns(columns : _*)
 
   ////////////////////////////////////////////////////////////////////////////////////
   // Variable types
@@ -101,8 +110,9 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
     sparkDf.createTempView(name)
   }
 
-
-  override def sort(sortExprs: Column*): Dataframe = ???
+  override def sort(sortExprs: Column*): Dataframe = {
+    new SparkDataframe(sparkDf.sort(toSparkColumns(sortExprs) : _*), schema.copy())
+  }
 
   def drop(colNames: Seq[String]): Dataframe = {
     val droppedColNames = colNames.filter(schema.contains)
@@ -121,25 +131,31 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   // SQL-like APIs
   ////////////////////////////////////////////////////////////////////////////////////
 
-  override def select(columns: Column*): Dataframe = ???
-
-  override def where(column: Column): Dataframe = ???
-
-  override def orderBy(sortExprs: Column*): Dataframe = ???
-
-  override def col(colName: String): Column = colName match {
-    case "*" =>
-      new Column(SparkPrimitiveExpression(sparkDf.col(colName)))
-    case _ =>
-      checkArguments(schema.contains(colName), s"Column name not found: $colName")
-      new Column(SparkPrimitiveExpression(sparkDf.col(colName)))
+  override def select(columns: Column*): Dataframe = {
+    //TODO: preserve custom information in schema
+    new SparkDataframe(sparkDf.select(toSparkColumns(columns) : _*))
   }
+
+  override def where(column: Column): Dataframe = {
+    //TODO: preserve custom information in schema
+    new SparkDataframe(sparkDf.where(toSparkColumn(column)))
+  }
+
+  override def orderBy(sortExprs: Column*): Dataframe = {
+    new SparkDataframe(sparkDf.select(toSparkColumns(sortExprs) : _*), schema.copy())
+  }
+
+  override def col(colName: String): Column = new Column(SparkPrimitiveExpression(sparkDf.col(colName)))
 
   override def alias(alias: String): Dataframe = {
     new SparkDataframe(sparkDf.alias(alias), schema.copy())
   }
 
-  override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = ???
+  override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = {
+    //TODO: preserve custom information in schema
+    val rightDf = getSparkDataframe(right).sparkDf
+    new SparkDataframe(sparkDf.join(rightDf, toSparkColumn(joinExprs), joinType))
+  }
 
   override def limit(n: Int): Dataframe = {
     checkArguments(n >= 0, s"The limit must be equal to or greater than 0, but got $n")
