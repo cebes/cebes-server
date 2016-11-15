@@ -9,16 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 14/11/2016.
  */
 
 package io.cebes.df.expressions
 
 /**
-  * Represent a column of a [[io.cebes.df.Dataframe]], backed by an expression.
-  *
-  * @param expr Expression behind this column
+  * Most primitive expression, typically taken from the backend engine
   */
-class Column(val expr: Expression) {
+abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression {
 
 }

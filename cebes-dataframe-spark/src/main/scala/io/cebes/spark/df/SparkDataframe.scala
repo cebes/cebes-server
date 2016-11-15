@@ -24,6 +24,7 @@ import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.schema.Schema
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.types.storage.StorageType
+import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.DataFrame
@@ -128,10 +129,10 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
 
   override def col(colName: String): Column = colName match {
     case "*" =>
-      throw new NotImplementedError("")
+      new Column(SparkPrimitiveExpression(sparkDf.col(colName)))
     case _ =>
       checkArguments(schema.contains(colName), s"Column name not found: $colName")
-      throw new NotImplementedError("")
+      new Column(SparkPrimitiveExpression(sparkDf.col(colName)))
   }
 
   override def alias(alias: String): Dataframe = {

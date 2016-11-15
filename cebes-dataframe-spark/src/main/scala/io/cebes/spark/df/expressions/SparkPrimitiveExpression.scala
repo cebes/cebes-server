@@ -9,16 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 14/11/2016.
  */
 
-package io.cebes.df.expressions
+package io.cebes.spark.df.expressions
 
-/**
-  * Represent a column of a [[io.cebes.df.Dataframe]], backed by an expression.
-  *
-  * @param expr Expression behind this column
-  */
-class Column(val expr: Expression) {
+import io.cebes.df.expressions.PrimitiveExpression
+import org.apache.spark.sql.Column
+
+case class SparkPrimitiveExpression(sparkCol: Column) extends PrimitiveExpression[Column](sparkCol) {
 
 }

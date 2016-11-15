@@ -25,6 +25,11 @@ trait Expression {
 
   def children: Seq[Expression]
 
+  /**
+    * Name of this expression, default to be the class name
+    */
+  def name: String = getClass.getSimpleName
+
   // deserialize from JSON (clients)
 
   // get the state

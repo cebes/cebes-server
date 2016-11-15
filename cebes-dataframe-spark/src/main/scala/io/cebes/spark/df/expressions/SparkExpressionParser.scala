@@ -9,16 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 15/11/2016.
  */
 
-package io.cebes.df.expressions
+package io.cebes.spark.df.expressions
 
-/**
-  * Represent a column of a [[io.cebes.df.Dataframe]], backed by an expression.
-  *
-  * @param expr Expression behind this column
-  */
-class Column(val expr: Expression) {
+import io.cebes.df.expressions.AbstractExpressionParser
 
+class SparkExpressionParser extends AbstractExpressionParser {
+
+  def visitSparkPrimitiveExpression(expr: SparkPrimitiveExpression): Unit = {
+
+  }
 }
