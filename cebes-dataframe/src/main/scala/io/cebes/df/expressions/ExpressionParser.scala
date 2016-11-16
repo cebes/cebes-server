@@ -46,8 +46,15 @@ trait ExpressionParser {
 }
 
 /**
-  * expression parser that uses Reflection to select the right
-  * "visitX" function to call for each sub-type of Expression
+  * Expression parser that uses Reflection to select the right
+  * "visitX(expr: X)" function to call for each sub-type of Expression
+  *
+  * Note that we use the exact equality (=:=) to check the type of the
+  * arguments when searching for the "visitX" function to call.
+  *
+  * This means if you only have visit(expr: Expression), and
+  * you call `parse()` on X - a subclass of Expression - then a [[RuntimeException]] will be thrown.
+  * It requires you to have a `visit(expr: X)` function.
   */
 abstract class AbstractExpressionParser extends ExpressionParser {
 

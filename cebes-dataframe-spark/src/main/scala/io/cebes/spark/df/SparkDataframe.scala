@@ -37,6 +37,11 @@ import org.apache.spark.sql.DataFrame
 class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) extends Dataframe
   with ArgumentChecks with CebesSparkUtil {
 
+  checkArguments(sparkDf.columns.length == schema.length &&
+    sparkDf.columns.zip(schema).forall(t => t._2.compareName(t._1)),
+    s"Invalid schema: schema has ${schema.length} columns (${schema.fieldNames.mkString(", ")})," +
+      s"while the data frame seems to has ${sparkDf.columns.length} columns (${sparkDf.columns.mkString(", ")})")
+
   def this(sparkDf: DataFrame, schema: Schema) = {
     this(sparkDf, schema, UUID.randomUUID())
   }
@@ -59,17 +64,17 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   // Variable types
   ////////////////////////////////////////////////////////////////////////////////////
 
-  override def inferVariableTypes(): Dataframe = {
-    val sample = take(1000)
+  override def inferVariableTypes(sampleSize: Int = 1000): Dataframe = {
+    val sample = take(sampleSize)
     val fields = schema.zip(sample.data).map { case (c, data) =>
       c.copy(variableType = SparkDataframe.inferVariableType(c.storageType, data))
     }.toArray
     new SparkDataframe(sparkDf, Schema(fields))
   }
 
-  override def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe = {
+  override def withVariableTypes(newTypes: Map[String, VariableType]): Dataframe = {
     val fields = schema.map { f =>
-      newTypes.find(_._1.equalsIgnoreCase(f.name)).map(_._2) match {
+      newTypes.find(entry => f.compareName(entry._1)).map(_._2) match {
         case Some(n) if n.validStorageTypes.contains(f.storageType) => f.copy(variableType = n)
         case Some(n) => throw new IllegalArgumentException(s"Column ${f.name} has storage type ${f.storageType} " +
           s"but is assigned variable type $n")
@@ -110,6 +115,10 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
     sparkDf.createTempView(name)
   }
 
+   ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
+
   override def sort(sortExprs: Column*): Dataframe = {
     new SparkDataframe(sparkDf.sort(toSparkColumns(sortExprs) : _*), schema.copy())
   }
@@ -130,6 +139,17 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-like APIs
   ////////////////////////////////////////////////////////////////////////////////////
+
+  override def withColumn(colName: String, col: Column): Dataframe = {
+    val newSparkDf = sparkDf.withColumn(colName, toSparkColumn(col))
+    new SparkDataframe(newSparkDf, schema.withField(colName,
+      SparkSchemaUtils.sparkTypesToCebes(newSparkDf.schema(colName).dataType)))
+  }
+
+  override def withColumnRenamed(existingName: String, newName: String): Dataframe = {
+    val newSparkDf = sparkDf.withColumnRenamed(existingName, newName)
+    new SparkDataframe(newSparkDf, schema.withFieldRenamed(existingName, newName))
+  }
 
   override def select(columns: Column*): Dataframe = {
     //TODO: preserve custom information in schema

@@ -15,7 +15,7 @@
 package io.cebes.df.schema
 
 import io.cebes.df.types.VariableTypes
-import io.cebes.df.types.storage.{FloatType, IntegerType}
+import io.cebes.df.types.storage.{FloatType, IntegerType, StringType}
 import org.scalatest.FunSuite
 
 class SchemaSuite extends FunSuite {
@@ -36,5 +36,44 @@ class SchemaSuite extends FunSuite {
     intercept[IllegalArgumentException] {
       Schema().add("a", IntegerType, VariableTypes.TEXT)
     }
+  }
+
+  test("withField") {
+    val sc = Schema().withField("a", IntegerType).withField("b", StringType)
+    assert(sc.length === 2)
+    assert(sc.fieldNames === Array("a", "b"))
+
+    // add
+    val sc2 = sc.withField("c", FloatType)
+    assert(sc2.length === 3)
+    assert(sc2.fieldNames === Array("a", "b", "c"))
+
+    val sc3 = sc.withField("c", FloatType, VariableTypes.CONTINUOUS)
+    assert(sc3.length === 3)
+    assert(sc3.fieldNames === Array("a", "b", "c"))
+
+    // replace
+    val sc4 = sc.withField("A", StringType)
+    assert(sc4.length === 2)
+    assert(sc4.fieldNames === Array("A", "b"))
+    assert(sc4("a").storageType === StringType)
+  }
+
+  test("withFieldRenamed") {
+    val sc = Schema().withField("a", IntegerType).withField("b", StringType)
+    assert(sc.length === 2)
+    assert(sc.fieldNames === Array("a", "b"))
+
+    // success
+    val sc2 = sc.withFieldRenamed("A", "aa")
+    assert(sc2.ne(sc))
+    assert(sc2.length === 2)
+    assert(sc2.fieldNames === Array("aa", "b"))
+    assert(sc2("aa").storageType === IntegerType)
+    assert(sc2("b").storageType === StringType)
+
+    // no-op
+    val sc3 = sc.withFieldRenamed("AA", "aa")
+    assert(sc3.eq(sc))
   }
 }

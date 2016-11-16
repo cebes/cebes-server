@@ -26,6 +26,37 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     createOrReplaceCylinderBands()
   }
 
+
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Variable types
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  test("Dataframe variable types") {
+    val df = getCylinderBands
+    assert(df.schema("customer").storageType === StorageTypes.StringType)
+    assert(df.schema("customer").variableType === VariableTypes.TEXT)
+
+    val df2 = df.inferVariableTypes()
+    assert(df2.id !== df.id)
+    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df2.schema("customer").variableType))
+    assert(df2.schema("job_number").variableType === VariableTypes.ORDINAL)
+
+    val df3 = df.withVariableTypes(Map("customer" -> VariableTypes.ORDINAL,
+      "Job_Number" -> VariableTypes.DISCRETE))
+    assert(df3.id !== df.id)
+    assert(df3.schema("customer").variableType === VariableTypes.ORDINAL)
+    assert(df3.schema("job_number").variableType === VariableTypes.DISCRETE)
+  }
+
+  test("Apply schema") {
+    // TODO: implement
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Sampling
+  ////////////////////////////////////////////////////////////////////////////////////
+
   test("Type conversions in take()") {
     val df = sparkDataframeService.sql("SELECT customer, " +
       " customer IN ('TVGUIDE', 'MASSEY') AS my_customer_bool, " +
@@ -52,7 +83,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("sample") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df = getCylinderBands
     assert(df.numCols === 40)
     assert(df.numRows === 540)
 
@@ -65,25 +96,16 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df3.numRows > df.numRows)
   }
 
-  test("Dataframe variable types") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
-    assert(df.schema("customer").storageType === StorageTypes.StringType)
-    assert(df.schema("customer").variableType === VariableTypes.TEXT)
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
 
-    val df2 = df.inferVariableTypes()
-    assert(df2.id !== df.id)
-    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df2.schema("customer").variableType))
-    assert(df2.schema("job_number").variableType === VariableTypes.ORDINAL)
-
-    val df3 = df.updateVariableTypes(Map("customer" -> VariableTypes.ORDINAL,
-      "Job_Number" -> VariableTypes.DISCRETE))
-    assert(df3.id !== df.id)
-    assert(df3.schema("customer").variableType === VariableTypes.ORDINAL)
-    assert(df3.schema("job_number").variableType === VariableTypes.DISCRETE)
+  test("sort") {
+    //TODO: implement
   }
 
   test("drop columns") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df = getCylinderBands
     val df2 = df.drop(Seq("random_columns"))
     assert(df2.id === df.id)
 
@@ -98,7 +120,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("dropDuplicates") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName").limit(30)
+    val df = getCylinderBands.limit(30)
     val df2 = df.dropDuplicates(df.columns)
     assert(df.id !== df2.id)
     assert(df.numRows === df2.numRows)
@@ -112,8 +134,40 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df4.numRows === df2.numRows)
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////
+  // SQL-like APIs
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  test("withColumn") {
+    //TODO: implement
+  }
+
+  test("withColumnRenamed") {
+    //TODO: implement
+  }
+
+  test("select") {
+    //TODO: implement
+  }
+
+  test("where") {
+    // TODO: implement
+  }
+
+  test("orderBy") {
+    // TODO: implement
+  }
+
+  test("alias") {
+    // TODO: implement
+  }
+
+  test("join") {
+    // TODO: implement
+  }
+
   test("limit") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df = getCylinderBands
     val df2 = df.limit(20)
     assert(df2.columns === df.columns)
     assert(df2.numRows === 20)
@@ -124,7 +178,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("union") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName").limit(20)
+    val df = getCylinderBands.limit(20)
 
     val df2 = df.union(df)
     assert(df2.numRows === 2 * df.numRows)

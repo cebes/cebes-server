@@ -14,8 +14,9 @@
 
 package io.cebes.spark.df.expressions
 
+import io.cebes.df.expressions.Expression
 import io.cebes.spark.helpers.TestDataHelper
-import org.apache.spark.sql.Column
+import org.apache.spark.sql.{Column => SparkColumn}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 class SparkExpressionParserSuite extends FunSuite with BeforeAndAfterAll with TestDataHelper {
@@ -25,10 +26,25 @@ class SparkExpressionParserSuite extends FunSuite with BeforeAndAfterAll with Te
     createOrReplaceCylinderBands()
   }
 
-  test("parser simple case") {
+  test("parser with simple spark primitive column") {
+    val parser = new SparkExpressionParser()
+
+    val sparkCol = new SparkColumn("abc")
+    parser.parse(SparkPrimitiveExpression(sparkCol))
+    assert(parser.getResult.isInstanceOf[SparkColumn])
+
+    val exp = intercept[RuntimeException] {
+      parser.parse(new Expression {
+        override def children: Seq[Expression] = Seq.empty
+      })
+    }
+    assert(exp.getMessage.contains("Visit method not found"))
+  }
+
+  test("parser with DF col()") {
     val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
     val sparkCol = SparkExpressionParser.toSparkColumn(df.col("timestamp"))
-    assert(sparkCol.isInstanceOf[Column])
+    assert(sparkCol.isInstanceOf[SparkColumn])
 
     val sparkCols = SparkExpressionParser.toSparkColumns(df.col("Timestamp"), df.col("cylinder_number"))
     assert(sparkCols.length === 2)

@@ -36,7 +36,7 @@ trait Dataframe extends HasSchema with HasId {
     * @return a new [[Dataframe]]
     * @group Schema manipulation
     */
-  def inferVariableTypes(): Dataframe
+  def inferVariableTypes(sampleSize: Int = 1000): Dataframe
 
   /**
     * Manually update variable types for each column. Column names are case-insensitive.
@@ -44,10 +44,23 @@ trait Dataframe extends HasSchema with HasId {
     * an exception will be thrown.
     *
     * @param newTypes map from column name -> new [[VariableType]]
-    * @return the same [[Dataframe]]
+    * @return a new [[Dataframe]]
     * @group Schema manipulation
     */
-  def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe
+  def withVariableTypes(newTypes: Map[String, VariableType]): Dataframe
+
+  /**
+    * Manually update variable types for each column. Column names are case-insensitive.
+    * Sanity checks will be performed. If new variable type doesn't conform with its storage type,
+    * an exception will be thrown.
+    *
+    * @param colName column name
+    * @param variableType new variable type
+    * @return a new [[Dataframe]]
+    * @group Schema manipulation
+    */
+  def withVariableType(colName: String, variableType: VariableType): Dataframe =
+  withVariableTypes(Map(colName -> variableType))
 
   /**
     * Apply a new schema to this data frame
@@ -93,6 +106,7 @@ trait Dataframe extends HasSchema with HasId {
 
   /**
     * Returns a new Dataframe sorted by the given expressions. This is an alias for `orderedBy`
+    *
     * @group data-exploration
     */
   def sort(sortExprs: Column*): Dataframe
@@ -120,6 +134,22 @@ trait Dataframe extends HasSchema with HasId {
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-related functions
   ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Returns a new [[Dataframe]] by adding a column or replacing
+    * the existing column that has the same name (case-insensitive).
+    *
+    * @group sql-api
+    */
+  def withColumn(colName: String, col: Column): Dataframe
+
+  /**
+    * Returns a new [[Dataframe]] with a column renamed.
+    * This is a no-op if schema doesn't contain `existingName`.
+    *
+    * @group sql-api
+    */
+  def withColumnRenamed(existingName: String, newName: String): Dataframe
 
   /**
     * Selects a set of columns based on expressions.
@@ -165,10 +195,9 @@ trait Dataframe extends HasSchema with HasId {
     *   df1.join(df2, df1.col("df1Key") === df2.col("df2Key"), "outer")
     * }}}
     *
-    * @param right Right side of the join.
+    * @param right     Right side of the join.
     * @param joinExprs Join expression.
-    * @param joinType One of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`.
-    *
+    * @param joinType  One of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`.
     * @group sql-api
     */
   def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe

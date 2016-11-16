@@ -29,6 +29,11 @@ case class SchemaField(name: String, storageType: StorageType, variableType: Var
     this(name, storageType, VariableTypes.fromStorageType(storageType))
   }
 
+  /**
+    * Is the `otherName` the same with the name of this field?
+    * Basically this is an `equalsIgnoreCase` comparision
+    */
+  def compareName(otherName: String) = name.equalsIgnoreCase(otherName)
 }
 
 case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaField] {
@@ -48,7 +53,7 @@ case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaFi
   /**
     * Get the field with the given name (case-insensitive)
     */
-  def get(name: String): Option[SchemaField] = find(_.name.equalsIgnoreCase(name))
+  def get(name: String): Option[SchemaField] = find(_.compareName(name))
 
   /**
     * Whether this schema contains a field with the given name (case-insensitive)
@@ -97,4 +102,45 @@ case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaFi
     */
   def add(name: String, storageType: StorageType, variableType: VariableType): Schema =
   add(SchemaField(name, storageType, variableType))
+
+  /**
+    * Creates a new [[Schema]] by adding a new field, or replace the current field
+    * that has the same name.
+    */
+  def withField(field: SchemaField): Schema = {
+    this.get(field.name) match {
+      case Some(_) => this.copy(fields = fields.map {
+        case f if f.compareName(field.name) => field
+        case f => f.copy()
+      })
+      case None => this.copy(fields = fields.map(_.copy()) :+ field)
+    }
+  }
+
+  /**
+    * Creates a new [[Schema]] by adding a new field, or replace the current field
+    * that has the same name.
+    */
+  def withField(name: String, storageType: StorageType): Schema = withField(new SchemaField(name, storageType))
+
+  /**
+    * Creates a new [[Schema]] by adding a new field, or replace the current field
+    * that has the same name.
+    */
+  def withField(name: String, storageType: StorageType, variableType: VariableType): Schema =
+  withField(SchemaField(name, storageType, variableType))
+
+  /**
+    * Returns a new [[Schema]] with a field renamed.
+    * This is a no-op if schema doesn't contain `existingName`.
+    */
+  def withFieldRenamed(existingName: String, newName: String): Schema = {
+    this.get(existingName) match {
+      case Some(_) => this.copy(fields = fields.map {
+        case f if f.compareName(existingName) => f.copy(name = newName)
+        case f => f.copy()
+      })
+      case None => this
+    }
+  }
 }
