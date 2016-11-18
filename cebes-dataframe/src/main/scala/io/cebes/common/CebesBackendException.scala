@@ -9,19 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 14/11/2016.
+ * Created by phvu on 17/11/2016.
  */
 
-package io.cebes.df.expressions
+package io.cebes.common
 
 /**
-  * Most primitive expression, typically taken from the backend engine
+  * Exception happened in the backend engine, get wrapped in a custom exception.
+  * The original backend exception is is `cause`, if it is available.
   */
-abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression {
-
-}
-
-/**
-  * Containing any kind of literal, and Symbol
-  */
-case class Literal(value: Any) extends LeafExpression
+case class CebesBackendException(message: String, cause: Option[Throwable] = None)
+  extends Exception(message, cause.orNull)

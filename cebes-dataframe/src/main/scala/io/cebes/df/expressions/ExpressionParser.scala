@@ -67,9 +67,11 @@ abstract class AbstractExpressionParser extends ExpressionParser {
     currentMirror.classSymbol(getClass).toType.members.filter { m =>
       m.isMethod && m.name.decodedName.toString.startsWith("visit")
     }.map(_.asMethod).filter { m =>
-      m.paramLists.nonEmpty &&
-        m.paramLists.head.length == 1 &&
-        m.paramLists.head.head.info <:< universe.typeOf[Expression]
+      val paramLists = m.paramLists
+      paramLists.nonEmpty &&
+        paramLists.head.nonEmpty &&
+        paramLists.head.head.info <:< universe.typeOf[Expression] &&
+        filterMethod(m)
     }.map { m =>
       m.paramLists.head.head.info -> thisMirror.reflectMethod(m)
     }.toMap
@@ -78,10 +80,56 @@ abstract class AbstractExpressionParser extends ExpressionParser {
   override protected def traverse(expr: Expression): Unit = {
     val exprType = currentMirror.reflect(expr).symbol.toType
     visitMethods.find(_._1 =:= exprType).map(_._2) match {
-      case Some(method) => method(expr)
+      case Some(method) => invoke(expr, method)
       case None =>
         throw new RuntimeException(s"Visit method not found for type ${exprType.toString}. " +
-          s"Please add a new visit(expr: ${exprType.toString}) function into the parser class")
+          s"Please add a new visit() function into the parser class")
     }
+  }
+
+  protected def filterMethod(method: universe.MethodSymbol): Boolean = true
+
+  protected def invoke(expr: Expression, method: universe.MethodMirror) = method(expr)
+
+}
+
+/**
+  * Parser that uses a stack to store the results, with helpers to alleviate
+  * the job of stacking/unstacking elements
+  *
+  * The visit() methods of parsers that are subclasses of this class has to be in this form:
+  *
+  * {{{
+  *   def visitExpressionX(expr: ExpressionX, parsedChildren: Seq[T]): Option[T] {
+  *     ...
+  *   }
+  * }}}
+  *
+  */
+abstract class StackExpressionParser[T](implicit typeTag: universe.TypeTag[T]) extends AbstractExpressionParser {
+
+  protected val resultStack = mutable.Stack[T]()
+
+  override protected def filterMethod(method: universe.MethodSymbol): Boolean = {
+    val paramList = method.paramLists.head
+    paramList.length == 2 &&
+      paramList.last.info =:= universe.typeOf[Seq[T]] &&
+      method.returnType =:= universe.typeOf[Option[T]]
+  }
+
+  override def invoke(expr: Expression, method: universe.MethodMirror): Any = {
+    val parsedChildren = expr.children.map(_ => resultStack.pop())
+    method(expr, parsedChildren).asInstanceOf[Option[T]] match {
+      case Some(result) => resultStack.push(result)
+      case None => // do nothing
+    }
+  }
+
+  def getResult: T = {
+    if (resultStack.size != 1) {
+      throw new IllegalArgumentException("There is an error when parsing the expression, " +
+        "or you haven't called parse() yet?")
+    }
+    resultStack.head
   }
 }

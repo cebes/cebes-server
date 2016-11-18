@@ -9,19 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 14/11/2016.
+ * Created by phvu on 17/11/2016.
  */
 
 package io.cebes.df.expressions
 
-/**
-  * Most primitive expression, typically taken from the backend engine
-  */
-abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression {
+case class UnaryMinus(child: Expression) extends UnaryExpression
 
-}
+case class Add(left: Expression, right: Expression) extends BinaryExpression
 
-/**
-  * Containing any kind of literal, and Symbol
-  */
-case class Literal(value: Any) extends LeafExpression
+case class Subtract(left: Expression, right: Expression) extends BinaryExpression
+
+case class Multiply(left: Expression, right: Expression) extends BinaryExpression
+
+case class Divide(left: Expression, right: Expression) extends BinaryExpression
+
+case class Remainder(left: Expression, right: Expression) extends BinaryExpression

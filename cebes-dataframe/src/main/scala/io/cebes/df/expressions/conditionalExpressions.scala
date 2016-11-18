@@ -9,19 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 14/11/2016.
+ * Created by phvu on 17/11/2016.
  */
 
 package io.cebes.df.expressions
 
-/**
-  * Most primitive expression, typically taken from the backend engine
-  */
-abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression {
+case class CaseWhen(branches: Seq[(Expression, Expression)],
+                    elseValue: Option[Expression] = None) extends Expression {
 
+  override def children: Seq[Expression] = branches.flatMap(b => b._1 :: b._2 :: Nil) ++ elseValue
 }
 
-/**
-  * Containing any kind of literal, and Symbol
-  */
-case class Literal(value: Any) extends LeafExpression
+case class GetItem(left: Expression, right: Expression) extends BinaryExpression
+
+case class GetField(child: Expression, fieldName: String) extends UnaryExpression

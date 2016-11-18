@@ -15,7 +15,6 @@
 package io.cebes.df
 
 import io.cebes.common.HasId
-import io.cebes.df.expressions.Column
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{HasSchema, Schema}
 import io.cebes.df.types.VariableTypes.VariableType
@@ -29,6 +28,9 @@ trait Dataframe extends HasSchema with HasId {
     * Number of rows
     */
   def numRows: Long
+
+  /** Selects column based on the column name and return it as a [[Column]]. **/
+  def apply(colName: String): Column = col(colName)
 
   /**
     * Automatically infer variable types, using various heuristics based on data
@@ -145,7 +147,6 @@ trait Dataframe extends HasSchema with HasId {
 
   /**
     * Returns a new [[Dataframe]] with a column renamed.
-    * This is a no-op if schema doesn't contain `existingName`.
     *
     * @group sql-api
     */
@@ -159,6 +160,18 @@ trait Dataframe extends HasSchema with HasId {
   def select(columns: Column*): Dataframe
 
   /**
+    * Selects a set of columns. This is a variant of `select` that can only select
+    * existing columns using column names (i.e. cannot construct expressions).
+    *
+    * {{{
+    *   ds.select("colA", "colB")
+    * }}}
+    *
+    * @group sql-api
+    */
+  def select(col: String, cols: String*): Dataframe
+
+  /**
     * Filters rows using the given condition.
     *
     * @group sql-api
@@ -170,7 +183,7 @@ trait Dataframe extends HasSchema with HasId {
     *
     * @group sql-api
     */
-  def orderBy(sortExprs: Column*): Dataframe
+  def orderBy(sortExprs: Column*): Dataframe = sort(sortExprs: _*)
 
   /**
     * Selects column based on the column name and return it as a [[Column]].

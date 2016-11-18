@@ -16,18 +16,19 @@ package io.cebes.spark.df
 
 import java.util.UUID
 
-import io.cebes.common.ArgumentChecks
-import io.cebes.df.Dataframe
-import io.cebes.df.expressions.Column
+import io.cebes.common.{ArgumentChecks, CebesBackendException}
 import io.cebes.df.sample.DataSample
-import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.schema.Schema
-import io.cebes.df.types.{StorageTypes, VariableTypes}
+import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.types.storage.StorageType
+import io.cebes.df.types.{StorageTypes, VariableTypes}
+import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.util.CebesSparkUtil
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{AnalysisException, DataFrame}
+
+import scala.util.{Failure, Success, Try}
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -58,7 +59,30 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
 
   @inline private def toSparkColumn(column: Column) = SparkExpressionParser.toSparkColumn(column)
 
-  @inline private def toSparkColumns(columns: Seq[Column]) = SparkExpressionParser.toSparkColumns(columns : _*)
+  @inline private def toSparkColumns(columns: Seq[Column]) = SparkExpressionParser.toSparkColumns(columns: _*)
+
+  /**
+    * Catch recognized exception thrown by Spark, wrapped in a [[CebesBackendException]].
+    * If an exception is unrecognized, it will be re-thrown (until we know what to do with it)
+    */
+  private def safeSparkCall[T](result: => T): T = {
+    Try(result) match {
+      case Success(r) => r
+      case Failure(e) => e match {
+        case ex: AnalysisException =>
+          throw CebesBackendException(s"Spark query analysis exception: ${ex.message}", Some(ex))
+        case ex => throw ex
+      }
+    }
+  }
+
+  /** short-hand for returning a SparkDataframe, with proper exception handling **/
+  @inline private def withSparkDataFrame(df: => DataFrame): SparkDataframe =
+    new SparkDataframe(safeSparkCall(df))
+
+  /** short-hand for returning a SparkDataframe, with proper exception handling **/
+  @inline private def withSparkDataFrame(df: => DataFrame, schema: Schema): SparkDataframe =
+    new SparkDataframe(safeSparkCall(df), schema)
 
   ////////////////////////////////////////////////////////////////////////////////////
   // Variable types
@@ -92,7 +116,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
     val sparkCols = schema.fields.zip(newSchema.fields).map { case (currentCol, newCol) =>
       sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
     }
-    new SparkDataframe(sparkDf.select(sparkCols: _*), newSchema)
+    withSparkDataFrame(sparkDf.select(sparkCols: _*), newSchema)
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -108,32 +132,31 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   }
 
   def sample(withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = {
-    new SparkDataframe(sparkDf.sample(withReplacement, fraction, seed), schema.copy())
+    withSparkDataFrame(sparkDf.sample(withReplacement, fraction, seed), schema.copy())
   }
 
   override def createTempView(name: String) = {
     sparkDf.createTempView(name)
   }
 
-   ////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////
   // Data exploration
   ////////////////////////////////////////////////////////////////////////////////////
 
-  override def sort(sortExprs: Column*): Dataframe = {
-    new SparkDataframe(sparkDf.sort(toSparkColumns(sortExprs) : _*), schema.copy())
-  }
+  override def sort(sortExprs: Column*): Dataframe =
+    withSparkDataFrame(sparkDf.sort(toSparkColumns(sortExprs): _*), schema.copy())
 
   def drop(colNames: Seq[String]): Dataframe = {
     val droppedColNames = colNames.filter(schema.contains)
     if (droppedColNames.isEmpty) {
       this
     } else {
-      new SparkDataframe(sparkDf.drop(droppedColNames: _*), schema.remove(colNames))
+      withSparkDataFrame(sparkDf.drop(droppedColNames: _*), schema.remove(colNames))
     }
   }
 
   override def dropDuplicates(colNames: Seq[String]): Dataframe = {
-    new SparkDataframe(sparkDf.dropDuplicates(colNames), schema.copy())
+    withSparkDataFrame(sparkDf.dropDuplicates(colNames), schema.copy())
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -141,61 +164,59 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   ////////////////////////////////////////////////////////////////////////////////////
 
   override def withColumn(colName: String, col: Column): Dataframe = {
-    val newSparkDf = sparkDf.withColumn(colName, toSparkColumn(col))
+    val newSparkDf = safeSparkCall(sparkDf.withColumn(colName, toSparkColumn(col)))
     new SparkDataframe(newSparkDf, schema.withField(colName,
       SparkSchemaUtils.sparkTypesToCebes(newSparkDf.schema(colName).dataType)))
   }
 
   override def withColumnRenamed(existingName: String, newName: String): Dataframe = {
-    val newSparkDf = sparkDf.withColumnRenamed(existingName, newName)
+    val newSparkDf = safeSparkCall(sparkDf.withColumnRenamed(existingName, newName))
     new SparkDataframe(newSparkDf, schema.withFieldRenamed(existingName, newName))
   }
 
   override def select(columns: Column*): Dataframe = {
     //TODO: preserve custom information in schema
-    new SparkDataframe(sparkDf.select(toSparkColumns(columns) : _*))
+    withSparkDataFrame(sparkDf.select(toSparkColumns(columns): _*))
   }
+
+  override def select(col: String, cols: String*): Dataframe = select((col +: cols).map(this.col): _*)
 
   override def where(column: Column): Dataframe = {
     //TODO: preserve custom information in schema
-    new SparkDataframe(sparkDf.where(toSparkColumn(column)))
+    withSparkDataFrame(sparkDf.where(toSparkColumn(column)))
   }
 
-  override def orderBy(sortExprs: Column*): Dataframe = {
-    new SparkDataframe(sparkDf.select(toSparkColumns(sortExprs) : _*), schema.copy())
-  }
-
-  override def col(colName: String): Column = new Column(SparkPrimitiveExpression(sparkDf.col(colName)))
+  override def col(colName: String): Column = new Column(SparkPrimitiveExpression(safeSparkCall(sparkDf.col(colName))))
 
   override def alias(alias: String): Dataframe = {
-    new SparkDataframe(sparkDf.alias(alias), schema.copy())
+    withSparkDataFrame(sparkDf.alias(alias), schema.copy())
   }
 
   override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = {
     //TODO: preserve custom information in schema
     val rightDf = getSparkDataframe(right).sparkDf
-    new SparkDataframe(sparkDf.join(rightDf, toSparkColumn(joinExprs), joinType))
+    withSparkDataFrame(sparkDf.join(rightDf, toSparkColumn(joinExprs), joinType))
   }
 
   override def limit(n: Int): Dataframe = {
     checkArguments(n >= 0, s"The limit must be equal to or greater than 0, but got $n")
-    new SparkDataframe(sparkDf.limit(n), schema.copy())
+    withSparkDataFrame(sparkDf.limit(n), schema.copy())
   }
 
   override def union(other: Dataframe): Dataframe = {
     checkArguments(other.numCols == numCols,
       s"Unions only work for tables with the same number of columns, " +
         s"but got ${this.numCols} and ${other.numCols} columns respectively")
-    val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
-    new SparkDataframe(sparkDf.union(otherDf), schema.copy())
+    val otherDf = getSparkDataframe(other).sparkDf
+    withSparkDataFrame(sparkDf.union(otherDf), schema.copy())
   }
 
   override def intersect(other: Dataframe): Dataframe = {
     checkArguments(other.numCols == numCols,
       s"Intersects only work for tables with the same number of columns, " +
         s"but got ${this.numCols} and ${other.numCols} columns respectively")
-    val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
-    new SparkDataframe(sparkDf.intersect(otherDf), schema.copy())
+    val otherDf = getSparkDataframe(other).sparkDf
+    withSparkDataFrame(sparkDf.intersect(otherDf), schema.copy())
   }
 
   override def except(other: Dataframe): Dataframe = {
@@ -203,7 +224,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
       s"Excepts only work for tables with the same number of columns, " +
         s"but got ${this.numCols} and ${other.numCols} columns respectively")
     val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
-    new SparkDataframe(sparkDf.except(otherDf), schema.copy())
+    withSparkDataFrame(sparkDf.except(otherDf), schema.copy())
   }
 }
 

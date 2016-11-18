@@ -10,6 +10,9 @@ lazy val commonSettings = Seq(
   (testOptions in Test) += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-report"),
 
   libraryDependencies ++= Seq(
+    "com.typesafe.scala-logging" %% "scala-logging-slf4j" % Common.scalaLoggingSlf4jVersion,
+    // "ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
+
     "org.scalatest" %% "scalatest" % "3.0.0" % "test"
   )
 )

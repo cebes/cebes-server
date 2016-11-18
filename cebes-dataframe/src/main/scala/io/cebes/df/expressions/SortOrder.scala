@@ -9,16 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 17/11/2016.
  */
 
 package io.cebes.df.expressions
 
-/**
-  * Represent a column of a [[io.cebes.df.Dataframe]], backed by an expression.
-  *
-  * @param expr Expression behind this column
-  */
-class Column(val expr: Expression) {
+abstract sealed class SortDirection {
+}
 
+case object Ascending extends SortDirection {
+}
+
+case object Descending extends SortDirection {
+}
+
+case class SortOrder(child: Expression, direction: SortDirection) extends UnaryExpression {
 }

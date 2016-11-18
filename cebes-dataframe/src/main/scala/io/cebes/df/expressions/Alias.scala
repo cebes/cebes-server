@@ -9,19 +9,15 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 14/11/2016.
+ * Created by phvu on 18/11/2016.
  */
 
 package io.cebes.df.expressions
 
-/**
-  * Most primitive expression, typically taken from the backend engine
-  */
-abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression {
+import io.cebes.df.types.storage.StorageType
 
-}
+case class Alias(child: Expression, alias: String) extends UnaryExpression
 
-/**
-  * Containing any kind of literal, and Symbol
-  */
-case class Literal(value: Any) extends LeafExpression
+case class MultiAlias(child: Expression, aliases: Seq[String]) extends UnaryExpression
+
+case class Cast(child: Expression, to: StorageType) extends UnaryExpression

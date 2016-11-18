@@ -16,9 +16,10 @@ package io.cebes.common
 
 trait ArgumentChecks {
 
-  @inline def checkArguments(condition: Boolean, errorMsg: String) = {
-    if (!condition) {
-      throw new IllegalArgumentException(errorMsg)
-    }
+  /**
+    * throw an [[IllegalArgumentException]] if the given condition turns out to be false
+    */
+  @inline def checkArguments(condition: Boolean, errorMsg: String) = if (!condition) {
+    throw new IllegalArgumentException(errorMsg)
   }
 }

@@ -8,9 +8,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-testkit" % "2.4.11" % "test",
   "com.softwaremill.akka-http-session" %% "core" % "0.2.7",
 
-  "com.typesafe.scala-logging" %% "scala-logging-slf4j" % Common.scalaLoggingSlf4jVersion,
-  //"ch.qos.logback" % "logback-classic" % "1.1.7",
-
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),

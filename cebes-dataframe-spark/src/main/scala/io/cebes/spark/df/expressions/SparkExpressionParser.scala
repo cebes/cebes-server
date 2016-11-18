@@ -14,39 +14,193 @@
 
 package io.cebes.spark.df.expressions
 
-import io.cebes.df.expressions.{AbstractExpressionParser, Column => CebesColumn}
-import org.apache.spark.sql.{Column => SparkColumn}
+import io.cebes.common.ArgumentChecks
+import io.cebes.df.Column
+import io.cebes.df.expressions._
+import io.cebes.spark.df.schema.SparkSchemaUtils
+import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 
-import scala.collection.mutable
 
 object SparkExpressionParser {
 
   /**
     * Transform a cebes Column into a Spark column
     */
-  def toSparkColumn(column: CebesColumn): SparkColumn = {
+  def toSparkColumn(column: Column): SparkColumn = {
     val parser = new SparkExpressionParser()
     parser.parse(column.expr)
     parser.getResult
   }
 
-  def toSparkColumns(columns: CebesColumn*): Seq[SparkColumn] = columns.map(toSparkColumn)
+  def toSparkColumns(columns: Column*): Seq[SparkColumn] = columns.map(toSparkColumn)
 }
 
 
-class SparkExpressionParser extends AbstractExpressionParser {
+class SparkExpressionParser extends StackExpressionParser[SparkColumn] with ArgumentChecks {
 
-  private val resultStack = mutable.Stack[SparkColumn]()
+  /////////////////////////////////////////////////////////////////////////////
+  // visit functions
+  /////////////////////////////////////////////////////////////////////////////
 
-  def getResult: SparkColumn = {
-    if (resultStack.size != 1) {
-      throw new IllegalArgumentException("There is an error when parsing the expression, " +
-        "or you haven't called parse() yet?")
-    }
-    resultStack.head
+  protected def visitSparkPrimitiveExpression(expr: SparkPrimitiveExpression,
+                                              parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(expr.sparkCol)
   }
 
-  def visitSparkPrimitiveExpression(expr: SparkPrimitiveExpression): Unit = {
-    resultStack.push(expr.sparkCol)
+  protected def visitLiteral(expr: Literal, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(sparkFunctions.lit(expr.value))
+  }
+
+  protected def visitSortOrder(expr: SortOrder, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(expr.direction match {
+      case Ascending => parsedChildren.head.asc
+      case Descending => parsedChildren.head.desc
+    })
+  }
+
+  protected def visitUnaryMinus(expr: UnaryMinus, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(-parsedChildren.head)
+  }
+
+  protected def visitNot(expr: Not, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(!parsedChildren.head)
+  }
+
+  protected def visitEqualTo(expr: EqualTo, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head === parsedChildren.last)
+  }
+
+  protected def visitGreaterThan(expr: GreaterThan, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head > parsedChildren.last)
+  }
+
+  protected def visitLessThan(expr: LessThan, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head < parsedChildren.last)
+  }
+
+  protected def visitGreaterThanOrEqual(expr: GreaterThanOrEqual,
+                                        parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head >= parsedChildren.last)
+  }
+
+  protected def visitLessThanOrEqual(expr: LessThanOrEqual,
+                                     parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head <= parsedChildren.last)
+  }
+
+  protected def visitLessEqualNullSafe(expr: EqualNullSafe,
+                                     parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head <=> parsedChildren.last)
+  }
+
+  protected def visitCaseWhen(expr: CaseWhen, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    checkArguments(parsedChildren.length >= 2, "Expected a list of branches")
+
+    val branch = sparkFunctions.when(parsedChildren.head, parsedChildren(1))
+    Some(parsedChildren.grouped(2).toSeq.tail.foldLeft(branch) { (b, conditionClause) =>
+      conditionClause match {
+        case Seq(condition, value) => b.when(condition, value)
+        case Seq(otherwiseVal) => b.otherwise(otherwiseVal)
+      }
+    })
+  }
+
+  protected def visitIsNaN(expr: IsNaN, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.isNaN)
+  }
+
+  protected def visitIsNull(expr: IsNull, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.isNull)
+  }
+
+  protected def visitIsNotNull(expr: IsNotNull, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.isNotNull)
+  }
+
+  protected def visitOr(expr: Or, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head || parsedChildren.last)
+  }
+
+  protected def visitAnd(expr: And, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head && parsedChildren.last)
+  }
+
+  protected def visitAdd(expr: Add, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head + parsedChildren.last)
+  }
+
+  protected def visitSubtract(expr: Subtract, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head - parsedChildren.last)
+  }
+
+  protected def visitMultiply(expr: Multiply, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head * parsedChildren.last)
+  }
+
+  protected def visitDivide(expr: Divide, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head / parsedChildren.last)
+  }
+
+  protected def visitRemainder(expr: Remainder, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head % parsedChildren.last)
+  }
+
+  protected def visitIn(expr: In, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.isin(parsedChildren.tail))
+  }
+
+  protected def visitLike(expr: Like, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.like(expr.literal))
+  }
+
+  protected def visitRLike(expr: RLike, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.rlike(expr.literal))
+  }
+
+  protected def visitGetItem(expr: GetItem, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.getItem(parsedChildren.last))
+  }
+
+  protected def visitGetField(expr: GetField, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.getField(expr.fieldName))
+  }
+
+  protected def visitSubstring(expr: Substring, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.substr(parsedChildren(1), parsedChildren(2)))
+  }
+
+  protected def visitContains(expr: Contains, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.contains(parsedChildren.last))
+  }
+
+  protected def visitStartsWith(expr: StartsWith, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.startsWith(parsedChildren.last))
+  }
+
+  protected def visitEndsWith(expr: EndsWith, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.endsWith(parsedChildren.last))
+  }
+
+  protected def visitMultiAlias(expr: MultiAlias, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.as(expr.aliases))
+  }
+
+  protected def visitAlias(expr: Alias, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.alias(expr.alias))
+  }
+  protected def visitCast(expr: Cast, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.cast(SparkSchemaUtils.cebesTypesToSpark(expr.to)))
+  }
+
+  protected def visitBitwiseOr(expr: BitwiseOr, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.bitwiseOR(parsedChildren.last))
+  }
+
+  protected def visitBitwiseAnd(expr: BitwiseAnd, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.bitwiseAND(parsedChildren.last))
+  }
+
+  protected def visitBitwiseXor(expr: BitwiseXor, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(parsedChildren.head.bitwiseXOR(parsedChildren.last))
   }
 }
