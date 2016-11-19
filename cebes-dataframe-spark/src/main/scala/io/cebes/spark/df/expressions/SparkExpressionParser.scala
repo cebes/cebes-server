@@ -51,6 +51,11 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] with Argu
     Some(sparkFunctions.lit(expr.value))
   }
 
+  protected def visitUnresolvedColumnName(expr: UnresolvedColumnName,
+                                          parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
+    Some(sparkFunctions.col(expr.colName))
+  }
+
   protected def visitSortOrder(expr: SortOrder, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
     Some(expr.direction match {
       case Ascending => parsedChildren.head.asc

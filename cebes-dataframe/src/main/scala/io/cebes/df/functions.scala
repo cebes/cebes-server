@@ -12,13 +12,18 @@
  * Created by phvu on 17/11/2016.
  */
 
-package io.cebes.df.expressions
+package io.cebes.df
 
-import io.cebes.df.Column
+import io.cebes.df.expressions.{CaseWhen, Expression, Literal, UnresolvedColumnName}
 
 object functions {
 
   private def withExpr(expr: Expression): Column = new Column(expr)
+
+  /**
+    * Returns a [[Column]] based on the given column name.
+    */
+  def col(colName: String): Column = new Column(UnresolvedColumnName(colName))
 
   /**
     * Creates a [[io.cebes.df.Column]] of literal value.

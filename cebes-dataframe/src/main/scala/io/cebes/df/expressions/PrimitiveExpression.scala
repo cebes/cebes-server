@@ -17,11 +17,11 @@ package io.cebes.df.expressions
 /**
   * Most primitive expression, typically taken from the backend engine
   */
-abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression {
-
-}
+abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression
 
 /**
   * Containing any kind of literal, and Symbol
   */
 case class Literal(value: Any) extends LeafExpression
+
+case class UnresolvedColumnName(colName: String) extends LeafExpression

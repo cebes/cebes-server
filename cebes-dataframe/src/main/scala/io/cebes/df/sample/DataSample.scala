@@ -39,11 +39,21 @@ class DataSample(override val schema: Schema, val data: Seq[Seq[Any]]) extends H
   }
 
   /**
+    * Get the rows from the start index to the end index.
+    */
+  def rows(start: Int, end: Int) =
+    data.head.indices.slice(start, end).map(r => data.map(_(r)))
+
+  /**
+    * Get all rows of this sample
+    */
+  def rows: Seq[Seq[Any]] = rows(0, data.head.length)
+
+  /**
     * Tabulated string representation of the sample. For debugging purposes.
     */
   def tabulate(rowsLimit: Int = 10): String = {
-    val rowBasedData = schema.fieldNames.toSeq +:
-      data.head.indices.slice(0, rowsLimit).map(r => data.map(_(r)))
+    val rowBasedData = schema.fieldNames.toSeq +: this.rows
     Tabulator.format(rowBasedData)
   }
 }

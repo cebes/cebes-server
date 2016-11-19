@@ -17,6 +17,4 @@ package io.cebes.spark.df.expressions
 import io.cebes.df.expressions.PrimitiveExpression
 import org.apache.spark.sql.Column
 
-case class SparkPrimitiveExpression(sparkCol: Column) extends PrimitiveExpression[Column](sparkCol) {
-
-}
+case class SparkPrimitiveExpression(sparkCol: Column) extends PrimitiveExpression[Column](sparkCol)
