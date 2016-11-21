@@ -16,8 +16,8 @@ package io.cebes.df
 
 import io.cebes.common.HasId
 import io.cebes.df.sample.DataSample
-import io.cebes.df.schema.VariableTypes.VariableType
-import io.cebes.df.schema.{Column, HasSchema, Schema}
+import io.cebes.df.schema.{HasSchema, Schema}
+import io.cebes.df.types.VariableTypes.VariableType
 
 /**
   * Cebes Dataframe
@@ -26,18 +26,19 @@ trait Dataframe extends HasSchema with HasId {
 
   /**
     * Number of rows
-    *
-    * @return a long
     */
   def numRows: Long
+
+  /** Selects column based on the column name and return it as a [[Column]]. **/
+  def apply(colName: String): Column = col(colName)
 
   /**
     * Automatically infer variable types, using various heuristics based on data
     *
-    * @return the same [[Dataframe]]
+    * @return a new [[Dataframe]]
     * @group Schema manipulation
     */
-  def inferVariableTypes(): Dataframe
+  def inferVariableTypes(sampleSize: Int = 1000): Dataframe
 
   /**
     * Manually update variable types for each column. Column names are case-insensitive.
@@ -45,10 +46,31 @@ trait Dataframe extends HasSchema with HasId {
     * an exception will be thrown.
     *
     * @param newTypes map from column name -> new [[VariableType]]
-    * @return the same [[Dataframe]]
+    * @return a new [[Dataframe]]
     * @group Schema manipulation
     */
-  def updateVariableTypes(newTypes: Map[String, VariableType]): Dataframe
+  def withVariableTypes(newTypes: Map[String, VariableType]): Dataframe
+
+  /**
+    * Manually update variable types for each column. Column names are case-insensitive.
+    * Sanity checks will be performed. If new variable type doesn't conform with its storage type,
+    * an exception will be thrown.
+    *
+    * @param colName column name
+    * @param variableType new variable type
+    * @return a new [[Dataframe]]
+    * @group Schema manipulation
+    */
+  def withVariableType(colName: String, variableType: VariableType): Dataframe =
+  withVariableTypes(Map(colName -> variableType))
+
+  /**
+    * Apply a new schema to this data frame
+    *
+    * @param newSchema the new Schema
+    * @return a new dataframe with the new Schema
+    */
+  def applySchema(newSchema: Schema): Dataframe
 
   /**
     * Get the first n rows. If the [[Dataframe]] has less than n rows, all rows will be returned.
@@ -80,12 +102,13 @@ trait Dataframe extends HasSchema with HasId {
     */
   def createTempView(name: String)
 
-  /**
-    * Data exploration
-    */
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
 
   /**
     * Returns a new Dataframe sorted by the given expressions. This is an alias for `orderedBy`
+    *
     * @group data-exploration
     */
   def sort(sortExprs: Column*): Dataframe
@@ -110,10 +133,24 @@ trait Dataframe extends HasSchema with HasId {
     */
   def dropDuplicates(colNames: Seq[String]): Dataframe
 
-  /**
-    * SQL-related functions
-    */
+  ////////////////////////////////////////////////////////////////////////////////////
+  // SQL-related functions
+  ////////////////////////////////////////////////////////////////////////////////////
 
+  /**
+    * Returns a new [[Dataframe]] by adding a column or replacing
+    * the existing column that has the same name (case-insensitive).
+    *
+    * @group sql-api
+    */
+  def withColumn(colName: String, col: Column): Dataframe
+
+  /**
+    * Returns a new [[Dataframe]] with a column renamed.
+    *
+    * @group sql-api
+    */
+  def withColumnRenamed(existingName: String, newName: String): Dataframe
 
   /**
     * Selects a set of columns based on expressions.
@@ -121,6 +158,18 @@ trait Dataframe extends HasSchema with HasId {
     * @group sql-api
     */
   def select(columns: Column*): Dataframe
+
+  /**
+    * Selects a set of columns. This is a variant of `select` that can only select
+    * existing columns using column names (i.e. cannot construct expressions).
+    *
+    * {{{
+    *   ds.select("colA", "colB")
+    * }}}
+    *
+    * @group sql-api
+    */
+  def select(col: String, cols: String*): Dataframe
 
   /**
     * Filters rows using the given condition.
@@ -134,7 +183,7 @@ trait Dataframe extends HasSchema with HasId {
     *
     * @group sql-api
     */
-  def orderBy(sortExprs: Column*): Dataframe
+  def orderBy(sortExprs: Column*): Dataframe = sort(sortExprs: _*)
 
   /**
     * Selects column based on the column name and return it as a [[Column]].
@@ -159,10 +208,9 @@ trait Dataframe extends HasSchema with HasId {
     *   df1.join(df2, df1.col("df1Key") === df2.col("df2Key"), "outer")
     * }}}
     *
-    * @param right Right side of the join.
+    * @param right     Right side of the join.
     * @param joinExprs Join expression.
-    * @param joinType One of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`.
-    *
+    * @param joinType  One of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`.
     * @group sql-api
     */
   def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe
@@ -215,12 +263,4 @@ trait Dataframe extends HasSchema with HasId {
     * @group sql-api
     */
   def distinct(): Dataframe = dropDuplicates(this.columns)
-
-  /**
-    * Apply a new schema to this data frame
-    *
-    * @param newSchema the new Schema
-    * @return a new dataframe with the new Schema
-    */
-  def applySchema(newSchema: Schema): Dataframe
 }

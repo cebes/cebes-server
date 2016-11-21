@@ -20,7 +20,6 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
-  val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
   override def beforeAll(): Unit = {
     super.beforeAll()
     createOrReplaceCylinderBands()

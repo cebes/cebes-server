@@ -9,27 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 17/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.df.expressions
 
-/**
-  * Trait with everything related to Dataframe's schema
-  */
-trait HasSchema {
+abstract sealed class SortDirection {
+}
 
-  def schema: Schema
+case object Ascending extends SortDirection {
+}
 
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.length
+case object Descending extends SortDirection {
+}
 
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.fieldNames
+case class SortOrder(child: Expression, direction: SortDirection) extends UnaryExpression {
 }

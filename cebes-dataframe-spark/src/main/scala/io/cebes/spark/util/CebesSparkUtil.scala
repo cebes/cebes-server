@@ -21,9 +21,7 @@ trait CebesSparkUtil {
 
   /**
     * Utility function to make sure the [[Dataframe]] passed is a [[SparkDataframe]]
-    *
-    * @param df a [[Dataframe]] object
-    * @return the [[SparkDataframe]] object, or throw an [[IllegalArgumentException]] otherwise
+    * Return the [[SparkDataframe]] object, or throw an [[IllegalArgumentException]] otherwise
     */
   def getSparkDataframe(df: Dataframe): SparkDataframe = df match {
     case sparkDf: SparkDataframe => sparkDf

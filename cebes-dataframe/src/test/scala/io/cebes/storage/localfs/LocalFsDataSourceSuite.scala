@@ -15,7 +15,7 @@
 package io.cebes.storage.localfs
 
 import java.io.IOException
-import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
+import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 
 import io.cebes.storage.DataFormats
 import org.scalatest.FunSuite

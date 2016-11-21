@@ -9,17 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 08/11/2016.
+ * Created by phvu on 17/11/2016.
  */
 
-package io.cebes.common
+package io.cebes.df.expressions
 
-trait ArgumentChecks {
+case class UnaryMinus(child: Expression) extends UnaryExpression
 
-  /**
-    * throw an [[IllegalArgumentException]] if the given condition turns out to be false
-    */
-  @inline def checkArguments(condition: Boolean, errorMsg: String) = if (!condition) {
-    throw new IllegalArgumentException(errorMsg)
-  }
-}
+case class Add(left: Expression, right: Expression) extends BinaryExpression
+
+case class Subtract(left: Expression, right: Expression) extends BinaryExpression
+
+case class Multiply(left: Expression, right: Expression) extends BinaryExpression
+
+case class Divide(left: Expression, right: Expression) extends BinaryExpression
+
+case class Remainder(left: Expression, right: Expression) extends BinaryExpression

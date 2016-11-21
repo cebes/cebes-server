@@ -14,19 +14,65 @@
 
 package io.cebes.spark.df
 
-import io.cebes.df.schema.{StorageTypes, VariableTypes}
+import io.cebes.common.CebesBackendException
+import io.cebes.df.types.storage.{IntegerType, LongType}
+import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import io.cebes.df.functions
 
 class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
-  val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
-
   override def beforeAll(): Unit = {
     super.beforeAll()
-    createOrReplaceCylinderBands(cylinderBandsTableName)
+    createOrReplaceCylinderBands()
   }
+
+
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Variable types
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  test("Dataframe variable types") {
+    val df = getCylinderBands
+    assert(df.schema("customer").storageType === StorageTypes.StringType)
+    assert(df.schema("customer").variableType === VariableTypes.TEXT)
+
+    val df2 = df.inferVariableTypes()
+    assert(df2.id !== df.id)
+    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df2.schema("customer").variableType))
+    assert(df2.schema("job_number").variableType === VariableTypes.ORDINAL)
+
+    val df3 = df.withVariableTypes(Map("customer" -> VariableTypes.ORDINAL,
+      "Job_Number" -> VariableTypes.DISCRETE))
+    assert(df3.id !== df.id)
+    assert(df3.schema("customer").variableType === VariableTypes.ORDINAL)
+    assert(df3.schema("job_number").variableType === VariableTypes.DISCRETE)
+  }
+
+  test("Apply schema") {
+    val df = getCylinderBands
+    assert(df.schema("job_number").storageType === IntegerType)
+
+    val newSchema = df.schema.withFieldRenamed("timestamp", "new_timestamp").
+      withField("JoB_number", LongType, VariableTypes.NOMINAL)
+    val df2 = df.applySchema(newSchema)
+    assert(df2.id !== df.id)
+    assert(!df2.columns.contains("timestamp"))
+    assert(df2.columns.contains("new_timestamp"))
+    assert(df2.schema("Job_number").storageType === LongType)
+    assert(df2.schema("Job_number").variableType === VariableTypes.NOMINAL)
+
+    intercept[IllegalArgumentException] {
+      df.applySchema(df.schema.withField("newColumn", IntegerType))
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Sampling
+  ////////////////////////////////////////////////////////////////////////////////////
 
   test("Type conversions in take()") {
     val df = sparkDataframeService.sql("SELECT customer, " +
@@ -54,7 +100,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("sample") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df = getCylinderBands
     assert(df.numCols === 40)
     assert(df.numRows === 540)
 
@@ -67,25 +113,42 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df3.numRows > df.numRows)
   }
 
-  test("Dataframe variable types") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
-    assert(df.schema.getColumn("customer").storageType === StorageTypes.STRING)
-    assert(df.schema.getColumn("customer").getVariableType === VariableTypes.TEXT)
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
 
-    val df2 = df.inferVariableTypes()
-    assert(df2.id === df.id)
-    assert(Seq(VariableTypes.TEXT, VariableTypes.NOMINAL).contains(df.schema.getColumn("customer").getVariableType))
-    assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.ORDINAL)
+  test("sort") {
+    val df = getCylinderBands
 
-    val df3 = df.updateVariableTypes(Map("customer" -> VariableTypes.ORDINAL,
-      "Job_Number" -> VariableTypes.DISCRETE))
-    assert(df3.id === df.id)
-    assert(df.schema.getColumn("customer").getVariableType === VariableTypes.ORDINAL)
-    assert(df.schema.getColumn("job_number").getVariableType === VariableTypes.DISCRETE)
+    // ascending
+    val df2 = df.sort(df.col("timestamp"))
+    assert(df2.id !== df.id)
+    val sample2 = df2.take(100)
+    val col2 = sample2.get[Long]("Timestamp").get
+    assert((1 until col2.length).forall(i => col2(i) >= col2(i - 1)))
+
+    // descending
+    val df3 = df.sort(df.col("timestamp").desc)
+    val sample3 = df3.take(100)
+    val col3 = sample3.get[Long]("Timestamp").get
+    assert((1 until col3.length).forall(i => col3(i) <= col3(i - 1)))
+
+    // mixed
+    val df4 = df.sort(df.col("timestamp").desc, df.col("cylinder_number").asc)
+    val sample4 = df4.take(10)
+    val col4Ts = sample4.get[Long]("Timestamp").get
+    val col4Cn = sample4.get[String]("cylinder_number").get
+    assert(col4Ts.head === col4Ts(1))
+    assert(col4Cn.head < col4Cn(1))
+    assert(col4Ts.head > col4Ts.last)
+
+    intercept[CebesBackendException]{
+      df.sort(df.col("timestampZXXXXX"))
+    }
   }
 
   test("drop columns") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df = getCylinderBands
     val df2 = df.drop(Seq("random_columns"))
     assert(df2.id === df.id)
 
@@ -100,7 +163,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("dropDuplicates") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName").limit(30)
+    val df = getCylinderBands.limit(30)
     val df2 = df.dropDuplicates(df.columns)
     assert(df.id !== df2.id)
     assert(df.numRows === df2.numRows)
@@ -114,8 +177,126 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df4.numRows === df2.numRows)
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////
+  // SQL-like APIs
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  test("withColumn") {
+    val dfOriginal = getCylinderBands
+
+    // add new column
+    val df1 = dfOriginal.withColumn("timestamp2", dfOriginal("Timestamp"))
+    val sample1 = df1.take(10)
+    assert(df1.id !== dfOriginal.id)
+    assert(df1.numCols === dfOriginal.numCols + 1)
+    assert(df1.columns.last === "timestamp2")
+    assert(sample1.get[Long]("timestamp") === sample1.get[Long]("timestamp2"))
+
+    // replace a column
+    val df3 = dfOriginal.withColumn("timestamp", dfOriginal("job_number"))
+    val sample3 = df3.take(10)
+    assert(df3.numCols === dfOriginal.numCols)
+    assert(df3.schema("timestamp").storageType === dfOriginal.schema("job_number").storageType)
+    assert(df3.schema("timestamp").variableType === dfOriginal.schema("job_number").variableType)
+    assert(sample3.get[Long]("timestamp") === sample3.get[Long]("job_number"))
+
+    // invalid use of wildcard
+    val exception2 = intercept[CebesBackendException] {
+      dfOriginal.withColumn("all_of_them", dfOriginal("*"))
+    }
+    assert(exception2.message.contains("Invalid usage of '*'"))
+  }
+
+  test("withColumnRenamed") {
+    val df = getCylinderBands
+
+    // correct case
+    val df1 = df.withColumnRenamed("Timestamp", "timestamp_new")
+    assert(df1.id !== df.id)
+    assert(df1.numCols === df.numCols)
+    assert(df1.schema.get("timestamp").isEmpty)
+    assert(df1.schema.get("Timestamp_new").nonEmpty)
+    assert(df1.columns.contains("timestamp_new"))
+    assert(!df1.columns.contains("timestamp"))
+
+    // rename to an existing name is fine, but error when it gets selected
+    val df2 = df.withColumnRenamed("Timestamp", "job_number")
+    val exception2 = intercept[CebesBackendException](df2("job_number"))
+    assert(exception2.message.contains("Reference 'job_number' is ambiguous"))
+
+    // existing column name is not in the df
+    val df3 = df.withColumnRenamed("timestamp_not_existed", "timestamp_new")
+    assert(df3.columns === df.columns)
+  }
+
+  test("select") {
+    val df = getCylinderBands
+
+    // select single column, case-insensitive name
+    val df1 = df.select(df("TimeStamp"))
+    assert(df1.numCols === 1)
+    assert(df1.columns.head === "TimeStamp")
+    assert(df1.schema("timestamp").storageType === df.schema("timestamp").storageType)
+
+    // select 3 columns
+    val df2 = df.select(df("roughness"), df("blade_pressure"), df("varnish_pct"))
+    assert(df2.numCols === 3)
+    assert(df2.columns === Seq("roughness", "blade_pressure", "varnish_pct"))
+    assert(df2.schema("roughness").storageType === df.schema("roughness").storageType)
+    assert(df2.schema("blade_pressure").storageType === df.schema("blade_pressure").storageType)
+    assert(df2.schema("varnish_pct").storageType === df.schema("varnish_pct").storageType)
+
+    // select everything
+    val df3 = df.select(df("*"))
+    assert(df3.numCols === df.numCols)
+    assert(df3.columns === df.columns)
+    assert(df3.columns.forall(s => df3.schema(s).storageType === df.schema(s).storageType))
+
+    // select a non-existing column
+    intercept[CebesBackendException](df.select(df("non_existing_column")))
+  }
+
+  test("where") {
+    val df = getCylinderBands.where(functions.col("job_number") % 2 === 0 && functions.col("grain_screened") === "YES")
+    val sample = df.take(100)
+    val jobColIdx = df.columns.indexOf("job_number")
+    val grainColIdx = df.columns.indexOf("grain_screened")
+    assert(df.numRows > 0)
+    assert(sample.rows.forall{ s =>
+      s(jobColIdx).asInstanceOf[Int] % 2 === 0 && s(grainColIdx) === "YES"
+    })
+  }
+
+  test("orderBy") {
+    // very light test because orderBy is an alias of sort
+    val df = getCylinderBands
+    val df2 = df.orderBy(df("timestamp"))
+    assert(df2.id !== df.id)
+    val sample2 = df2.take(100)
+    val col2 = sample2.get[Long]("Timestamp").get
+    assert((1 until col2.length).forall(i => col2(i) >= col2(i - 1)))
+  }
+
+  test("alias") {
+    val df = getCylinderBands
+
+    val df1 = df.alias("new_name")
+    assert(df1.id !== df.id)
+    assert(df1.columns === df.columns)
+    assert(df1.numRows === df.numRows)
+
+    val df2 = df.alias("string with space")
+    assert(df2.id !== df.id)
+    assert(df2.columns === df.columns)
+    assert(df2.numRows === df.numRows)
+  }
+
+  test("join") {
+    // TODO: implement
+  }
+
   test("limit") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+    val df = getCylinderBands
     val df2 = df.limit(20)
     assert(df2.columns === df.columns)
     assert(df2.numRows === 20)
@@ -126,7 +307,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("union") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName").limit(20)
+    val df = getCylinderBands.limit(20)
 
     val df2 = df.union(df)
     assert(df2.numRows === 2 * df.numRows)

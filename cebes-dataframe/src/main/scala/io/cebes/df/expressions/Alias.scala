@@ -9,27 +9,15 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 18/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.df.expressions
 
-/**
-  * Trait with everything related to Dataframe's schema
-  */
-trait HasSchema {
+import io.cebes.df.types.storage.StorageType
 
-  def schema: Schema
+case class Alias(child: Expression, alias: String) extends UnaryExpression
 
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.length
+case class MultiAlias(child: Expression, aliases: Seq[String]) extends UnaryExpression
 
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.fieldNames
-}
+case class Cast(child: Expression, to: StorageType) extends UnaryExpression

@@ -9,27 +9,12 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 14/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.spark.df.expressions
 
-/**
-  * Trait with everything related to Dataframe's schema
-  */
-trait HasSchema {
+import io.cebes.df.expressions.PrimitiveExpression
+import org.apache.spark.sql.Column
 
-  def schema: Schema
-
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.length
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.fieldNames
-}
+case class SparkPrimitiveExpression(sparkCol: Column) extends PrimitiveExpression[Column](sparkCol)

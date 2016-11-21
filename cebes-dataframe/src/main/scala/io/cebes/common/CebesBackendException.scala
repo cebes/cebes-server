@@ -9,27 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 17/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.common
 
 /**
-  * Trait with everything related to Dataframe's schema
+  * Exception happened in the backend engine, get wrapped in a custom exception.
+  * The original backend exception is is `cause`, if it is available.
   */
-trait HasSchema {
-
-  def schema: Schema
-
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.length
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.fieldNames
-}
+case class CebesBackendException(message: String, cause: Option[Throwable] = None)
+  extends Exception(message, cause.orNull)

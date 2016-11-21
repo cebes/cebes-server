@@ -9,27 +9,19 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 14/11/2016.
  */
 
-package io.cebes.df.schema
+package io.cebes.df.expressions
 
 /**
-  * Trait with everything related to Dataframe's schema
+  * Most primitive expression, typically taken from the backend engine
   */
-trait HasSchema {
+abstract class PrimitiveExpression[T](backendCol: T) extends LeafExpression
 
-  def schema: Schema
+/**
+  * Containing any kind of literal, and Symbol
+  */
+case class Literal(value: Any) extends LeafExpression
 
-  /**
-    * Number of columns
-    *
-    * @return a long
-    */
-  def numCols: Long = schema.length
-
-  /**
-    * Returns all column names as an array.
-    */
-  def columns: Seq[String] = schema.fieldNames
-}
+case class UnresolvedColumnName(colName: String) extends LeafExpression

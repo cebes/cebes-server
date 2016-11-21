@@ -9,94 +9,138 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/09/16.
+ * Created by phvu on 14/11/2016.
  */
 
 package io.cebes.df.schema
 
+import io.cebes.df.types.VariableTypes
+import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.types.storage.StorageType
 
-class Schema(val columns: Seq[Column]) {
+case class SchemaField(name: String, storageType: StorageType, variableType: VariableType) {
 
-  /**
-    * Number of columns
-    */
-  def numCols: Long = columns.length
+  if (!variableType.validStorageTypes.contains(storageType)) {
+    throw new IllegalArgumentException(s"Invalid variable type: column $name has storage type $storageType " +
+      s"but forced to have variable type $variableType.")
+  }
 
-  /**
-    * Names of all the columns as a sequence of Strings
-    */
-  def columnNames: Seq[String] = columns.map(_.name)
-
-  /**
-    * Get the column as an Option[Column]
-    *
-    * @param name name of the column to get, case-insensitive
-    * @return Option[Column]
-    */
-  def getColumnOptional(name: String): Option[Column] = {
-    columns.find(_.compareName(name))
+  def this(name: String, storageType: StorageType) {
+    this(name, storageType, VariableTypes.fromStorageType(storageType))
   }
 
   /**
-    * Get the column object. To get the column as an Option[Column], use [[getColumnOptional()]].
-    *
-    * @param name name of the column to get, case-insensitive
-    * @return [[Column]] object if found, or [[IllegalArgumentException]] otherwise
+    * Is the `otherName` the same with the name of this field?
+    * Basically this is an `equalsIgnoreCase` comparision
     */
-  def getColumn(name: String): Column = {
-    val col = getColumnOptional(name)
-    if (col.isEmpty) {
-      throw new IllegalArgumentException(s"Column name not found: $name")
-    }
-    col.get
-  }
-
-  /**
-    * Returns a new Schema with columns dropped.
-    * This is a no-op if schema doesn't contain column name(s).
-    *
-    * The colName string is treated literally without further interpretation.
-    */
-  def drop(colNames: Seq[String]): Schema = {
-    val droppedColNames = colNames.filter(this.contains)
-    if (droppedColNames.isEmpty) {
-      this
-    } else {
-      new Schema(columns.filterNot { c =>
-        droppedColNames.exists(c.compareName)
-      }.map(_.copy()))
-    }
-  }
-
-  /**
-    * Utilities
-    */
-
-  /**
-    * Whether this schema has a column with the given name
-    * Column names are compared using [[Column.compareName()]]
-    */
-  def contains(colName: String): Boolean = {
-    columns.exists(_.compareName(colName))
-  }
-
-  /**
-    * Clone this Schema object, by cloning all the columns
-    */
-  def copy(): Schema = new Schema(columns.map(_.copy()))
-
-  override def toString: String = columns.map(c => s"${c.name} ${c.storageType.toString}").mkString(", ")
+  def compareName(otherName: String) = name.equalsIgnoreCase(otherName)
 }
 
-object Schema {
+case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaField] {
 
-  def fromString(schemaStr: String): Schema = {
-    val cols = schemaStr.split(",").map { col =>
-      col.stripPrefix(" ").stripSuffix(" ").split(" ").filter(_.length > 0) match {
-        case Array(colName, colType) => new Column(colName, StorageTypes.fromString(colType))
-        case t => throw new IllegalArgumentException(s"Unrecognized column specification: ${t.toString}")
-      }
+  override def length: Int = fields.length
+
+  override def iterator: Iterator[SchemaField] = fields.iterator
+
+  override def apply(fieldIndex: Int): SchemaField = fields(fieldIndex)
+
+  def apply(name: String): SchemaField = {
+    get(name).getOrElse(throw new IllegalArgumentException(s"""Field "$name" does not exist."""))
+  }
+
+  def fieldNames = fields.map(_.name)
+
+  /**
+    * Get the field with the given name (case-insensitive)
+    */
+  def get(name: String): Option[SchemaField] = find(_.compareName(name))
+
+  /**
+    * Whether this schema contains a field with the given name (case-insensitive)
+    */
+  def contains(name: String): Boolean = get(name).isDefined
+
+  /**
+    * Return a new [[Schema]] without the given field
+    */
+  def remove(names: Seq[String]): Schema = {
+    Schema(fields.filterNot(f => names.exists(_.equalsIgnoreCase(f.name))).map(_.copy()))
+  }
+
+  /**
+    * Return a new [[Schema]] without the given field
+    */
+  def remove(name: String): Schema = remove(Seq(name))
+
+  /**
+    * Creates a new [[Schema]] by adding a new field.
+    * {{{
+    * val schema = Schema()
+    *   .add(SchemaField("a", IntegerType))
+    *   .add(SchemaField("b", LongType))
+    * }}}
+    */
+  def add(field: SchemaField): Schema = Schema(fields :+ field)
+
+  /**
+    * Creates a new [[Schema]] by adding a new field.
+    * {{{
+    * val schema = Schema()
+    *   .add("a", IntegerType)
+    *   .add("b", LongType)
+    * }}}
+    */
+  def add(name: String, storageType: StorageType): Schema = add(new SchemaField(name, storageType))
+
+  /**
+    * Creates a new [[Schema]] by adding a new field.
+    * {{{
+    * val schema = Schema()
+    *   .add("a", IntegerType, VariableTypes.NOMIAL)
+    *   .add("b", LongType, , VariableTypes.NOMIAL)
+    * }}}
+    */
+  def add(name: String, storageType: StorageType, variableType: VariableType): Schema =
+  add(SchemaField(name, storageType, variableType))
+
+  /**
+    * Creates a new [[Schema]] by adding a new field, or replace the current field
+    * that has the same name.
+    */
+  def withField(field: SchemaField): Schema = {
+    this.get(field.name) match {
+      case Some(_) => this.copy(fields = fields.map {
+        case f if f.compareName(field.name) => field
+        case f => f.copy()
+      })
+      case None => this.copy(fields = fields.map(_.copy()) :+ field)
     }
-    new Schema(cols)
+  }
+
+  /**
+    * Creates a new [[Schema]] by adding a new field, or replace the current field
+    * that has the same name.
+    */
+  def withField(name: String, storageType: StorageType): Schema = withField(new SchemaField(name, storageType))
+
+  /**
+    * Creates a new [[Schema]] by adding a new field, or replace the current field
+    * that has the same name.
+    */
+  def withField(name: String, storageType: StorageType, variableType: VariableType): Schema =
+  withField(SchemaField(name, storageType, variableType))
+
+  /**
+    * Returns a new [[Schema]] with a field renamed.
+    * This is a no-op if schema doesn't contain `existingName`.
+    */
+  def withFieldRenamed(existingName: String, newName: String): Schema = {
+    this.get(existingName) match {
+      case Some(_) => this.copy(fields = fields.map {
+        case f if f.compareName(existingName) => f.copy(name = newName)
+        case f => f.copy()
+      })
+      case None => this
+    }
   }
 }
