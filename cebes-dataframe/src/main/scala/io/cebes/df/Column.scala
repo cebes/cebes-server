@@ -350,7 +350,7 @@ class Column(val expr: Expression) extends StrictLogging {
   def and(other: Column): Column = this && other
 
   /**
-    * Sum of this expression and another expression.
+    * Sum of this expression and another expression. Only work on numeric columns.
     * {{{
     *   // Selects the sum of a person's height and weight.
     *   people.select( people("height") + people("weight") )
@@ -362,7 +362,7 @@ class Column(val expr: Expression) extends StrictLogging {
   }
 
   /**
-    * Sum of this expression and another expression.
+    * Sum of this expression and another expression. Only work on numeric columns.
     * {{{
     *   // Selects the sum of a person's height and weight.
     *   people.select( people("height") + people("weight") )
@@ -373,6 +373,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * Subtraction. Subtract the other expression from this expression.
+    * Only work on numeric columns.
     * {{{
     *   // Selects the difference between people's height and their weight.
     *   people.select( people("height") - people("weight") )
@@ -385,6 +386,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * Subtraction. Subtract the other expression from this expression.
+    * Only work on numeric columns.
     * {{{
     *   // Selects the difference between people's height and their weight.
     *   people.select( people("height") - people("weight") )
@@ -395,6 +397,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * Multiplication of this expression and another expression.
+    * Only work on numeric columns.
     * {{{
     *   // Multiplies a person's height by their weight.
     *   people.select( people("height") * people("weight") )
@@ -407,6 +410,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * Multiplication of this expression and another expression.
+    * Only work on numeric columns.
     * {{{
     *   // Multiplies a person's height by their weight.
     *   people.select( people("height") * people("weight") )
@@ -417,6 +421,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * Division this expression by another expression.
+    * Only work on numeric columns.
     * {{{
     *   // Divides a person's height by their weight.
     *   people.select( people("height") / people("weight") )
@@ -429,6 +434,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * Division this expression by another expression.
+    * Only work on numeric columns.
     * {{{
     *   // Divides a person's height by their weight.
     *   people.select( people("height") / people("weight") )
@@ -459,6 +465,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * SQL like expression.
+    * Result will be a BooleanType column
     */
   def like(literal: String): Column = withExpr {
     Like(expr, literal)
@@ -466,6 +473,7 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * SQL RLIKE expression (LIKE with Regex).
+    * Result will be a BooleanType column
     */
   def rlike(literal: String): Column = withExpr {
     RLike(expr, literal)
@@ -488,6 +496,13 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * An expression that returns a substring.
+    * NOTE: that this is not zero based, but 1-based index. The first character in str has index 1.
+    *
+    * `startPos` and `len` are handled specially:
+    * - `"Content".substr(1, 3)` gives `"Con"`
+    * - `"Content".substr(-100, 2)` gives `""`
+    * - `"Content".substr(-100, 102)` gives `"Content"`
+    * - `"Content".substr(2, 100)` gives `"ontent"`
     *
     * @param startPos expression for the starting position.
     * @param len      expression for the length of the substring.
@@ -498,6 +513,13 @@ class Column(val expr: Expression) extends StrictLogging {
 
   /**
     * An expression that returns a substring.
+    * NOTE: that this is not zero based, but 1-based index. The first character in str has index 1.
+    *
+    * `startPos` and `len` are handled specially:
+    * - `"Content".substr(1, 3)` gives `"Con"`
+    * - `"Content".substr(-100, 2)` gives `""`
+    * - `"Content".substr(-100, 102)` gives `"Content"`
+    * - `"Content".substr(2, 100)` gives `"ontent"`
     *
     * @param startPos starting position.
     * @param len      length of the substring.

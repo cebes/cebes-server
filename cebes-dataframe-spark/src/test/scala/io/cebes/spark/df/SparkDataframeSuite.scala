@@ -19,6 +19,7 @@ import io.cebes.df.types.storage.{IntegerType, LongType}
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import io.cebes.df.functions
 
 class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
@@ -256,7 +257,14 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("where") {
-    // TODO: implement
+    val df = getCylinderBands.where(functions.col("job_number") % 2 === 0 && functions.col("grain_screened") === "YES")
+    val sample = df.take(100)
+    val jobColIdx = df.columns.indexOf("job_number")
+    val grainColIdx = df.columns.indexOf("grain_screened")
+    assert(df.numRows > 0)
+    assert(sample.rows.forall{ s =>
+      s(jobColIdx).asInstanceOf[Int] % 2 === 0 && s(grainColIdx) === "YES"
+    })
   }
 
   test("orderBy") {

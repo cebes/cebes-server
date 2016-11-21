@@ -151,7 +151,7 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] with Argu
   }
 
   protected def visitIn(expr: In, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(parsedChildren.head.isin(parsedChildren.tail))
+    Some(parsedChildren.head.isin(parsedChildren.tail: _*))
   }
 
   protected def visitLike(expr: Like, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {

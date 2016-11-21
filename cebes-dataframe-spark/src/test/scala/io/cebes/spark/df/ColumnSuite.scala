@@ -16,7 +16,7 @@ package io.cebes.spark.df
 
 import io.cebes.common.CebesBackendException
 import io.cebes.df.functions
-import io.cebes.df.types.storage.BooleanType
+import io.cebes.df.types.storage._
 import io.cebes.spark.helpers.TestDataHelper
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
@@ -321,5 +321,531 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
       df("viscosity"), df("proof_cut"), df("plating_tank")).limit(100)
     assert(df2.numCols === 4)
     assert(df2.numRows === 100)
+  }
+
+  test("isNaN") {
+    val df = getCylinderBands
+
+    // on float column
+    val df1 = df.select(df("proof_cut").isNaN.as("proof_cut_bool"))
+    assert(df1.numCols === 1)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("proof_cut_bool").storageType === BooleanType)
+
+    // on string column
+    val df2 = df.select(df("cylinder_number").isNaN.as("cylinder_number_bool"))
+    assert(df2.numCols === 1)
+    assert(df2.numRows === df.numRows)
+    assert(df2.schema("cylinder_number_bool").storageType === BooleanType)
+  }
+
+  test("isNull") {
+    val df = getCylinderBands
+
+    val df1 = df.select(df("plating_tank").isNull.as("plating_tank_null"),
+      df("plating_tank"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 2)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema(df1.columns.head).storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(b: Boolean, null) => b
+      case Seq(b: Boolean, v: Int) => !b
+    })
+  }
+
+  test("isNotNull") {
+    val df = getCylinderBands
+
+    val df1 = df.select(df("plating_tank").isNotNull.as("plating_tank_not_null"),
+      df("plating_tank"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 2)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema(df1.columns.head).storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(b: Boolean, null) => !b
+      case Seq(b: Boolean, v: Int) => b
+    })
+  }
+
+  test("or") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select((df("grain_screened") === "YES" || df("proof_on_ctd_ink") === "YES").as("or_col"),
+      df("grain_screened"),	df("proof_on_ctd_ink"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("or_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df1.schema("or_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(b: Boolean, s1: String, s2: String) => b === (s1 === "YES" || s2 === "YES")
+    })
+
+    val df2 = df.select((df("job_number") > 20000).or(df("unit_number") <= 10).as("or_col"),
+      df("job_number"),	df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 3)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("or_col", "job_number", "unit_number"))
+    assert(df2.schema("or_col").storageType === BooleanType)
+    assert(sample2.rows.forall {
+      case Seq(b: Boolean, v1: Int, v2: Int) => b === (v1 > 20000 || v2 <= 10)
+    })
+  }
+
+  test("and") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select((df("grain_screened") === "YES" && df("proof_on_ctd_ink") === "YES").as("and_col"),
+      df("grain_screened"),	df("proof_on_ctd_ink"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("and_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df1.schema("and_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(b: Boolean, s1: String, s2: String) => b === (s1 === "YES" && s2 === "YES")
+    })
+
+    val df2 = df.select((df("job_number") > 20000).and(df("unit_number") <= 10).as("and_col"),
+      df("job_number"),	df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 3)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("and_col", "job_number", "unit_number"))
+    assert(df2.schema("and_col").storageType === BooleanType)
+    assert(sample2.rows.forall {
+      case Seq(b: Boolean, v1: Int, v2: Int) => b === (v1 > 20000 && v2 <= 10)
+    })
+  }
+
+  test("plus") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("job_number").plus(df("unit_number") + 15).as("plus_col"),
+      df("job_number"),	df("unit_number"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("plus_col", "job_number", "unit_number"))
+    assert(df1.schema("plus_col").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) => v === (v1 + v2 + 15)
+    })
+
+    // promoted to Double
+    val df2 = df.select(df("job_number").plus(df("unit_number") + 19.4).as("plus_col"),
+      df("job_number"),	df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 3)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("plus_col", "job_number", "unit_number"))
+    assert(df2.schema("plus_col").storageType === DoubleType)
+    assert(sample2.rows.forall {
+      case Seq(v: Double, v1: Int, v2: Int) => v === (v1 + v2 + 19.4)
+    })
+
+    // evaluated to null when applied on string column
+    val df3 = df.select((df("grain_screened") + df("proof_on_ctd_ink")).as("plus_col"),
+      df("grain_screened"),	df("proof_on_ctd_ink"))
+    val sample3 = df3.take(100)
+    assert(df3.numCols === 3)
+    assert(df3.numRows === 100)
+    assert(df3.columns === Seq("plus_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df3.schema("plus_col").storageType === DoubleType)
+    assert(sample3.get[Any]("plus_col").get.forall(Option(_).isEmpty))
+  }
+
+  test("minus") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("job_number").minus(df("unit_number") - 15).as("minus_col"),
+      df("job_number"),	df("unit_number"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("minus_col", "job_number", "unit_number"))
+    assert(df1.schema("minus_col").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) =>
+        v === (v1 - (v2 - 15))
+    })
+
+    // promoted to Double
+    val df2 = df.select(df("job_number").minus(df("unit_number") - 19.4).as("minus_col"),
+      df("job_number"),	df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 3)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("minus_col", "job_number", "unit_number"))
+    assert(df2.schema("minus_col").storageType === DoubleType)
+    assert(sample2.rows.forall {
+      case Seq(v: Double, v1: Int, v2: Int) => v === (v1 - (v2 - 19.4))
+    })
+
+    // evaluated to null when applied on string column
+    val df3 = df.select((df("grain_screened") - df("proof_on_ctd_ink")).as("minus_col"),
+      df("grain_screened"),	df("proof_on_ctd_ink"))
+    val sample3 = df3.take(100)
+    assert(df3.numCols === 3)
+    assert(df3.numRows === 100)
+    assert(df3.columns === Seq("minus_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df3.schema("minus_col").storageType === DoubleType)
+    assert(sample3.get[Any]("minus_col").get.forall(Option(_).isEmpty))
+  }
+
+  test("multiply") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("job_number").multiply(df("unit_number") * 2).as("multiply_col"),
+      df("job_number"),	df("unit_number"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("multiply_col", "job_number", "unit_number"))
+    assert(df1.schema("multiply_col").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) => v === (v1 * v2 * 2)
+    })
+
+    // promoted to Double
+    val df2 = df.select(df("job_number").multiply(df("unit_number") * 0.4).as("multiply_col"),
+      df("job_number"),	df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 3)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("multiply_col", "job_number", "unit_number"))
+    assert(df2.schema("multiply_col").storageType === DoubleType)
+    assert(sample2.rows.forall {
+      case Seq(v: Double, v1: Int, v2: Int) =>
+        v === (v1 * (v2 * 0.4))
+    })
+
+    // evaluated to null when applied on string column
+    val df3 = df.select((df("grain_screened") * df("proof_on_ctd_ink")).as("multiply_col"),
+      df("grain_screened"),	df("proof_on_ctd_ink"))
+    val sample3 = df3.take(100)
+    assert(df3.numCols === 3)
+    assert(df3.numRows === 100)
+    assert(df3.columns === Seq("multiply_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df3.schema("multiply_col").storageType === DoubleType)
+    assert(sample3.get[Any]("multiply_col").get.forall(Option(_).isEmpty))
+  }
+
+  test("divide") {
+    val df = getCylinderBands.limit(100)
+
+    // promoted to Double anyway
+    val df1 = df.select(df("job_number").divide(df("unit_number") / 2).as("divide_col"),
+      df("job_number"),	df("unit_number"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("divide_col", "job_number", "unit_number"))
+    assert(df1.schema("divide_col").storageType === DoubleType)
+    assert(sample1.rows.forall {
+      case Seq(v: Double, v1: Int, v2: Int) =>
+        math.abs(v - (v1 / (v2 / 2.0))) <= 10E-10
+    })
+
+    // promoted to Double
+    val df2 = df.select(df("job_number").divide(df("unit_number") / 2.5).as("divide_col"),
+      df("job_number"),	df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 3)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("divide_col", "job_number", "unit_number"))
+    assert(df2.schema("divide_col").storageType === DoubleType)
+    assert(sample2.rows.forall {
+      case Seq(v: Double, v1: Int, v2: Int) => math.abs(v - (v1 / (v2 / 2.5))) <= 10E-10
+    })
+
+    // evaluated to null when applied on string column
+    val df3 = df.select((df("grain_screened") / df("proof_on_ctd_ink")).as("divide_col"),
+      df("grain_screened"),	df("proof_on_ctd_ink"))
+    val sample3 = df3.take(100)
+    assert(df3.numCols === 3)
+    assert(df3.numRows === 100)
+    assert(df3.columns === Seq("divide_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df3.schema("divide_col").storageType === DoubleType)
+    assert(sample3.get[Any]("divide_col").get.forall(Option(_).isEmpty))
+  }
+
+  test("modulo") {
+    val df = getCylinderBands.limit(100)
+
+    // modulo to another column
+    val df1 = df.select(df("job_number").mod(df("unit_number")).as("mod_col"),
+      df("job_number"),	df("unit_number"))
+    val sample1 = df1.take(100)
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 100)
+    assert(df1.columns === Seq("mod_col", "job_number", "unit_number"))
+    assert(df1.schema("mod_col").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) => v === (v1 % v2)
+    })
+
+    // modulo to a number
+    val df2 = df.select((df("job_number") % 3).as("mod_col"), df("job_number"))
+    val sample2 = df2.take(100)
+    assert(df2.numCols === 2)
+    assert(df2.numRows === 100)
+    assert(df2.columns === Seq("mod_col", "job_number"))
+    assert(df2.schema("mod_col").storageType === IntegerType)
+    assert(sample2.rows.forall {
+      case Seq(v: Int, v1: Int) => v === (v1 % 3)
+    })
+
+    // modulo of a string column gives NULL
+    val df3 = df.select((df("grain_screened") % 3).as("mod_col"), df("grain_screened"))
+    val sample3 = df3.take(100)
+    assert(df3.numCols === 2)
+    assert(df3.numRows === 100)
+    assert(df3.columns === Seq("mod_col", "grain_screened"))
+    assert(df3.schema("mod_col").storageType === DoubleType)
+    assert(sample3("mod_col").forall { _ === null })
+  }
+
+  test("isIn") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("grain_screened").isin(df("proof_on_ctd_ink"), "NO", 125).as("isin_col"),
+      df("grain_screened"), df("proof_on_ctd_ink"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("isin_col", "grain_screened", "proof_on_ctd_ink"))
+    assert(df1.schema("isin_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(v: Boolean, s1: String, s2: String) => v === Seq(s2, "NO").contains(s1)
+    })
+
+    // empty list: false all the time
+    val df2 = df.select(df("grain_screened").isin().as("isin_col"), df("grain_screened"))
+    val sample2 = df2.take(100)
+    assert(df2.columns === Seq("isin_col", "grain_screened"))
+    assert(df2.schema("isin_col").storageType === BooleanType)
+    assert(sample2.get[Boolean]("isin_col").get.forall(b => !b))
+  }
+
+  test("like") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").like("%M_T").as("like_col"), df("customer"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("like_col", "customer"))
+    assert(df1.schema("like_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(s: Boolean, c: String) => s === (c === "MODMAT")
+    })
+
+    // use RLIKE expression: false all the time
+    val df2 = df.select(df("customer").like("^MOD[M|m]AT").as("like_col"), df("customer"))
+    val sample2 = df2.take(100)
+    assert(df2.columns === Seq("like_col", "customer"))
+    assert(df2.schema("like_col").storageType === BooleanType)
+    assert(sample2.get[Boolean]("like_col").get.forall(!_))
+  }
+
+  test("rlike") {
+    val df = getCylinderBands.limit(100)
+
+    // use RLIKE expression: false all the time
+    val df1 = df.select(df("customer").rlike("^MOD[M|m]AT").as("like_col"), df("customer"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("like_col", "customer"))
+    assert(df1.schema("like_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(s: Boolean, c: String) => s === (c === "MODMAT")
+    })
+  }
+
+  test("getItem") {
+    // TODO: implement this
+  }
+
+  test("getField") {
+    // TODO: implement this
+  }
+
+  test("substring") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").substr(2, 3).as("substr_col"), df("customer"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("substr_col", "customer"))
+    assert(df1.schema("substr_col").storageType === StringType)
+    assert(sample1.rows.forall {
+      case Seq(s: String, s1: String) => s === s1.substring(1, math.min(4, s1.length))
+    })
+
+    val df2 = df.select(df("customer").substr(functions.lit(1), (df("unit_number") % 4) + 1).as("substr_col"),
+      df("customer"), df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.columns === Seq("substr_col", "customer", "unit_number"))
+    assert(df2.schema("substr_col").storageType === StringType)
+    assert(sample2.rows.forall {
+      case Seq(s: String, s1: String, v: Int) => s === s1.substring(0, math.min(s1.length, 1 + (v % 4)))
+    })
+
+    // invalid starting index will give empty strings
+    val df3 = df.select(df("customer").substr(-100, 2).as("substr_col"), df("customer"))
+    assert(df3.take(100).get[String]("substr_col").get.forall(_ === ""))
+
+    // len = big number will give the whole string
+    val df4 = df.select(df("customer").substr(-100, 102).as("substr_col"), df("customer"))
+    assert(df4.take(100).rows.forall {
+      case Seq(s: String, s1: String) => s === s1
+    })
+
+    // automatically wrap at the last index
+    val df5 = df.select(df("customer").substr(2, 100).as("substr_col"), df("customer"))
+    assert(df5.take(100).rows.forall {
+      case Seq(s: String, s1: String) => s === s1.substring(1)
+    })
+  }
+
+  test("contains") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").contains("MOD").as("contains_col"), df("customer"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("contains_col", "customer"))
+    assert(df1.schema("contains_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(s: Boolean, s1: String) => s === s1.contains("MOD")
+    })
+
+    val df2 = df.select(df("customer").contains(df("customer").substr(1, 2)).as("contains_col"), df("customer"))
+    val sample2 = df2.take(100)
+    assert(df2.columns === Seq("contains_col", "customer"))
+    assert(df2.schema("contains_col").storageType === BooleanType)
+    assert(sample2.get[Boolean]("contains_col").get.forall(p => p))
+  }
+
+  test("startsWith") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").startsWith("MOD").as("start_col"), df("customer"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("start_col", "customer"))
+    assert(df1.schema("start_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(s: Boolean, s1: String) => s === s1.startsWith("MOD")
+    })
+
+    val df2 = df.select(df("customer").startsWith(df("customer").substr(1, 2)).as("start_col"), df("customer"))
+    val sample2 = df2.take(100)
+    assert(df2.columns === Seq("start_col", "customer"))
+    assert(df2.schema("start_col").storageType === BooleanType)
+    assert(sample2.get[Boolean]("start_col").get.forall(p => p))
+  }
+
+  test("endsWith") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").endsWith("MAT").as("end_col"), df("customer"))
+    val sample1 = df1.take(100)
+    assert(df1.columns === Seq("end_col", "customer"))
+    assert(df1.schema("end_col").storageType === BooleanType)
+    assert(sample1.rows.forall {
+      case Seq(s: Boolean, s1: String) => s === s1.endsWith("MAT")
+    })
+
+    val df2 = df.select(df("customer").endsWith(df("customer").substr(2, 100)).as("end_col"), df("customer"))
+    val sample2 = df2.take(100)
+    assert(df2.columns === Seq("end_col", "customer"))
+    assert(df2.schema("end_col").storageType === BooleanType)
+    assert(sample2.get[Boolean]("end_col").get.forall(p => p))
+  }
+
+  test("as - MultiAlias") {
+    // TODO: implement this
+  }
+
+  test("cast") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("job_number").cast(StringType).as("job_number_str"), df("job_number"))
+    val sample1 = df1.take(100)
+    assert(df1.schema("job_number_str").storageType === StringType)
+    assert(sample1.rows.forall {
+      case Seq(s: String, n: Int) => s === s"$n"
+    })
+
+    val df2 = df.select(df("customer").cast(FloatType).as("customer_float"), df("customer"))
+    val sample2 = df2.take(100)
+    assert(df2.schema("customer_float").storageType === FloatType)
+    assert(sample2("customer_float").forall(_ === null))
+  }
+
+  test("bitwiseOr") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("press").bitwiseOR(10).as("press_or2"), df("press"))
+    val sample1 = df1.take(100)
+    assert(df1.schema("press_or2").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int) => v === (v1 | 10)
+    })
+
+    val df2 = df.select(df("press").bitwiseOR(df("unit_number")).as("or_col"), df("press"), df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.schema("or_col").storageType === IntegerType)
+    assert(sample2.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) => v === (v1 | v2)
+    })
+
+    // or with a string column gives exception
+    intercept[CebesBackendException] {
+      df.select(df("customer").bitwiseOR(df("press")).as("or_col"), df("press"), df("customer"))
+    }
+  }
+
+  test("bitwiseAnd") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("press").bitwiseAND(10).as("press_and"), df("press"))
+    val sample1 = df1.take(100)
+    assert(df1.schema("press_and").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int) => v === (v1 & 10)
+    })
+
+    val df2 = df.select(df("press").bitwiseAND(df("unit_number")).as("and_col"), df("press"), df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.schema("and_col").storageType === IntegerType)
+    assert(sample2.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) => v === (v1 & v2)
+    })
+
+    // and with a string column gives exception
+    intercept[CebesBackendException] {
+      df.select(df("customer").bitwiseAND(df("press")).as("and_col"), df("press"), df("customer"))
+    }
+  }
+
+  test("bitwiseXor") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("press").bitwiseXOR(10).as("press_xor"), df("press"))
+    val sample1 = df1.take(100)
+    assert(df1.schema("press_xor").storageType === IntegerType)
+    assert(sample1.rows.forall {
+      case Seq(v: Int, v1: Int) => v === (v1 ^ 10)
+    })
+
+    val df2 = df.select(df("press").bitwiseXOR(df("unit_number")).as("xor_col"), df("press"), df("unit_number"))
+    val sample2 = df2.take(100)
+    assert(df2.schema("xor_col").storageType === IntegerType)
+    assert(sample2.rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int) => v === (v1 ^ v2)
+    })
+
+    // or with a string column gives exception
+    intercept[CebesBackendException] {
+      df.select(df("customer").bitwiseXOR(df("press")).as("xor_col"), df("press"), df("customer"))
+    }
   }
 }
