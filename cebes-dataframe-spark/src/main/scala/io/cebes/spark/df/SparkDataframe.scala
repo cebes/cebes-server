@@ -16,19 +16,17 @@ package io.cebes.spark.df
 
 import java.util.UUID
 
-import io.cebes.common.{ArgumentChecks, CebesBackendException}
+import io.cebes.common.ArgumentChecks
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.Schema
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.types.storage.StorageType
 import io.cebes.df.types.{StorageTypes, VariableTypes}
-import io.cebes.df.{Column, Dataframe}
-import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
+import io.cebes.df.{Column, Dataframe, GroupedDataframe}
+import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.util.CebesSparkUtil
-import org.apache.spark.sql.{AnalysisException, DataFrame}
-
-import scala.util.{Failure, Success, Try}
+import org.apache.spark.sql.DataFrame
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -52,37 +50,6 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   }
 
   override def numRows: Long = sparkDf.count()
-
-  ////////////////////////////////////////////////////////////////////////////////////
-  // Private helpers
-  ////////////////////////////////////////////////////////////////////////////////////
-
-  @inline private def toSparkColumn(column: Column) = SparkExpressionParser.toSparkColumn(column)
-
-  @inline private def toSparkColumns(columns: Seq[Column]) = SparkExpressionParser.toSparkColumns(columns: _*)
-
-  /**
-    * Catch recognized exception thrown by Spark, wrapped in a [[CebesBackendException]].
-    * If an exception is unrecognized, it will be re-thrown (until we know what to do with it)
-    */
-  private def safeSparkCall[T](result: => T): T = {
-    Try(result) match {
-      case Success(r) => r
-      case Failure(e) => e match {
-        case ex: AnalysisException =>
-          throw CebesBackendException(s"Spark query analysis exception: ${ex.message}", Some(ex))
-        case ex => throw ex
-      }
-    }
-  }
-
-  /** short-hand for returning a SparkDataframe, with proper exception handling **/
-  @inline private def withSparkDataFrame(df: => DataFrame): SparkDataframe =
-    new SparkDataframe(safeSparkCall(df))
-
-  /** short-hand for returning a SparkDataframe, with proper exception handling **/
-  @inline private def withSparkDataFrame(df: => DataFrame, schema: Schema): SparkDataframe =
-    new SparkDataframe(safeSparkCall(df), schema)
 
   ////////////////////////////////////////////////////////////////////////////////////
   // Variable types
@@ -225,6 +192,22 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
         s"but got ${this.numCols} and ${other.numCols} columns respectively")
     val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
     withSparkDataFrame(sparkDf.except(otherDf), schema.copy())
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // GroupBy-related functions
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  override def groupBy(cols: Column*): GroupedDataframe = {
+    new SparkGroupedDataframe(safeSparkCall(sparkDf.groupBy(toSparkColumns(cols): _*)))
+  }
+
+  override def rollup(cols: Column*): GroupedDataframe = {
+    new SparkGroupedDataframe(safeSparkCall(sparkDf.rollup(toSparkColumns(cols): _*)))
+  }
+
+  override def cube(cols: Column*): GroupedDataframe = {
+    new SparkGroupedDataframe(safeSparkCall(sparkDf.cube(toSparkColumns(cols): _*)))
   }
 }
 

@@ -31,7 +31,7 @@ import io.cebes.storage.{DataFormats, DataSource, StorageService}
   *
   * This class can be instantiated multiple times from the DI framework
   */
-class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends StorageService {
+class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends StorageService with CebesSparkUtil {
 
   private val sparkSession = hasSparkSession.session
 
@@ -44,7 +44,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
     * @param dataSource data storage to store the given data frame
     */
   override def write(dataframe: Dataframe, dataSource: DataSource): Unit = {
-    val sparkDf = CebesSparkUtil.getSparkDataframe(dataframe).sparkDf
+    val sparkDf = getSparkDataframe(dataframe).sparkDf
 
     dataSource match {
       case jdbcSource: JdbcDataSource =>

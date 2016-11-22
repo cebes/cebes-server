@@ -97,6 +97,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
       assert(c.length === 10)
       assert(!c.forall(_ === null))
     }
+    assert(sample.tabulate().length > 0)
   }
 
   test("sample") {
@@ -175,6 +176,10 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     val df4 = df3.dropDuplicates(df3.columns)
     assert(df4.numCols === df3.numCols)
     assert(df4.numRows === df2.numRows)
+
+    val df5 = df3.distinct()
+    assert(df5.numCols === df3.numCols)
+    assert(df5.numRows === df2.numRows)
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -363,4 +368,55 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     }
   }
 
+  test("groupBy") {
+    val df = getCylinderBands
+
+    val df1 = df.groupBy("customer", "grain_screened").avg()
+    assert(df1.columns.head === "customer")
+    assert(df1.columns(1) === "grain_screened")
+    assert(df1.numCols > 2)
+    assert(df1.numRows > 0)
+
+    val df2 = df.groupBy(df("customer"), df("job_number") % 2).max()
+    assert(df2.numCols > 2)
+    assert(df2.numRows > 0)
+
+    intercept[CebesBackendException] {
+      df.groupBy("non_existed_column").max()
+    }
+  }
+
+  test("rollUp") {
+    val df = getCylinderBands
+
+    val df1 = df.rollup(df("customer"), df("grain_screened")).avg()
+    println("RollUp:\n" + df1.take(10).tabulate())
+    assert(df1.columns.head === "customer")
+    assert(df1.columns(1) === "grain_screened")
+    assert(df1.numCols > 2)
+    assert(df1.numRows > 0)
+
+    intercept[CebesBackendException] {
+      df.rollup(df("non_existed_column")).max()
+    }
+  }
+
+  test("cube") {
+    val df = getCylinderBands
+
+    val df1 = df.cube(df("customer"), df("grain_screened")).avg()
+    println("Cube:\n" + df1.take(10).tabulate())
+    assert(df1.columns.head === "customer")
+    assert(df1.columns(1) === "grain_screened")
+    assert(df1.numCols > 2)
+    assert(df1.numRows > 0)
+
+    intercept[CebesBackendException] {
+      df.cube(df("non_existed_column")).max()
+    }
+  }
+
+  test("agg") {
+    // TODO: implement this
+  }
 }

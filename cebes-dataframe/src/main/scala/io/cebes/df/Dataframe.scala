@@ -263,4 +263,118 @@ trait Dataframe extends HasSchema with HasId {
     * @group sql-api
     */
   def distinct(): Dataframe = dropDuplicates(this.columns)
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // GroupBy-related functions
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Groups the Dataset using the specified columns, so we can run aggregation on them. See
+    * [[GroupedDataframe]] for all the available aggregate functions.
+    *
+    * {{{
+    *   // Compute the average for all numeric columns grouped by department.
+    *   ds.groupBy(ds("department")).avg()
+    *
+    *   // Compute the max age and average salary, grouped by department and gender.
+    *   ds.groupBy(ds("department"), ds("gender")).agg(Map(
+    *     "salary" -> "avg",
+    *     "age" -> "max"
+    *   ))
+    * }}}
+    *
+    * @group aggregation
+    */
+  def groupBy(cols: Column*): GroupedDataframe
+
+  /**
+    * Groups the Dataset using the specified columns, so that we can run aggregation on them.
+    * See [[GroupedDataframe]] for all the available aggregate functions.
+    *
+    * This is a variant of groupBy that can only group by existing columns using column names
+    * (i.e. cannot construct expressions).
+    *
+    * @group aggregation
+    */
+  def groupBy(col1: String, cols: String*): GroupedDataframe = {
+    groupBy((col1 +: cols).map(functions.col): _*)
+  }
+
+  /**
+    * Create a multi-dimensional rollup for the current Dataset using the specified columns,
+    * so we can run aggregation on them.
+    * See [[GroupedDataframe]] for all the available aggregate functions.
+    *
+    * {{{
+    *   // Compute the average for all numeric columns rolluped by department and group.
+    *   ds.rollup(ds("department"), ds("group")).avg()
+    *
+    *   // Compute the max age and average salary, rolluped by department and gender.
+    *   ds.rollup(ds("department"), ds("group")).agg(Map(
+    *     "salary" -> "avg",
+    *     "age" -> "max"
+    *   ))
+    * }}}
+    *
+    * @group aggregation
+    */
+  def rollup(cols: Column*): GroupedDataframe
+
+  /**
+    * Create a multi-dimensional cube for the current Dataset using the specified columns,
+    * so we can run aggregation on them.
+    * See [[GroupedDataframe]] for all the available aggregate functions.
+    *
+    * {{{
+    *   // Compute the average for all numeric columns cubed by department and group.
+    *   ds.cube(ds("department"), ds("group")).avg()
+    *
+    *   // Compute the max age and average salary, cubed by department and gender.
+    *   ds.cube(ds("department"), ds("group")).agg(Map(
+    *     "salary" -> "avg",
+    *     "age" -> "max"
+    *   ))
+    * }}}
+    *
+    * @group aggregation
+    */
+  def cube(cols: Column*): GroupedDataframe
+
+  /**
+    * Aggregates on the entire Dataframe without groups.
+    * {{{
+    *   // df.agg(...) is a shorthand for df.groupBy().agg(...)
+    *   df.agg("age" -> "max", "salary" -> "avg")
+    *   df.groupBy().agg("age" -> "max", "salary" -> "avg")
+    * }}}
+    *
+    * @group aggregation
+    */
+  def agg(aggExpr: (String, String), aggExprs: (String, String)*): Dataframe = {
+    groupBy().agg(aggExpr, aggExprs : _*)
+  }
+
+  /**
+    * Aggregates on the entire Dataframe without groups.
+    * {{{
+    *   // df.agg(...) is a shorthand for df.groupBy().agg(...)
+    *   df.agg("age" -> "max", "salary" -> "avg")
+    *   df.groupBy().agg("age" -> "max", "salary" -> "avg")
+    * }}}
+    *
+    * @group aggregation
+    */
+  def agg(exprs: Map[String, String]): Dataframe = groupBy().agg(exprs)
+
+  /**
+    * Aggregates on the entire Dataframe without groups.
+    * {{{
+    *   // df.agg(...) is a shorthand for df.groupBy().agg(...)
+    *   df.agg("age" -> "max", "salary" -> "avg")
+    *   df.groupBy().agg("age" -> "max", "salary" -> "avg")
+    * }}}
+    *
+    * @group aggregation
+    */
+  def agg(expr: Column, exprs: Column*): Dataframe = groupBy().agg(expr, exprs : _*)
 }
