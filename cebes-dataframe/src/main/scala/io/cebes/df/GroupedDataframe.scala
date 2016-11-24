@@ -48,8 +48,6 @@ trait GroupedDataframe {
     *     "expense" -> "sum"
     *   ))
     * }}}
-    *
-    * @since 1.3.0
     */
   def agg(exprs: Map[String, String]): Dataframe
 
