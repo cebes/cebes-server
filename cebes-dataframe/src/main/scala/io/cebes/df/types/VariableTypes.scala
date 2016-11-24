@@ -20,8 +20,14 @@ object VariableTypes {
 
   sealed abstract class VariableType(val name: String, val isNumeric: Boolean,
                                      val isCategorical: Boolean,
-                                     val validStorageTypes: Seq[StorageType]) {
+                                     val validStorageTypes: Seq[StorageType],
+                                     val validStorageClasses: Option[Seq[Class[_ <: StorageType]]] = None) {
     override def toString: String = name
+
+    def isValid(storageType: StorageType): Boolean = {
+      validStorageTypes.contains(storageType) || (validStorageClasses.nonEmpty &&
+        validStorageClasses.get.exists(_.isInstance(storageType)))
+    }
   }
 
   case object DISCRETE extends VariableType("Discrete", true, false,
@@ -52,10 +58,11 @@ object VariableTypes {
     Seq(StorageTypes.StringType))
 
   case object DATETIME extends VariableType("DateTime", false, false,
-    Seq(StorageTypes.DateType, StorageTypes.TimestampType))
+    Seq(StorageTypes.DateType, StorageTypes.TimestampType, StorageTypes.CalendarIntervalType))
 
   case object ARRAY extends VariableType("Array", false, false,
-    Seq(StorageTypes.VectorType, StorageTypes.BinaryType))
+    Seq(StorageTypes.VectorType, StorageTypes.BinaryType),
+    Some(Seq(classOf[storage.ArrayType])))
 
   val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY)
 
@@ -74,15 +81,19 @@ object VariableTypes {
     storageType match {
       case StorageTypes.BinaryType | StorageTypes.VectorType =>
         VariableTypes.ARRAY
-      case StorageTypes.TimestampType | StorageTypes.DateType  =>
+      case StorageTypes.TimestampType | StorageTypes.DateType | StorageTypes.CalendarIntervalType  =>
         VariableTypes.DATETIME
-      case StorageTypes.BooleanType => VariableTypes.NOMINAL
+      case StorageTypes.BooleanType =>
+        VariableTypes.NOMINAL
       case StorageTypes.ByteType | StorageTypes.ShortType |
            StorageTypes.IntegerType | StorageTypes.LongType =>
         VariableTypes.DISCRETE
       case StorageTypes.FloatType | StorageTypes.DoubleType =>
         VariableTypes.CONTINUOUS
-      case StorageTypes.StringType => VariableTypes.TEXT
+      case StorageTypes.StringType =>
+        VariableTypes.TEXT
+      case _: storage.ArrayType =>
+        VariableTypes.ARRAY
     }
   }
 }

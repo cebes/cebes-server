@@ -14,8 +14,11 @@
 
 package io.cebes.df.expressions
 
+import java.lang.reflect.InvocationTargetException
+
 import scala.collection.mutable
 import scala.reflect.runtime._
+import scala.util.{Failure, Success, Try}
 
 /**
   * The generic parser for parsing Cebes' Expression into whatever
@@ -119,9 +122,13 @@ abstract class StackExpressionParser[T](implicit typeTag: universe.TypeTag[T]) e
 
   override def invoke(expr: Expression, method: universe.MethodMirror): Any = {
     val parsedChildren = expr.children.map(_ => resultStack.pop())
-    method(expr, parsedChildren).asInstanceOf[Option[T]] match {
-      case Some(result) => resultStack.push(result)
-      case None => // do nothing
+    Try(method(expr, parsedChildren)) match {
+      case Success(t) => t.asInstanceOf[Option[T]] match {
+        case Some(result) => resultStack.push(result)
+        case None => // do nothing
+      }
+      case Failure(f: InvocationTargetException) => throw f.getCause
+      case Failure(f) => throw f
     }
   }
 

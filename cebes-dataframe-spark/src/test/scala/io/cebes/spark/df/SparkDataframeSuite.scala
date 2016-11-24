@@ -15,7 +15,7 @@
 package io.cebes.spark.df
 
 import io.cebes.common.CebesBackendException
-import io.cebes.df.types.storage.{IntegerType, LongType}
+import io.cebes.df.types.storage.{DoubleType, FloatType, IntegerType, LongType}
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
@@ -97,6 +97,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
       assert(c.length === 10)
       assert(!c.forall(_ === null))
     }
+    assert(sample.tabulate().length > 0)
   }
 
   test("sample") {
@@ -175,6 +176,10 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     val df4 = df3.dropDuplicates(df3.columns)
     assert(df4.numCols === df3.numCols)
     assert(df4.numRows === df2.numRows)
+
+    val df5 = df3.distinct()
+    assert(df5.numCols === df3.numCols)
+    assert(df5.numRows === df2.numRows)
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -363,4 +368,407 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     }
   }
 
+  test("groupBy") {
+    val df = getCylinderBands
+
+    val df1 = df.groupBy("customer", "grain_screened").avg()
+    assert(df1.columns.head === "customer")
+    assert(df1.columns(1) === "grain_screened")
+    assert(df1.numCols > 2)
+    assert(df1.numRows > 0)
+
+    val df2 = df.groupBy(df("customer"), df("job_number") % 2).max()
+    assert(df2.numCols > 2)
+    assert(df2.numRows > 0)
+
+    intercept[CebesBackendException] {
+      df.groupBy("non_existed_column").max()
+    }
+  }
+
+  test("rollUp") {
+    val df = getCylinderBands
+
+    val df1 = df.rollup(df("customer"), df("grain_screened")).avg()
+    assert(df1.columns.head === "customer")
+    assert(df1.columns(1) === "grain_screened")
+    assert(df1.numCols > 2)
+    assert(df1.numRows > 0)
+
+    intercept[CebesBackendException] {
+      df.rollup(df("non_existed_column")).max()
+    }
+  }
+
+  test("cube") {
+    val df = getCylinderBands
+
+    val df1 = df.cube(df("customer"), df("grain_screened")).avg()
+    assert(df1.columns.head === "customer")
+    assert(df1.columns(1) === "grain_screened")
+    assert(df1.numCols > 2)
+    assert(df1.numRows > 0)
+
+    intercept[CebesBackendException] {
+      df.cube(df("non_existed_column")).max()
+    }
+  }
+
+  test("agg") {
+    val df = getCylinderBands
+
+    val df1 = df.agg(("timestamp", "max"), ("press", "avg"))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+
+    intercept[CebesBackendException] {
+      df.agg(Map("timestamp" -> "max", "press" -> "avgggg"))
+    }
+
+    // not an aggregation function
+    intercept[CebesBackendException] {
+      df.agg(df("timestamp"))
+    }
+  }
+
+  test("agg - approxCountDistinct") {
+    val df = getCylinderBands
+
+    val df1 = df.agg(functions.approxCountDistinct("customer"),
+      functions.approxCountDistinct("customer", rsd=0.05))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+
+    val df2 = df.agg(functions.approxCountDistinct(df("customer")),
+      functions.approxCountDistinct(df("customer"), rsd=0.05))
+    assert(df2.numCols === 2)
+    assert(df2.numRows === 1)
+
+    // rsd is too high
+    intercept[IllegalArgumentException] {
+      df.agg(functions.approxCountDistinct("customer", rsd=0.5))
+    }
+  }
+
+  test("agg - avg") {
+    val df = getCylinderBands
+
+    val df1 = df.agg(functions.avg("caliper"), functions.avg(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.avg("customer")).numRows === 1)
+  }
+
+  test("agg - collectList") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.collectList("customer"),
+      functions.collectList(df("job_number") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - collectSet") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.collectSet("customer"),
+      functions.collectSet(df("job_number") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - corr") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.corr("job_number", "press"),
+      functions.corr("job_number", "job_number"),
+      functions.corr(df("job_number") / 2, df("customer")))
+    assert(df1.numCols === 3)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - count") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.count("*"),
+      functions.count(df("proof_on_ctd_ink")))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - countDistinct") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.countDistinct("customer", "proof_on_ctd_ink"),
+      functions.countDistinct(df("customer")))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+
+    // * does not work with count distinct
+    intercept[CebesBackendException] {
+      df.agg(functions.countDistinct("*"))
+    }
+    intercept[CebesBackendException] {
+      df.agg(functions.countDistinct(df("*")))
+    }
+  }
+
+  test("agg - covarPop") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.covarPop("press", "job_number"),
+      functions.covarPop("press", "press"),
+      functions.covarPop("customer", "press"),
+      functions.covarPop(df("job_number"), df("press") / 2))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - covarSamp") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.covarSamp("press", "job_number"),
+      functions.covarSamp("press", "press"),
+      functions.covarSamp("customer", "press"),
+      functions.covarSamp(df("job_number"), df("press") / 2))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - first") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.first("press", ignoreNulls = true),
+      functions.first("customer"),
+      functions.first(df("customer"), ignoreNulls = true),
+      functions.first(df("job_number")))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - last") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.last("press", ignoreNulls = true),
+      functions.last("customer"),
+      functions.last(df("customer"), ignoreNulls = true),
+      functions.last(df("job_number")))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - grouping") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.cube(df("press"), df("customer")).agg(
+      functions.grouping("press"),
+      functions.grouping(df("customer")))
+    assert(df1.numCols === 4)
+    assert(df1.numRows > 0)
+
+    // grouping only works with cube/rollup/groupingSet
+    intercept[CebesBackendException] {
+      df.agg(functions.grouping("press"),
+        functions.grouping(df("customer")))
+    }
+  }
+
+  test("agg - groupingId") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.cube(df("press"), df("customer")).agg(
+      functions.groupingId("press", "customer"),
+      functions.groupingId(df("press"), df("customer")))
+    assert(df1.numCols === 4)
+    assert(df1.numRows > 0)
+
+    val ex1 = intercept[CebesBackendException] {
+      df.agg(functions.groupingId("press"),
+        functions.groupingId(df("customer")))
+    }
+    assert(ex1.message.contains("grouping_id() can only be used with GroupingSets/Cube/Rollup"))
+
+    // Columns of grouping_id does not match grouping columns
+    val ex2 = intercept[CebesBackendException] {
+      df.cube(df("press"), df("customer")).agg(
+        functions.groupingId("press"),
+        functions.groupingId(df("customer")))
+    }
+    assert(ex2.message.contains("Columns of grouping_id"))
+    assert(ex2.message.contains("does not match grouping columns"))
+  }
+
+  test("agg - kurtosis") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.kurtosis("caliper"),
+      functions.kurtosis(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.kurtosis("customer")).numRows === 1)
+  }
+
+  test("agg - max") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.max("caliper"),
+      functions.max(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.schema.head.storageType === FloatType)
+    assert(df1.schema.last.storageType === DoubleType)
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.max("customer")).numRows === 1)
+  }
+
+  test("agg - mean") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.mean("caliper"),
+      functions.mean(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.mean("customer")).numRows === 1)
+  }
+
+  test("agg - min") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.min("caliper"),
+      functions.min(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.schema.head.storageType === FloatType)
+    assert(df1.schema.last.storageType === DoubleType)
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.min("customer")).numRows === 1)
+  }
+
+  test("agg - skewness") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.skewness("caliper"),
+      functions.skewness(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.skewness("customer")).numRows === 1)
+  }
+
+  test("agg - stddev") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.stddev("caliper"),
+      functions.stddev(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.stddev("customer")).numRows === 1)
+  }
+
+  test("agg - stddevPop") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.stddevPop("caliper"),
+      functions.stddevPop(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.stddevPop("customer")).numRows === 1)
+  }
+
+  test("agg - stddevSamp") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.stddevSamp("caliper"),
+      functions.stddevSamp(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.stddevSamp("customer")).numRows === 1)
+  }
+
+  test("agg - sum") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.sum("caliper"),
+      functions.sum(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.sum("customer")).numRows === 1)
+  }
+
+  test("agg - sumDistinct") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.sumDistinct("caliper"),
+      functions.sumDistinct(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.sumDistinct("customer")).numRows === 1)
+  }
+
+  test("agg - variance") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.variance("caliper"),
+      functions.variance(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.variance("customer")).numRows === 1)
+  }
+
+  test("agg - varSamp") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.varSamp("caliper"),
+      functions.varSamp(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.varSamp("customer")).numRows === 1)
+  }
+
+  test("agg - varPop") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.varPop("caliper"),
+      functions.varPop(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.varPop("customer")).numRows === 1)
+  }
 }
