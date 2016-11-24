@@ -15,7 +15,7 @@
 package io.cebes.spark.df
 
 import io.cebes.common.CebesBackendException
-import io.cebes.df.types.storage.{IntegerType, LongType}
+import io.cebes.df.types.storage.{DoubleType, IntegerType, LongType}
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
@@ -417,6 +417,70 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("agg") {
-    // TODO: implement this
+    val df = getCylinderBands
+
+    val df1 = df.agg(("timestamp", "max"), ("press", "avg"))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+
+    intercept[CebesBackendException] {
+      df.agg(Map("timestamp" -> "max", "press" -> "avgggg"))
+    }
+
+    // not an aggregation function
+    intercept[CebesBackendException] {
+      df.agg(df("timestamp"))
+    }
   }
+
+  test("agg - approxCountDistinct") {
+    val df = getCylinderBands
+
+    val df1 = df.agg(functions.approxCountDistinct("customer"),
+      functions.approxCountDistinct("customer", rsd=0.05))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+
+    val df2 = df.agg(functions.approxCountDistinct(df("customer")),
+      functions.approxCountDistinct(df("customer"), rsd=0.05))
+    assert(df2.numCols === 2)
+    assert(df2.numRows === 1)
+
+    // rsd is too high
+    intercept[IllegalArgumentException] {
+      df.agg(functions.approxCountDistinct("customer", rsd=0.5))
+    }
+  }
+
+  test("agg - avg") {
+    val df = getCylinderBands
+
+    val df1 = df.agg(functions.avg("caliper"), functions.avg(df("caliper") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+    assert(df1.columns.forall(c => df1.schema(c).storageType === DoubleType))
+
+    // avg on a string column still gives result, but it is null
+    assert(df.agg(functions.avg("customer")).numRows === 1)
+  }
+
+  test("agg - collectList") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.collectList("customer"),
+      functions.collectList(df("job_number") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+  }
+
+  test("agg - collectSet") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.agg(functions.collectSet("customer"),
+      functions.collectSet(df("job_number") / 2))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === 1)
+  }
+
+
 }

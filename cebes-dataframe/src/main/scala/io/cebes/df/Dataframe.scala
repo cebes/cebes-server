@@ -100,7 +100,7 @@ trait Dataframe extends HasSchema with HasId {
     *
     * @param name name of the view
     */
-  def createTempView(name: String)
+  def createTempView(name: String): Unit
 
   ////////////////////////////////////////////////////////////////////////////////////
   // Data exploration

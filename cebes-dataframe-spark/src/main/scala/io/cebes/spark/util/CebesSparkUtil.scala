@@ -20,6 +20,7 @@ import io.cebes.df.schema.Schema
 import io.cebes.spark.df.SparkDataframe
 import io.cebes.spark.df.expressions.SparkExpressionParser
 import org.apache.spark.sql._
+import org.apache.spark.sql.{Column => SparkColumn}
 
 import scala.util.{Failure, Success, Try}
 
@@ -34,9 +35,10 @@ trait CebesSparkUtil {
     case _ => throw new IllegalArgumentException("Only SparkDataframe can be handled")
   }
 
-  @inline def toSparkColumn(column: Column) = SparkExpressionParser.toSparkColumn(column)
+  @inline def toSparkColumn(column: Column): SparkColumn = SparkExpressionParser.toSparkColumn(column)
 
-  @inline def toSparkColumns(columns: Seq[Column]) = SparkExpressionParser.toSparkColumns(columns: _*)
+  @inline def toSparkColumns(columns: Seq[Column]): Seq[SparkColumn] =
+    SparkExpressionParser.toSparkColumns(columns: _*)
 
   /**
     * Catch recognized exception thrown by Spark, wrapped in a [[CebesBackendException]].

@@ -20,7 +20,7 @@ import io.cebes.df.types.storage.StorageType
 
 case class SchemaField(name: String, storageType: StorageType, variableType: VariableType) {
 
-  if (!variableType.validStorageTypes.contains(storageType)) {
+  if (!variableType.isValid(storageType)) {
     throw new IllegalArgumentException(s"Invalid variable type: column $name has storage type $storageType " +
       s"but forced to have variable type $variableType.")
   }
@@ -33,7 +33,7 @@ case class SchemaField(name: String, storageType: StorageType, variableType: Var
     * Is the `otherName` the same with the name of this field?
     * Basically this is an `equalsIgnoreCase` comparision
     */
-  def compareName(otherName: String) = name.equalsIgnoreCase(otherName)
+  def compareName(otherName: String): Boolean = name.equalsIgnoreCase(otherName)
 }
 
 case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaField] {
@@ -48,7 +48,7 @@ case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaFi
     get(name).getOrElse(throw new IllegalArgumentException(s"""Field "$name" does not exist."""))
   }
 
-  def fieldNames = fields.map(_.name)
+  def fieldNames: Seq[String] = fields.map(_.name)
 
   /**
     * Get the field with the given name (case-insensitive)
