@@ -317,7 +317,7 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] {
     Some(sparkFunctions.var_samp(parsedChildren.head))
   }
 
-  protected def visitVariancePop(expr: VarianceSamp,
+  protected def visitVariancePop(expr: VariancePop,
                                   parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
     Some(sparkFunctions.var_pop(parsedChildren.head))
   }
