@@ -23,6 +23,11 @@ lazy val cebesProperties = project.in(file("cebes-properties")).
 lazy val cebesAuth = project.in(file("cebes-auth")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
+lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
+  disablePlugins(AssemblyPlugin).
+  settings(commonSettings: _*).
+  dependsOn(cebesProperties)
+
 lazy val cebesDataframe = project.in(file("cebes-dataframe")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
@@ -36,7 +41,8 @@ lazy val cebesHttpServer = project.in(file("cebes-http-server")).
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).
-  aggregate(cebesAuth, cebesHttpServer, cebesDataframe, cebesDataframeSpark)
+  aggregate(cebesProperties, cebesAuth, cebesPersistenceMysql,
+    cebesDataframe, cebesDataframeSpark, cebesHttpServer)
 
 // test in all other sub-projects, except cebesHttpServer
 // http://stackoverflow.com/questions/9856204/sbt-skip-tests-in-subproject-unless-running-from-within-that-project
@@ -44,6 +50,7 @@ val testNoHttpServer = TaskKey[Unit]("testNoHttpServer")
 testNoHttpServer <<= Seq(
   test in (cebesProperties, Test),
   test in (cebesAuth, Test),
+  test in (cebesPersistenceMysql, Test),
   test in (cebesDataframe, Test),
   test in (cebesDataframeSpark, Test)
 ).dependOn

@@ -1,0 +1,11 @@
+cebes {
+  test {
+    jdbc {
+      url = "jdbc:mysql://localhost:3306/cebes_test_db?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&useSSL=false"
+      driver = "com.mysql.cj.jdbc.Driver"
+      username = "cebes"
+      password = "cebespwd"
+    }
+  }
+
+}
