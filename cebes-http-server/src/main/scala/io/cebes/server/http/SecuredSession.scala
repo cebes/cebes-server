@@ -14,28 +14,31 @@
 
 package io.cebes.server.http
 
+import akka.http.scaladsl.server.{Directive0, Directive1}
 import com.softwaremill.session.CsrfDirectives._
 import com.softwaremill.session.CsrfOptions._
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import com.softwaremill.session._
 import com.typesafe.scalalogging.slf4j.StrictLogging
+import io.cebes.server.inject.InjectorService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait SecuredSession extends StrictLogging {
 
-  val sessionConfig = SessionConfig.default("9MLs9gc8Axvdi1tbM1T7ZpjFMM5R5QR7b788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0")
+  val sessionConfig: SessionConfig =
+    SessionConfig.default("9MLs9gc8Axvdi1tbM1T7ZpjFMM5R5QR7b788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0")
 
   implicit val encoder = new BasicSessionEncoder[SessionData]
   implicit val sessionManager = new SessionManager[SessionData](sessionConfig)
 
-  implicit val refreshTokenStorage = new InMemoryRefreshTokenStorage[SessionData] {
-    def log(msg: String) = logger.info(msg)
-  }
+  implicit val refreshTokenStorage: RefreshTokenStorage[SessionData] =
+    InjectorService.instance(classOf[JdbcRefreshTokenStorage])
 
-  def mySetSession(v: SessionData) = setSession(refreshable, usingHeaders, v)
+  def mySetSession(v: SessionData): Directive0 = setSession(refreshable, usingHeaders, v)
 
-  val myRequiredSession = randomTokenCsrfProtection(checkHeader) & requiredSession(refreshable, usingHeaders)
-  val myInvalidateSession = invalidateSession(refreshable, usingHeaders)
+  val myRequiredSession: Directive1[_] =
+    randomTokenCsrfProtection(checkHeader) & requiredSession(refreshable, usingHeaders)
+  val myInvalidateSession: Directive0 = invalidateSession(refreshable, usingHeaders)
 }

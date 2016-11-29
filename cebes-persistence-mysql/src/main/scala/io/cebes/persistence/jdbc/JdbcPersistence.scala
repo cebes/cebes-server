@@ -14,14 +14,10 @@
 
 package io.cebes.persistence.jdbc
 
-import java.sql.{Connection, ResultSet, SQLSyntaxErrorException}
+import java.sql.{Connection, ResultSet}
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import io.cebes.persistence.KeyValuePersistence
-
-import scala.util.{Failure, Success, Try}
-
-case class JdbcPersistenceColumn(name: String, spec: String)
 
 /**
   * Implementation of [[KeyValuePersistence]] using JDBC
@@ -31,37 +27,19 @@ case class JdbcPersistenceColumn(name: String, spec: String)
   * The type of the key in the SQL table will be always VARCHAR(200),
   * it is user's responsibility to make sure the `toString()` method of the
   * key type ([[K]]) produces meaningful values.
+  *
+  * See [[JdbcPersistenceBuilder]] for examples on how to use this.
   */
-abstract class JdbcPersistence[K <: Any, V](val url: String,
-                                            val userName: String,
-                                            val password: String,
-                                            val suggestedTableName: String,
-                                            val driver: String = "com.mysql.cj.jdbc.Driver"
-                                           ) extends KeyValuePersistence[K, V] with LazyLogging {
-
-  val tableName: String = withConnection { c =>
-    JdbcPersistence.ensureTableExists(c, valueSchema, suggestedTableName)
-  }
-
-  /////////////////////////////////////////////////////////////////////////////
-  // To be overridden
-  /////////////////////////////////////////////////////////////////////////////
-
-  /**
-    * Convert the result set to an instance of the Value
-    */
-  protected def sqlToValue(result: ResultSet): V
-
-  /**
-    * Return a sequence of values that is used to insert the value into the JDBC table
-    * The returned sequence must have the same length with [[valueSchema]].
-    */
-  protected def valueToSql(value: V): Seq[Any]
-
-  /**
-    * The schema for the values (excluding the key)
-    */
-  protected def valueSchema: Seq[JdbcPersistenceColumn]
+class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
+                                                 val userName: String,
+                                                 val password: String,
+                                                 val tableName: String,
+                                                 val driver: String = "com.mysql.cj.jdbc.Driver",
+                                                 val keyColumnName: String = "key",
+                                                 val valueSchema: Seq[JdbcPersistenceColumn],
+                                                 val valueToSql: V => Seq[Any],
+                                                 val sqlToValue: ResultSet => V
+                                                ) extends KeyValuePersistence[K, V] with LazyLogging {
 
   /////////////////////////////////////////////////////////////////////////////
   // KeyValuePersistence APIs
@@ -90,7 +68,7 @@ abstract class JdbcPersistence[K <: Any, V](val url: String,
   }
 
   override def lookup(key: K): Option[V] = withConnection { c =>
-    val stmt = c.prepareStatement(s"SELECT * FROM $tableName WHERE `${JdbcPersistence.keyColumnName}` = ?")
+    val stmt = c.prepareStatement(s"SELECT * FROM $tableName WHERE `$keyColumnName` = ?")
     stmt.setString(1, key.toString)
 
     JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
@@ -105,7 +83,7 @@ abstract class JdbcPersistence[K <: Any, V](val url: String,
   }
 
   override def remove(key: K): Unit = withConnection { c =>
-    val stmt = c.prepareStatement(s"DELETE FROM $tableName WHERE `${JdbcPersistence.keyColumnName}` = ?")
+    val stmt = c.prepareStatement(s"DELETE FROM $tableName WHERE `$keyColumnName` = ?")
     stmt.setString(1, key.toString)
     JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
       val result = s.executeUpdate()
@@ -131,47 +109,5 @@ abstract class JdbcPersistence[K <: Any, V](val url: String,
   private[jdbc] def dropTable(): Unit = withConnection { c =>
     val stmt = c.prepareStatement(s"DROP TABLE IF EXISTS $tableName")
     JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
-  }
-}
-
-object JdbcPersistence extends LazyLogging {
-
-  private val keyColumnName = "key"
-
-  protected def ensureTableExists(connection: Connection,
-                                  valueSchema: Seq[JdbcPersistenceColumn],
-                                  suggestedTableName: String): String = {
-    require(valueSchema.nonEmpty, "Empty value schema")
-
-    var newTableName = suggestedTableName
-    var incompatibleTable = true
-    do {
-      // query the table and check the schema, if it is similar to the requested schema
-      val stmtSchema = connection.prepareStatement(s"SELECT * FROM $newTableName LIMIT 1")
-      Try(stmtSchema.executeQuery().getMetaData) match {
-        case Success(rsmd) =>
-          incompatibleTable = rsmd.getColumnCount != valueSchema.length + 1 ||
-            valueSchema.zipWithIndex.exists {
-              case (col, idx) => !rsmd.getColumnName(idx + 1).equalsIgnoreCase(col.name)
-            } ||
-            !rsmd.getColumnName(rsmd.getColumnCount).equalsIgnoreCase(keyColumnName)
-
-          if (incompatibleTable) {
-            val newerTableName = s"${newTableName}_${System.currentTimeMillis / 1000}"
-            logger.warn(s"The suggested table name $newTableName exists and seems to have " +
-              s"different column names. Trying again with table named $newerTableName")
-            newTableName = newerTableName
-          }
-        case Failure(_: SQLSyntaxErrorException) =>
-          incompatibleTable = false
-        case Failure(f) => throw f
-      }
-    } while (incompatibleTable)
-
-    val stmt = connection.prepareStatement(s"CREATE TABLE IF NOT EXISTS $newTableName (" +
-      valueSchema.map(col => s"`${col.name}` ${col.spec}").mkString(", ") +
-      s", `$keyColumnName` VARCHAR(200) NOT NULL, PRIMARY KEY (`$keyColumnName`))")
-    JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
-    newTableName
   }
 }

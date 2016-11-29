@@ -14,57 +14,27 @@
 
 package io.cebes.persistence.jdbc
 
-import java.sql.ResultSet
 import java.util.UUID
 
 import io.cebes.persistence.helpers.TestPropertyHelper
 import org.scalatest.FunSuite
 
-case class Dummy(field1: Int, field2: Float)
-
-case class DummyJdbcPersistence(override val url: String,
-                                override val userName: String,
-                                override val password: String,
-                                override val suggestedTableName: String,
-                                override val driver: String)
-  extends JdbcPersistence[UUID, Dummy](url, userName, password, suggestedTableName, driver) {
-
-  override protected def sqlToValue(result: ResultSet): Dummy = {
-    Dummy(result.getInt("field1"), result.getFloat("field2"))
-  }
-
-  override protected def valueToSql(value: Dummy): Seq[Any] = Seq(value.field1, value.field2)
-
-  override protected def valueSchema: Seq[JdbcPersistenceColumn] = Seq(
-    JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT"))
-}
+case class Foo(field1: Int, field2: Float)
 
 case class Bar(f2: Float, f3: Int)
-
-case class BarJdbcPersistence(override val url: String,
-                                override val userName: String,
-                                override val password: String,
-                                override val suggestedTableName: String,
-                                override val driver: String)
-  extends JdbcPersistence[Int, Bar](url, userName, password, suggestedTableName, driver) {
-
-  override protected def sqlToValue(result: ResultSet): Bar = {
-    Bar(result.getFloat("f2"), result.getInt("f3"))
-  }
-
-  override protected def valueToSql(value: Bar): Seq[Any] = Seq(value.f2, value.f3)
-
-  override protected def valueSchema: Seq[JdbcPersistenceColumn] = Seq(
-    JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT"))
-}
 
 class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
 
   test("persistence with UUID key", JdbcTestsEnabled) {
     val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key"
 
-    val persistence = DummyJdbcPersistence(properties.jdbcUrl, properties.jdbcUsername,
-      properties.jdbcPassword, tableName, properties.jdbcDriver)
+    val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
+      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
+        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
+      .withValueToSeq(v => Seq(v.field1, v.field2))
+      .withSqlToValue(s => Foo(s.getInt("field1"), s.getFloat("field2")))
+      .build()
 
     val key = UUID.randomUUID()
 
@@ -74,14 +44,14 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistence.lookup(key).isEmpty)
 
-    persistence.store(key, Dummy(100, 219.0f))
+    persistence.store(key, Foo(100, 219.0f))
     val v = persistence.lookup(key)
     assert(v.nonEmpty)
     assert(v.get.field1 === 100)
     assert(v.get.field2 === 219.0f)
 
     // replace
-    persistence.store(key, Dummy(-100, -219.0f))
+    persistence.store(key, Foo(-100, -219.0f))
     val v2 = persistence.lookup(key)
     assert(v2.nonEmpty)
     assert(v2.get.field1 === -100)
@@ -97,8 +67,13 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
   test("persistence with Int key", JdbcTestsEnabled) {
     val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_int_key"
 
-    val persistence = BarJdbcPersistence(properties.jdbcUrl, properties.jdbcUsername,
-      properties.jdbcPassword, tableName, properties.jdbcDriver)
+    val persistence = JdbcPersistenceBuilder.newBuilder[Int, Bar]()
+      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
+        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
+      .withValueToSeq(v => Seq(v.f2, v.f3))
+      .withSqlToValue(s => Bar(s.getFloat("f2"), s.getInt("f3")))
+      .build()
 
     val key = 100
 
@@ -132,8 +107,13 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
 
     val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_incompatible"
 
-    val persistence = DummyJdbcPersistence(properties.jdbcUrl, properties.jdbcUsername,
-      properties.jdbcPassword, tableName, properties.jdbcDriver)
+    val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
+      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
+        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
+      .withValueToSeq(v => Seq(v.field1, v.field2))
+      .withSqlToValue(s => Foo(s.getInt("field1"), s.getFloat("field2")))
+      .build()
     assert(persistence.tableName === tableName)
 
     val key = UUID.randomUUID()
@@ -144,14 +124,14 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistence.lookup(key).isEmpty)
 
-    persistence.store(key, Dummy(100, 219.0f))
+    persistence.store(key, Foo(100, 219.0f))
     val v = persistence.lookup(key)
     assert(v.nonEmpty)
     assert(v.get.field1 === 100)
     assert(v.get.field2 === 219.0f)
 
     // replace
-    persistence.store(key, Dummy(-100, -219.0f))
+    persistence.store(key, Foo(-100, -219.0f))
     val v2 = persistence.lookup(key)
     assert(v2.nonEmpty)
     assert(v2.get.field1 === -100)
@@ -161,8 +141,13 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     assert(persistence.lookup(key).isEmpty)
 
     // using the same table again for a different persistence
-    val persistenceBar = BarJdbcPersistence(properties.jdbcUrl, properties.jdbcUsername,
-      properties.jdbcPassword, tableName, properties.jdbcDriver)
+    val persistenceBar = JdbcPersistenceBuilder.newBuilder[Int, Bar]()
+      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
+        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
+      .withValueToSeq(v => Seq(v.f2, v.f3))
+      .withSqlToValue(s => Bar(s.getFloat("f2"), s.getInt("f3")))
+      .build()
     assert(persistenceBar.tableName !== tableName)
 
     val keyBar = 100

@@ -11,7 +11,7 @@ lazy val commonSettings = Seq(
 
   libraryDependencies ++= Seq(
     "com.typesafe.scala-logging" %% "scala-logging-slf4j" % Common.scalaLoggingSlf4jVersion,
-    // "ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
+    //"ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
 
     "org.scalatest" %% "scalatest" % "3.0.0" % "test"
   )
@@ -37,7 +37,7 @@ lazy val cebesDataframeSpark = project.in(file("cebes-dataframe-spark")).
   dependsOn(cebesDataframe, cebesProperties)
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
-  dependsOn(cebesAuth, cebesDataframeSpark)
+  dependsOn(cebesAuth, cebesPersistenceMysql, cebesDataframeSpark)
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).

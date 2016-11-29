@@ -1,5 +1,5 @@
 object Common {
-  val sparkVersion = "2.0.0"
+  val sparkVersion = "2.0.2"
   val guiceVersion = "4.1.0"
   val guavaVersion = "19.0"
   val mySqlConnectorVersion = "6.0.5"

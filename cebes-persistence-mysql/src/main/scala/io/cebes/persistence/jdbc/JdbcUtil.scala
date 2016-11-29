@@ -51,19 +51,13 @@ object JdbcUtil extends LazyLogging {
 
   /**
     * Run a task on a resource, and clean it up after that.
-    *
-    * @param resource Resource to work on
-    * @param cleanup  function to clean up the resource
-    * @param doWork   the real work
-    * @tparam A  type of resource
-    * @tparam B  type of the result
-    * @tparam Ex type of the exception to catch
+    * Capture [[SQLException]], if it happens.
     */
-  def cleanly[A, B, Ex <: Exception](resource: A)(cleanup: A => Unit)(doWork: A => B): B = {
+  def cleanJdbcCall[A, B](resource: A)(cleanup: A => Unit)(doWork: A => B): B =
     try {
       doWork(resource)
     } catch {
-      case e: Ex =>
+      case e: SQLException =>
         logger.error("Failed when running the job on resource", e)
         throw e
     }
@@ -73,15 +67,8 @@ object JdbcUtil extends LazyLogging {
           cleanup(resource)
         }
       } catch {
-        case e: Ex =>
+        case e: SQLException =>
           logger.error("Failed to clean up resource", e)
       }
     }
-  }
-
-  /**
-    * Wrapper of [[cleanly()]], specialized for [[SQLException]]
-    */
-  def cleanJdbcCall[A, B](resource: A)(cleanup: A => Unit)(doWork: A => B): B =
-    cleanly[A, B, SQLException](resource)(cleanup)(doWork)
 }

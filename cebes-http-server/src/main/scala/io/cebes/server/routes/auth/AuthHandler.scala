@@ -34,15 +34,14 @@ trait AuthHandler extends SecuredSession {
   val authApi = pathPrefix("auth") {
     (path("login") & post) {
       entity(as[UserLogin]) { userLogin =>
-        authService.login(userLogin.userName, userLogin.passwordHash) match {
-          case true =>
-            mySetSession(SessionData(userLogin.userName)) {
-              setNewCsrfToken(checkHeader) { ctx =>
-                ctx.complete(OkResponse("ok"))
-              }
+        if (authService.login(userLogin.userName, userLogin.passwordHash)) {
+          mySetSession(SessionData(userLogin.userName)) {
+            setNewCsrfToken(checkHeader) { ctx =>
+              ctx.complete(OkResponse("ok"))
             }
-          case _ =>
-            throw new IllegalArgumentException("Invalid username or password")
+          }
+        } else {
+          throw new IllegalArgumentException("Invalid username or password")
         }
       }
     } ~ (path("logout") & post) {
