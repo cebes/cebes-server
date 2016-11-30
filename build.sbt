@@ -11,7 +11,7 @@ lazy val commonSettings = Seq(
 
   libraryDependencies ++= Seq(
     "com.typesafe.scala-logging" %% "scala-logging-slf4j" % Common.scalaLoggingSlf4jVersion,
-    // "ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
+    //"ch.qos.logback" % "logback-classic" % Common.logbackClassicVersion,
 
     "org.scalatest" %% "scalatest" % "3.0.0" % "test"
   )
@@ -23,6 +23,11 @@ lazy val cebesProperties = project.in(file("cebes-properties")).
 lazy val cebesAuth = project.in(file("cebes-auth")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
+lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
+  disablePlugins(AssemblyPlugin).
+  settings(commonSettings: _*).
+  dependsOn(cebesProperties)
+
 lazy val cebesDataframe = project.in(file("cebes-dataframe")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
@@ -32,11 +37,12 @@ lazy val cebesDataframeSpark = project.in(file("cebes-dataframe-spark")).
   dependsOn(cebesDataframe, cebesProperties)
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
-  dependsOn(cebesAuth, cebesDataframeSpark)
+  dependsOn(cebesAuth, cebesPersistenceMysql, cebesDataframeSpark)
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).
-  aggregate(cebesAuth, cebesHttpServer, cebesDataframe, cebesDataframeSpark)
+  aggregate(cebesProperties, cebesAuth, cebesPersistenceMysql,
+    cebesDataframe, cebesDataframeSpark, cebesHttpServer)
 
 // test in all other sub-projects, except cebesHttpServer
 // http://stackoverflow.com/questions/9856204/sbt-skip-tests-in-subproject-unless-running-from-within-that-project
@@ -44,6 +50,7 @@ val testNoHttpServer = TaskKey[Unit]("testNoHttpServer")
 testNoHttpServer <<= Seq(
   test in (cebesProperties, Test),
   test in (cebesAuth, Test),
+  test in (cebesPersistenceMysql, Test),
   test in (cebesDataframe, Test),
   test in (cebesDataframeSpark, Test)
 ).dependOn

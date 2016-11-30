@@ -12,21 +12,16 @@
  * Created by phvu on 23/09/16.
  */
 
-package io.cebes.spark.helpers
+package io.cebes.persistence.helpers
 
 import com.google.inject.Inject
 import io.cebes.prop.{Prop, Property}
 
 class TestProperties @Inject()
-(@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
- @Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String,
-
- @Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
+(@Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
  @Prop(Property.TEST_JDBC_DRIVER) val jdbcDriver: String,
  @Prop(Property.TEST_JDBC_USERNAME) val jdbcUsername: String,
  @Prop(Property.TEST_JDBC_PASSWORD) val jdbcPassword: String) {
-
-  def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
 
   def hasJdbcCredentials: Boolean = !jdbcUrl.isEmpty && !jdbcUsername.isEmpty && !jdbcPassword.isEmpty
 }

@@ -9,19 +9,23 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 26/11/2016.
  */
 
-package io.cebes.spark.helpers
+package io.cebes.persistence
 
-import io.cebes.spark.CebesSparkTestInjector
-import org.scalatest.{Ignore, Tag}
+/**
+  * A general trait for key-value persistent storage
+  */
+trait KeyValuePersistence[K, V] {
 
-trait TestPropertyHelper {
+  /**
+    * Store the value associated with the key.
+    * When the key is existed, its value will be updated
+    */
+  def store(key: K, value: V): Unit
 
-  val properties: TestProperties = CebesSparkTestInjector.injector.getInstance(classOf[TestProperties])
+  def lookup(key: K): Option[V]
 
-  object S3TestsEnabled extends Tag(if (properties.hasS3Credentials) "" else classOf[Ignore].getName)
-
-  object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
+  def remove(key: K): Unit
 }

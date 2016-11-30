@@ -14,13 +14,13 @@
 
 package io.cebes.server.inject
 
-import com.google.inject.{Guice, Stage}
+import com.google.inject.{Guice, Injector, Stage}
 import io.cebes.prop.PropertyModule
 import io.cebes.spark.CebesSparkDependencyModule
 
 object InjectorService {
 
-  lazy val injector = Guice.createInjector(Stage.PRODUCTION,
+  lazy val injector: Injector = Guice.createInjector(Stage.PRODUCTION,
     new PropertyModule(false),
     new CebesHttpDependencyModule,
     new CebesSparkDependencyModule)

@@ -9,19 +9,9 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 29/11/2016.
  */
 
-package io.cebes.spark.helpers
+package io.cebes.persistence.jdbc
 
-import io.cebes.spark.CebesSparkTestInjector
-import org.scalatest.{Ignore, Tag}
-
-trait TestPropertyHelper {
-
-  val properties: TestProperties = CebesSparkTestInjector.injector.getInstance(classOf[TestProperties])
-
-  object S3TestsEnabled extends Tag(if (properties.hasS3Credentials) "" else classOf[Ignore].getName)
-
-  object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
-}
+case class JdbcPersistenceColumn(name: String, spec: String)

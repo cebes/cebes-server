@@ -12,16 +12,13 @@
  * Created by phvu on 23/09/16.
  */
 
-package io.cebes.spark.helpers
+package io.cebes.persistence.helpers
 
-import io.cebes.spark.CebesSparkTestInjector
 import org.scalatest.{Ignore, Tag}
 
 trait TestPropertyHelper {
 
-  val properties: TestProperties = CebesSparkTestInjector.injector.getInstance(classOf[TestProperties])
-
-  object S3TestsEnabled extends Tag(if (properties.hasS3Credentials) "" else classOf[Ignore].getName)
+  val properties: TestProperties = CebesPersistenceTestInjector.injector.getInstance(classOf[TestProperties])
 
   object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
 }

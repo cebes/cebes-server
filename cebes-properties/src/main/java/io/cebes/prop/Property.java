@@ -36,6 +36,12 @@ public enum Property {
     HIVE_METASTORE_PASSWORD("CEBES_HIVE_METASTORE_PASSWORD", "cebes.hive.metastore.password", "",
             "Password for the hive metastore"),
 
+    // MYSQL backend
+    MYSQL_URL("CEBES_MYSQL_URL", "cebes.mysql.url", "", "URL for MySQL database"),
+    MYSQL_DRIVER("CEBES_MYSQL_DRIVER", "cebes.mysql.driver", "com.mysql.cj.jdbc.Driver", "Driver for MySQL database"),
+    MYSQL_USERNAME("CEBES_MYSQL_USERNAME", "cebes.mysql.username", "", "Username for MySQL database"),
+    MYSQL_PASSWORD("CEBES_MYSQL_PASSWORD", "cebes.mysql.password", "", "Password for MySQL database"),
+
     // test-only properties
     TEST_AWS_ACCESSKEY("CEBES_TEST_AWS_ACCESSKEY", "cebes.test.aws.accesskey",
             "", "AWS access key used for tests", true),

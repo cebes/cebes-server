@@ -28,7 +28,7 @@ import scala.collection.mutable
   */
 @Singleton class InMemoryResultStorage extends ResultStorage {
 
-  val storage = mutable.HashMap.empty[UUID, SerializableResult]
+  private val storage = mutable.HashMap.empty[UUID, SerializableResult]
 
   override def save(serializableResult: SerializableResult): Unit = {
     storage.put(serializableResult.requestId, serializableResult)
