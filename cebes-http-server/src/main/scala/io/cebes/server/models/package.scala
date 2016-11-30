@@ -33,7 +33,7 @@ package object models {
 
     val values = Seq(SCHEDULED, STARTED, FINISHED, FAILED)
 
-    def fromString(name: String) = values.find(_.name == name)
+    def fromString(name: String): Option[RequestStatusEnum] = values.find(_.name == name)
   }
 
   // Objects in requests

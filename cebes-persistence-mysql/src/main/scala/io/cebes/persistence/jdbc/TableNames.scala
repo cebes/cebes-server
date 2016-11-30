@@ -9,23 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 09/09/16.
+ * Created by phvu on 30/11/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.persistence.jdbc
 
-import com.google.inject.{Guice, Injector, Stage}
-import io.cebes.prop.PropertyModule
-import io.cebes.server.inject.CebesHttpDependencyModule
-import io.cebes.spark.CebesSparkDependencyModule
+/**
+  * Names of all MySQL tables used in cebes-server
+  */
+object TableNames {
 
-object TestInjector {
+  val REFRESH_TOKENS = "persistence_refresh_tokens"
 
-  lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
-    new PropertyModule(true),
-    new CebesHttpDependencyModule,
-    new CebesSparkDependencyModule)
-
-
-  def instance[T](t: Class[T]):T = injector.getInstance(t)
+  val RESULT_STORE = "persistence_result_store"
 }

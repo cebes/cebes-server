@@ -12,9 +12,10 @@
  * Created by phvu on 26/11/2016.
  */
 
-package io.cebes.persistence
+package io.cebes.persistence.cache
 
 import com.google.common.cache._
+import io.cebes.persistence.KeyValuePersistence
 
 /**
   * Support a [[LoadingCache]] by a [[KeyValuePersistence]].
@@ -25,6 +26,7 @@ import com.google.common.cache._
 class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V])
   extends CacheLoader[K, V] with RemovalListener[K, V] {
 
+  @throws[NoSuchElementException]("If the key doesn't exist")
   override def load(key: K): V = {
     persistence.lookup(key) match {
       case Some(v) => v
