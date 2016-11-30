@@ -12,13 +12,13 @@
  * Created by phvu on 29/11/2016.
  */
 
-package io.cebes.persistence
+package io.cebes.persistence.cache
 
 import java.util.UUID
 
 import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import io.cebes.persistence.cache.CachePersistenceSupporter
+import io.cebes.persistence.InMemoryPersistence
 import io.cebes.persistence.helpers.TestPropertyHelper
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn}
 import org.scalatest.FunSuite
