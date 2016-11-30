@@ -18,9 +18,21 @@ import java.util.UUID
 
 import io.cebes.server.models.SerializableResult
 
+/**
+  * A result storage.
+  *
+  * Classes implemented this trait should use the @Singleton annotation (to be instantiated by the DI framework)
+  * and make sure that they are thread-safe.
+  */
 trait ResultStorage {
 
+  /**
+    * Save the serializable result
+    */
   def save(serializableResult: SerializableResult): Unit
 
+  /**
+    * Get the saved serializable result of the given request ID
+    */
   def get(requestId: UUID): Option[SerializableResult]
 }

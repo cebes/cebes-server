@@ -17,7 +17,7 @@ package io.cebes.auth.simple
 import io.cebes.auth.AuthService
 
 /**
-  * Simple implementation of AuthService, using a table in mongodb
+  * Simple implementation of AuthService
   */
 class SimpleAuthService extends AuthService {
 

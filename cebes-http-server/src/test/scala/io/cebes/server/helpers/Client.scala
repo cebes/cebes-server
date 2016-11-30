@@ -38,8 +38,8 @@ import scala.util.{Failure, Random, Success, Try}
   */
 class Client extends StrictLogging {
 
-  implicit val actorSystem = Client.system
-  implicit val actorMaterializer = Client.materializer
+  implicit val actorSystem: ActorSystem = Client.system
+  implicit val actorMaterializer: ActorMaterializer = Client.materializer
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html

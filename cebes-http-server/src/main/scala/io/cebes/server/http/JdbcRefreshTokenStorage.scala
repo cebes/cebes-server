@@ -16,7 +16,7 @@ package io.cebes.server.http
 
 import com.google.inject.Inject
 import com.softwaremill.session.{RefreshTokenData, RefreshTokenLookupResult, RefreshTokenStorage}
-import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn}
+import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.{Prop, Property}
 
 import scala.concurrent.Future
@@ -32,7 +32,7 @@ class JdbcRefreshTokenStorage @Inject()
 
   val persistence: JdbcPersistence[String, Store] =
     JdbcPersistenceBuilder.newBuilder[String, Store]().
-      withCredentials(jdbcUrl, jdbcUserName, jdbcPassword, "persistence_refresh_tokens", jdbcDriver).
+      withCredentials(jdbcUrl, jdbcUserName, jdbcPassword, TableNames.REFRESH_TOKENS, jdbcDriver).
       withValueSchema(Seq(JdbcPersistenceColumn("userName", "VARCHAR (200)"),
         JdbcPersistenceColumn("tokenHash", "VARCHAR(256)"),
         JdbcPersistenceColumn("expires", "Long"))).

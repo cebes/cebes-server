@@ -36,6 +36,11 @@ public enum Property {
     HIVE_METASTORE_PASSWORD("CEBES_HIVE_METASTORE_PASSWORD", "cebes.hive.metastore.password", "",
             "Password for the hive metastore"),
 
+    // Non-essential properties
+    CACHESPEC_RESULT_STORE("CEBES_CACHESPEC_RESULT_STORE", "cebes.cachespec.result.store",
+            "maximumSize=1000,expireAfterAccess=30m",
+            "Spec for the cache used for result storage in cebes-http-server"),
+
     // MYSQL backend
     MYSQL_URL("CEBES_MYSQL_URL", "cebes.mysql.url", "", "URL for MySQL database"),
     MYSQL_DRIVER("CEBES_MYSQL_DRIVER", "cebes.mysql.driver", "com.mysql.cj.jdbc.Driver", "Driver for MySQL database"),
