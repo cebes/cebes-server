@@ -14,7 +14,7 @@
 
 package io.cebes.df
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.expressions._
 import io.cebes.df.types.storage.StorageType
 
@@ -23,7 +23,7 @@ import io.cebes.df.types.storage.StorageType
   *
   * @param expr Expression behind this column
   */
-class Column(val expr: Expression) extends StrictLogging {
+class Column(val expr: Expression) extends LazyLogging {
 
   /////////////////////////////////////////////////////////////////////////////
   // Private helpers

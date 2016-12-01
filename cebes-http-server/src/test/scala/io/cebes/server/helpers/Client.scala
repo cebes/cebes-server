@@ -24,7 +24,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
-import com.typesafe.scalalogging.slf4j.StrictLogging
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.models.{FailResponse, FutureResult, RequestStatus, SerializableResult}
 import spray.json.JsonFormat
 
@@ -36,7 +36,7 @@ import scala.util.{Failure, Random, Success, Try}
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
   */
-class Client extends StrictLogging {
+class Client extends LazyLogging {
 
   implicit val actorSystem: ActorSystem = Client.system
   implicit val actorMaterializer: ActorMaterializer = Client.materializer

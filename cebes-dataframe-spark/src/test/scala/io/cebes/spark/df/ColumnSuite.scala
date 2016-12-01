@@ -17,10 +17,9 @@ package io.cebes.spark.df
 import io.cebes.common.CebesBackendException
 import io.cebes.df.functions
 import io.cebes.df.types.storage._
-import io.cebes.spark.helpers.TestDataHelper
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper}
 
-class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
+class ColumnSuite extends CebesBaseSuite with TestDataHelper {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -98,10 +97,7 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
     assert((sample2.get[String]("proof_on_ctd_ink").get,
       sample2.get[String]("grain_screened").get,
       sample2.get[Boolean]("compare").get).zipped.forall {
-      (s1, s2, b) => b match {
-        case true => s1 === s2
-        case false => s1 !== s2
-      }
+      (s1, s2, b) => b === (s1 === s2)
     })
 
     val df3 = df1.select(df1("timestamp").equalTo(df1("grain_screened")))
@@ -119,10 +115,7 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
     assert((sample2.get[String]("proof_on_ctd_ink").get,
       sample2.get[String]("grain_screened").get,
       sample2.get[Boolean]("compare").get).zipped.forall {
-      (s1, s2, b) => b match {
-        case true => s1 !== s2
-        case false => s1 === s2
-      }
+      (s1, s2, b) => b === (s1 !== s2)
     })
 
     val df3 = df1.select(df1("timestamp").notEqual(df1("grain_screened")))
@@ -141,12 +134,12 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
       sample2.get[Float]("roughness").get,
       sample2.get[Boolean]("compare").get).zipped.forall {
       (v1, v2, b) =>
-        b match {
-          case true => v1 > v2
-          case false =>
-            // this happens when one of the two arguments are null
-            // which will be translated to 0.0 in Float
-            v1 <= v2 || v1 === 0.0 || v2 === 0.0
+        if (b) {
+          v1 > v2
+        } else {
+          // this happens when one of the two arguments are null
+          // which will be translated to 0.0 in Float
+          v1 <= v2 || v1 === 0.0 || v2 === 0.0
         }
     })
 
@@ -167,12 +160,12 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
       sample2.get[Float]("roughness").get,
       sample2.get[Boolean]("compare").get).zipped.forall {
       (v1, v2, b) =>
-        b match {
-          case true => v1 < v2
-          case false =>
-            // this happens when one of the two arguments are null
-            // which will be translated to 0.0 in Float
-            v1 >= v2 || v1 === 0.0 || v2 === 0.0
+        if (b) {
+          v1 < v2
+        } else {
+          // this happens when one of the two arguments are null
+          // which will be translated to 0.0 in Float
+          v1 >= v2 || v1 === 0.0 || v2 === 0.0
         }
     })
 
@@ -193,12 +186,12 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
       sample2.get[Float]("roughness").get,
       sample2.get[Boolean]("compare").get).zipped.forall {
       (v1, v2, b) =>
-        b match {
-          case true => v1 >= v2
-          case false =>
-            // this happens when one of the two arguments are null
-            // which will be translated to 0.0 in Float
-            v1 < v2 || v1 === 0.0 || v2 === 0.0
+        if (b) {
+          v1 >= v2
+        } else {
+          // this happens when one of the two arguments are null
+          // which will be translated to 0.0 in Float
+          v1 < v2 || v1 === 0.0 || v2 === 0.0
         }
     })
 
@@ -219,12 +212,12 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
       sample2.get[Float]("roughness").get,
       sample2.get[Boolean]("compare").get).zipped.forall {
       (v1, v2, b) =>
-        b match {
-          case true => v1 <= v2
-          case false =>
-            // this happens when one of the two arguments are null
-            // which will be translated to 0.0 in Float
-            v1 > v2 || v1 === 0.0 || v2 === 0.0
+        if (b) {
+          v1 <= v2
+        } else {
+          // this happens when one of the two arguments are null
+          // which will be translated to 0.0 in Float
+          v1 > v2 || v1 === 0.0 || v2 === 0.0
         }
     })
 
@@ -350,7 +343,7 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
     assert(df1.schema(df1.columns.head).storageType === BooleanType)
     assert(sample1.rows.forall {
       case Seq(b: Boolean, null) => b
-      case Seq(b: Boolean, v: Int) => !b
+      case Seq(b: Boolean, _: Int) => !b
     })
   }
 
@@ -365,7 +358,7 @@ class ColumnSuite extends FunSuite with TestDataHelper with BeforeAndAfterAll {
     assert(df1.schema(df1.columns.head).storageType === BooleanType)
     assert(sample1.rows.forall {
       case Seq(b: Boolean, null) => !b
-      case Seq(b: Boolean, v: Int) => b
+      case Seq(b: Boolean, _: Int) => b
     })
   }
 

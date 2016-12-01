@@ -1,7 +1,7 @@
 # cebes-server
 [![Build Status](http://ec2-52-52-145-236.us-west-1.compute.amazonaws.com:8080/buildStatus/icon?job=cebes-server-pull-request)](http://ec2-52-52-145-236.us-west-1.compute.amazonaws.com:8080/job/cebes-server-pull-request)
 
-Cebes - The Data Scientist's toolbox for Big Data
+Cebes - The integrated framework for Data Science at Scale
 
 ## Environment variables and configurations
 
@@ -10,16 +10,7 @@ All the variables are defined in `Property.java` in the `cebes-properties` modul
 
 ## Tests
 
-Since both `cebes-dataframe-spark` and `cebes-http-server` uses Spark
-with Hive enabled, by default both modules uses Hive with Derby metastore.
-
-When you run `sbt test` at the root project, both modules will use the 
-same Derby metastore, which then causes troubles, and the tests won't be 
-able to finish.
-
-There are two ways to bypass this (until we figure out a proper solution):
-
-1. Configure cebes to use MySQL for tests. The relevant configurations
+1. Configure cebes to use MySQL metastore for Hive. The relevant configurations
 are:
 
         CEBES_HIVE_METASTORE_URL: jdbc:mysql://<host>:<port>/<database_name>
@@ -35,16 +26,22 @@ are:
     to put Postgresql jar files in the class path, since Cebes only includes
     MySQL in its jar by default.
     
-2. Run tests independently:
-
-        $ sbt testNoHttpServer
-        $ sbt cebesHttpServer/test
-        
-   where `testNoHttpServer` is a special sbt command which exclude `cebesHttpServer` tests.
-   
-   You can also run everything with the accompanying script:
+2. Run the test script (with coverage report and so on):
    
         $ bin/test-all.sh
 
-    
+## Logging
 
+By default, the whole project use `scala-logging` with the `slf4j-log4j12` backend.
+The configuration of `log4j` can be found in `log4j.properties` in each module of the project.
+
+During tests, the resulting log files are normally named `${cebes.log.dir}<module_name>-test.log`.
+
+In production, the resulting log file is named `${cebes.log.dir}cebes-http-server.log`, and rolled daily.
+
+`Spark` has some nasty dependencies (`DataNucleus` and `parquet`), who
+use either `java.util.logging` or hard-coded `log4j`. For this, we tried our best
+to mute them in `cebes-http-server` with the `log4j.properties` and `parquet.logging.properties`
+files.
+
+It seems impossible to mute them in `cebes-dataframe-spark` though.

@@ -29,7 +29,7 @@ public enum Property {
     // for Hive metastore
     HIVE_METASTORE_URL("CEBES_HIVE_METASTORE_URL", "cebes.hive.metastore.url", "",
             "URL for the hive metastore"),
-    HIVE_METASTORE_DRIVER("CEBES_HIVE_METASTORE_DRIVER", "cebes.hive.metastore.driver", "",
+    HIVE_METASTORE_DRIVER("CEBES_HIVE_METASTORE_DRIVER", "cebes.hive.metastore.driver", "com.mysql.cj.jdbc.Driver",
             "Driver name for the hive metastore"),
     HIVE_METASTORE_USERNAME("CEBES_HIVE_METASTORE_USERNAME", "cebes.hive.metastore.username", "",
             "Username for the hive metastore"),
@@ -53,14 +53,14 @@ public enum Property {
     TEST_AWS_SECRETKEY("CEBES_TEST_AWS_SECRETKEY", "cebes.test.aws.secretkey",
             "", "AWS secret key used for tests", true),
 
-    TEST_JDBC_URL("CEBES_TEST_JDBC_URL", "cebes.test.jdbc.url",
-            "", "URL for JDBC data source for tests", true),
-    TEST_JDBC_DRIVER("CEBES_TEST_JDBC_DRIVER", "cebes.test.jdbc.driver",
-            "", "Driver for JDBC data source for tests", true),
-    TEST_JDBC_USERNAME("CEBES_TEST_JDBC_USERNAME", "cebes.test.jdbc.username",
-            "", "Username for JDBC data source for tests", true),
-    TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password",
-            "", "Password for JDBC data source for tests", true);
+    TEST_JDBC_URL("CEBES_TEST_JDBC_URL", "cebes.test.jdbc.url", "",
+            "URL for JDBC data source for tests", true),
+    TEST_JDBC_DRIVER("CEBES_TEST_JDBC_DRIVER", "cebes.test.jdbc.driver", "com.mysql.cj.jdbc.Driver",
+            "Driver for JDBC data source for tests", true),
+    TEST_JDBC_USERNAME("CEBES_TEST_JDBC_USERNAME", "cebes.test.jdbc.username", "",
+            "Username for JDBC data source for tests", true),
+    TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password", "",
+            "Password for JDBC data source for tests", true);
 
     private String environmentVar;
     private String propertyKey;

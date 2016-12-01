@@ -12,6 +12,6 @@ fi
 source "${CEBES_PATH}/bin/env.sh"
 
 ${SPARK_HOME}/bin/spark-submit --class "io.cebes.server.Main" \
-    --master local[4] \
-    --conf 'spark.driver.extraJavaOptions=-Dcebes.logs.dir=/tmp' \
-    ${CEBES_PATH}/cebes-http-server/target/scala-2.11/cebes-http-server-assembly-0.1.0.jar
+    --master "local[4]" \
+    --conf 'spark.driver.extraJavaOptions=-Dcebes.logs.dir=/tmp/' \
+    ${CEBES_PATH}/cebes-http-server/target/scala-2.11/cebes-http-server-assembly-0.2.0-SNAPSHOT.jar

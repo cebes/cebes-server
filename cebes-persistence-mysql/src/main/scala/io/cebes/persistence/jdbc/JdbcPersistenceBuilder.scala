@@ -16,7 +16,7 @@ package io.cebes.persistence.jdbc
 
 import java.sql.{Connection, ResultSet, SQLSyntaxErrorException}
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.util.{Failure, Success, Try}
 

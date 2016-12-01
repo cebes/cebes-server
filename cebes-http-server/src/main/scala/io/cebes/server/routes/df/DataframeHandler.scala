@@ -15,12 +15,13 @@
 package io.cebes.server.routes.df
 
 import akka.http.scaladsl.server.Directives._
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
 
 /**
   * Handle all requests related to dataframe
   */
-trait DataframeHandler extends SecuredSession {
+trait DataframeHandler extends SecuredSession with LazyLogging {
 
   val dataframeApi = pathPrefix("df") {
     path("tmp") {

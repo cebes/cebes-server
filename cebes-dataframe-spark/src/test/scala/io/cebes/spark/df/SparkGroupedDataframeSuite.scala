@@ -17,10 +17,9 @@ package io.cebes.spark.df
 import io.cebes.common.CebesBackendException
 import io.cebes.df.functions
 import io.cebes.df.types.storage._
-import io.cebes.spark.helpers.TestDataHelper
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper}
 
-class SparkGroupedDataframeSuite extends FunSuite with BeforeAndAfterAll with TestDataHelper {
+class SparkGroupedDataframeSuite extends CebesBaseSuite with TestDataHelper {
 
   override def beforeAll(): Unit = {
     super.beforeAll()

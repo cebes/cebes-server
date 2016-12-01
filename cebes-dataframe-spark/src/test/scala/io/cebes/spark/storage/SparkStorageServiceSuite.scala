@@ -18,16 +18,15 @@ import java.nio.file.{FileVisitOption, Files, Path, Paths}
 import java.util.Comparator
 import java.util.function.Consumer
 
-import com.typesafe.scalalogging.slf4j.StrictLogging
-import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
+import com.typesafe.scalalogging.StrictLogging
+import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
 import io.cebes.storage.DataFormats
 import io.cebes.storage.localfs.LocalFsDataSource
 import io.cebes.util.ResourceUtil
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll with TestPropertyHelper with TestDataHelper
+class SparkStorageServiceSuite extends CebesBaseSuite with TestPropertyHelper with TestDataHelper
   with StrictLogging {
 
   override def beforeAll(): Unit = {

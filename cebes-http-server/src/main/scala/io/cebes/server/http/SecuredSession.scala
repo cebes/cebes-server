@@ -20,12 +20,11 @@ import com.softwaremill.session.CsrfOptions._
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import com.softwaremill.session._
-import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.server.inject.InjectorService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-trait SecuredSession extends StrictLogging {
+trait SecuredSession {
 
   val sessionConfig: SessionConfig =
     SessionConfig.default("9MLs9gc8Axvdi1tbM1T7ZpjFMM5R5QR7b788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0")

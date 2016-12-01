@@ -20,20 +20,18 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.google.inject.Inject
-import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.prop.{Prop, Property}
 import io.cebes.server.routes.Routes
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.io.StdIn
 
 class HttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) val httpInterface: String,
-                           @Prop(Property.HTTP_PORT) val httpPort: Int)
-  extends StrictLogging with Routes {
+                           @Prop(Property.HTTP_PORT) val httpPort: Int) extends Routes {
 
   implicit val actorSystem = ActorSystem("CebesServerApp")
-  implicit val actorExecutor = actorSystem.dispatcher
+  implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
   implicit val actorMaterializer = ActorMaterializer()
 
   var bindingFuture: Future[Http.ServerBinding] = _

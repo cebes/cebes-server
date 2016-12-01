@@ -33,11 +33,12 @@ class JdbcRefreshTokenStorage @Inject()
   val persistence: JdbcPersistence[String, Store] =
     JdbcPersistenceBuilder.newBuilder[String, Store]().
       withCredentials(jdbcUrl, jdbcUserName, jdbcPassword, TableNames.REFRESH_TOKENS, jdbcDriver).
-      withValueSchema(Seq(JdbcPersistenceColumn("userName", "VARCHAR (200)"),
-        JdbcPersistenceColumn("tokenHash", "VARCHAR(256)"),
+      withValueSchema(Seq(
+        JdbcPersistenceColumn("user_name", "VARCHAR (200)"),
+        JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),
         JdbcPersistenceColumn("expires", "Long"))).
       withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires)).
-      withSqlToValue(r => Store(r.getString("userName"), r.getString("tokenHash"), r.getLong("expires"))).build()
+      withSqlToValue(r => Store(r.getString(1), r.getString(2), r.getLong(3))).build()
 
   override def lookup(selector: String): Future[Option[RefreshTokenLookupResult[SessionData]]] = Future.successful {
     persistence.lookup(selector).map { s =>

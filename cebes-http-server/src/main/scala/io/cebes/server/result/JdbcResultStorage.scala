@@ -19,7 +19,7 @@ import java.util.UUID
 import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.google.inject.{Inject, Singleton}
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.{Prop, Property}
@@ -33,14 +33,15 @@ import spray.json._
  @Prop(Property.MYSQL_DRIVER) jdbcDriver: String,
  @Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String) extends ResultStorage with LazyLogging {
 
-  case class Store(response: String, status: String)
+  case class Store(createdAt: Long, status: String, response: String)
 
   private lazy val jdbcPersistence = JdbcPersistenceBuilder.newBuilder[UUID, Store]()
     .withCredentials(jdbcUrl, jdbcUsername, jdbcPassword, TableNames.RESULT_STORE, jdbcDriver)
-    .withValueSchema(Seq(JdbcPersistenceColumn("response", "MEDIUMTEXT"),
-      JdbcPersistenceColumn("status", "VARCHAR(50)")))
-    .withValueToSeq(s => Seq(s.response, s.status))
-    .withSqlToValue(f => Store(f.getString(1), f.getString(2)))
+    .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
+      JdbcPersistenceColumn("status", "VARCHAR(50)"),
+      JdbcPersistenceColumn("response", "MEDIUMTEXT")))
+    .withValueToSeq(s => Seq(s.createdAt, s.status, s.response))
+    .withSqlToValue(f => Store(f.getLong(1), f.getString(2), f.getString(3)))
     .build()
 
   private lazy val cache: LoadingCache[UUID, Store] = {
@@ -50,8 +51,9 @@ import spray.json._
 
   override def save(serializableResult: SerializableResult): Unit = {
     cache.put(serializableResult.requestId,
-      Store(serializableResult.response.map(_.compactPrint).getOrElse(""),
-        serializableResult.status.name))
+      Store(System.currentTimeMillis,
+        serializableResult.status.name,
+        serializableResult.response.map(_.compactPrint).getOrElse("")))
   }
 
   override def get(requestId: UUID): Option[SerializableResult] = {
@@ -71,7 +73,7 @@ import spray.json._
       Some(SerializableResult(requestId, status, response))
     } catch {
       case e@(_: UncheckedExecutionException | _: IllegalArgumentException) =>
-        logger.error(s"Failed to get result for request ID $requestId", e)
+        logger.warn(s"Failed to get result for request ID $requestId: ${e.getMessage}")
         None
     }
   }
