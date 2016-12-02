@@ -6,7 +6,6 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),
-    //exclude("org.slf4j", "slf4j-log4j12"),
   "org.apache.spark" %% "spark-sql" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),

@@ -9,17 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 22/09/16.
+ * Created by phvu on 01/12/2016.
  */
 
-package io.cebes.spark
+package io.cebes.spark.helpers
 
-import com.google.inject.{Guice, Injector, Stage}
-import io.cebes.prop.PropertyModule
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-object CebesSparkTestInjector {
+trait CebesBaseSuite extends FunSuite with BeforeAndAfterAll {
 
-  lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
-    new PropertyModule(true),
-    new CebesSparkDependencyModule)
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+  }
 }

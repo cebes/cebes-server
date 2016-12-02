@@ -16,7 +16,7 @@ package io.cebes.persistence.jdbc
 
 import java.sql.{Connection, DriverManager, SQLException}
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 
 object JdbcUtil extends LazyLogging {
 

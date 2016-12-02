@@ -16,7 +16,6 @@ package io.cebes.server.routes.storage
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.HttpMethods
-import com.typesafe.scalalogging.slf4j.StrictLogging
 import io.cebes.server.helpers.{Client, TestPropertyHelper}
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.{DataframeResponse, ReadRequest, S3ReadRequest}
@@ -25,7 +24,7 @@ import org.scalatest.FunSuite
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class StorageHandlerSuite(val client: Client) extends FunSuite with TestPropertyHelper with StrictLogging {
+class StorageHandlerSuite(val client: Client) extends FunSuite with TestPropertyHelper {
 
   test("read data from S3", S3TestsEnabled) {
     val result = client.requestAndWait[ReadRequest, DataframeResponse](HttpMethods.POST, "storage/read",

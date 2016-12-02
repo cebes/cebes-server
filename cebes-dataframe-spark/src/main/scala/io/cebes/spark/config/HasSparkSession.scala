@@ -58,7 +58,7 @@ class HasSparkSessionProvider @Inject()
         s"file:${System.getProperty("java.io.tmpdir", "/tmp")}/spark-warehouse")
 
     // update log4j configuration if there is some log4j.properties in the classpath
-    Option(getClass.getClassLoader.getResourceAsStream("log4j.properties")).foreach {f =>
+    Option(getClass.getClassLoader.getResourceAsStream("log4j.properties")).foreach { f =>
       val props = new Properties()
       props.load(f)
       PropertyConfigurator.configure(props)

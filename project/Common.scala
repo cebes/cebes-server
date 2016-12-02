@@ -4,6 +4,7 @@ object Common {
   val guavaVersion = "19.0"
   val mySqlConnectorVersion = "6.0.5"
   val typeSafeConfigVersion = "1.3.0"
-  val scalaLoggingSlf4jVersion = "2.1.2"
-  val logbackClassicVersion = "1.1.7"
+  val scalaLoggingVersion = "3.5.0"
+  val scalaTestVersion = "3.0.0"
+  val log4j12Version = "1.7.16"    // should be the same with log4j12 in spark-core
 }

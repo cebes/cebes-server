@@ -16,7 +16,7 @@ package io.cebes.persistence.jdbc
 
 import java.sql.{Connection, ResultSet}
 
-import com.typesafe.scalalogging.slf4j.LazyLogging
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.KeyValuePersistence
 
 /**
