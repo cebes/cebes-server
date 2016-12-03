@@ -12,7 +12,9 @@
  * Created by phvu on 22/11/2016.
  */
 
-package io.cebes.df
+package io.cebes.df.support
+
+import io.cebes.df.{Column, Dataframe, functions}
 
 /**
   * A set of methods for aggregations on a [[Dataframe]], created by [[Dataframe.groupBy]].

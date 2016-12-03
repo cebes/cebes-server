@@ -18,12 +18,14 @@ import java.util.UUID
 
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.Schema
+import io.cebes.df.support.{GroupedDataframe, NAFunctions, StatFunctions}
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.types.storage.StorageType
 import io.cebes.df.types.{StorageTypes, VariableTypes}
-import io.cebes.df.{Column, Dataframe, GroupedDataframe}
+import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import io.cebes.spark.df.schema.SparkSchemaUtils
+import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.DataFrame
 
@@ -124,6 +126,10 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   override def dropDuplicates(colNames: Seq[String]): Dataframe = {
     withSparkDataFrame(sparkDf.dropDuplicates(colNames), schema.copy())
   }
+
+  override def na: NAFunctions = new SparkNAFunctions(safeSparkCall(sparkDf.na))
+
+  override def stat: StatFunctions = new SparkStatFunctions(safeSparkCall(sparkDf.stat))
 
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-like APIs

@@ -17,6 +17,7 @@ package io.cebes.df
 import io.cebes.common.HasId
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{HasSchema, Schema}
+import io.cebes.df.support.{GroupedDataframe, NAFunctions, StatFunctions}
 import io.cebes.df.types.VariableTypes.VariableType
 
 /**
@@ -132,6 +133,28 @@ trait Dataframe extends HasSchema with HasId {
     * @group data-exploration
     */
   def dropDuplicates(colNames: Seq[String]): Dataframe
+
+  /**
+    * Returns a [[NAFunctions]] for working with missing data.
+    * {{{
+    *   // Dropping rows containing any null values.
+    *   ds.na.drop()
+    * }}}
+    *
+    * @group data-exploration
+    */
+  def na: NAFunctions
+
+  /**
+    * Returns a [[StatFunctions]] for working statistic functions support.
+    * {{{
+    *   // Finding frequent items in column with name 'a'.
+    *   ds.stat.freqItems(Seq("a"))
+    * }}}
+    *
+    * @group data-exploration
+    */
+  def stat: StatFunctions
 
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-related functions
