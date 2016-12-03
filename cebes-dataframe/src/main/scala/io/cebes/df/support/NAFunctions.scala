@@ -21,7 +21,7 @@ trait NAFunctions {
   /**
     * Returns a new [[Dataframe]] that drops rows containing any null or NaN values.
     */
-  def drop(): Dataframe
+  def drop(): Dataframe = drop("any")
 
   /**
     * Returns a new [[Dataframe]] that drops rows containing null or NaN values.
@@ -35,10 +35,10 @@ trait NAFunctions {
     * Returns a new [[Dataframe]] that drops rows containing any null or NaN values
     * in the specified columns.
     */
-  def drop(cols: Seq[String]): Dataframe
+  def drop(cols: Seq[String]): Dataframe = drop(cols.size, cols)
 
   /**
-    * (Scala-specific) Returns a new [[Dataframe]] that drops rows containing null or NaN values
+    * Returns a new [[Dataframe]] that drops rows containing null or NaN values
     * in the specified columns.
     *
     * If `how` is "any", then drop rows containing any null or NaN values in the specified columns.
@@ -59,13 +59,7 @@ trait NAFunctions {
   def drop(minNonNulls: Int): Dataframe
 
   /**
-    * Returns a new [[Dataframe]] that drops rows containing
-    * less than `minNonNulls` non-null and non-NaN values in the specified columns.
-    */
-  def drop(minNonNulls: Int, cols: Array[String]): Dataframe
-
-  /**
-    * (Scala-specific) Returns a new [[Dataframe]] that drops rows containing less than
+    * Returns a new [[Dataframe]] that drops rows containing less than
     * `minNonNulls` non-null and non-NaN values in the specified columns.
     */
   def drop(minNonNulls: Int, cols: Seq[String]): Dataframe
@@ -131,7 +125,6 @@ trait NAFunctions {
     * @param col name of the column to apply the value replacement
     * @param replacement value replacement map, as explained above
     *
-    * @since 1.3.1
     */
   def replace[T](col: String, replacement: Map[T, T]): Dataframe
 

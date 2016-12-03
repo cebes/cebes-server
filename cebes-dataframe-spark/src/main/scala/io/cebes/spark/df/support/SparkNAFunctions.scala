@@ -21,17 +21,9 @@ import org.apache.spark.sql.DataFrameNaFunctions
 
 class SparkNAFunctions private[df](sparkNA: DataFrameNaFunctions) extends NAFunctions with CebesSparkUtil {
 
-  override def drop(): Dataframe = withSparkDataFrame(sparkNA.drop())
-
   override def drop(how: String): Dataframe = withSparkDataFrame(sparkNA.drop(how))
 
-  override def drop(cols: Seq[String]): Dataframe = withSparkDataFrame(sparkNA.drop(cols))
-
   override def drop(minNonNulls: Int): Dataframe = withSparkDataFrame(sparkNA.drop(minNonNulls))
-
-  override def drop(minNonNulls: Int, cols: Array[String]): Dataframe = withSparkDataFrame {
-    sparkNA.drop(minNonNulls, cols)
-  }
 
   override def drop(minNonNulls: Int, cols: Seq[String]): Dataframe = withSparkDataFrame {
     sparkNA.drop(minNonNulls, cols)
