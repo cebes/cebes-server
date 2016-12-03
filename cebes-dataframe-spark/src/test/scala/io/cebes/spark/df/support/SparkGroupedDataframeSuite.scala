@@ -12,7 +12,7 @@
  * Created by phvu on 22/11/2016.
  */
 
-package io.cebes.spark.df
+package io.cebes.spark.df.support
 
 import io.cebes.common.CebesBackendException
 import io.cebes.df.functions

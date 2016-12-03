@@ -12,9 +12,10 @@
  * Created by phvu on 22/11/2016.
  */
 
-package io.cebes.spark.df
+package io.cebes.spark.df.support
 
-import io.cebes.df.{Column, Dataframe, GroupedDataframe}
+import io.cebes.df.support.GroupedDataframe
+import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.RelationalGroupedDataset
 
