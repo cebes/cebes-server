@@ -16,10 +16,11 @@ package io.cebes.server.routes.common
 
 import java.io.{PrintWriter, StringWriter}
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.server.RequestContext
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.models._
-import io.cebes.server.result.ResultActorProducer
+import io.cebes.server.result.ResultStorage
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,12 +40,17 @@ import scala.util.{Failure, Success}
   * @tparam T Type of the actual result
   * @tparam R Type of the result will be returned to client
   */
-trait AsyncExecutor[E, T, R] {
+trait AsyncExecutor[E, T, R] extends LazyLogging {
+
+  /**
+    * To be injected by the DI framework
+    */
+  val resultStorage: ResultStorage
 
   /**
     * Implement this to do the real work
     */
-  def runImpl(requestEntity: E): T
+  protected def runImpl(requestEntity: E)(implicit ec: ExecutionContext): Future[T]
 
   /**
     * Transform the actual result (of type T)
@@ -55,7 +61,7 @@ trait AsyncExecutor[E, T, R] {
     * @param result        The actual result, returned by `runImpl`
     * @return a JSON-serializable object, to be returned to the clients
     */
-  def transformResult(requestEntity: E, result: T): Option[R]
+  protected def transformResult(requestEntity: E, result: T): Option[R]
 
   def run(requestEntity: E)
          (implicit ec: ExecutionContext,
@@ -63,42 +69,33 @@ trait AsyncExecutor[E, T, R] {
           actorSystem: ActorSystem,
           jfE: JsonFormat[E],
           jfR: JsonFormat[R],
-          jfResult: JsonFormat[Result[E, R]],
-          jfFr: JsonFormat[FailResponse],
-          jfResultFail: JsonFormat[Result[E, FailResponse]]): FutureResult = {
+          jfFr: JsonFormat[FailResponse]): Future[FutureResult] = {
 
-    val resultActor = actorSystem.actorOf(ResultActorProducer.props)
+    implicit val scheduler = actorSystem.scheduler
+    val requestJson = Some(requestEntity.toJson)
+    val requestId = java.util.UUID.randomUUID()
 
-    val requestObj = Request(requestEntity,
-      ctx.request.uri.path.toString(), java.util.UUID.randomUUID())
+    resultStorage.saveWithRetry {
+      SerializableResult(requestId, RequestStatus.SCHEDULED, None, requestJson)
+    }.map { _ =>
+      runImpl(requestEntity).onComplete {
+        case Success(t) =>
+          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatus.FINISHED,
+            this.transformResult(requestEntity, t).map(_.toJson), requestJson)).onFailure {
+            case f => logger.error(s"Failed to save FINISHED result for request $requestId", f)
+          }
 
-    resultActor ! SerializableResult(requestObj.requestId, RequestStatus.SCHEDULED, None)
+        case Failure(t) =>
+          val sw = new StringWriter()
+          val pw = new PrintWriter(sw)
+          t.printStackTrace(pw)
 
-    this.runImplWrapped(requestObj, resultActor).onComplete {
-      case Success(t) =>
-
-        resultActor ! SerializableResult(
-          requestObj.requestId, RequestStatus.FINISHED,
-          this.transformResult(requestEntity, t).map(_.toJson))
-
-      case Failure(t) =>
-        val sw = new StringWriter()
-        val pw = new PrintWriter(sw)
-        t.printStackTrace(pw)
-
-        resultActor ! SerializableResult(
-          requestObj.requestId, RequestStatus.FAILED,
-          Some(FailResponse(Option(t.getMessage), Option(sw.toString)).toJson))
+          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatus.FAILED,
+            Some(FailResponse(Option(t.getMessage), Option(sw.toString)).toJson), requestJson)).onFailure {
+            case f => logger.error(s"Failed to save FINISHED result for request $requestId", f)
+          }
+      }
+      FutureResult(requestId)
     }
-    FutureResult(requestObj.requestId)
-  }
-
-  def runImplWrapped(request: Request[E], resultActor: ActorRef)
-                    (implicit ec: ExecutionContext,
-                     jfE: JsonFormat[E],
-                     jfR: JsonFormat[R],
-                     jfResult: JsonFormat[Result[E, R]]): Future[T] = Future {
-    resultActor ! SerializableResult(request.requestId, RequestStatus.STARTED, None)
-    runImpl(request.entity)
   }
 }

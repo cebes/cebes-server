@@ -16,6 +16,7 @@ package io.cebes.server.routes.auth
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import com.softwaremill.session.CsrfDirectives._
 import com.softwaremill.session.CsrfOptions._
 import io.cebes.auth.AuthService
@@ -31,7 +32,7 @@ trait AuthHandler extends SecuredSession {
 
   val authService: AuthService = InjectorService.instance(classOf[AuthService])
 
-  val authApi = pathPrefix("auth") {
+  val authApi: Route = pathPrefix("auth") {
     (path("login") & post) {
       entity(as[UserLogin]) { userLogin =>
         if (authService.login(userLogin.userName, userLogin.passwordHash)) {

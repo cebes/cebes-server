@@ -16,7 +16,7 @@ package io.cebes.server.routes.common
 
 import akka.http.scaladsl.server.RequestContext
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Trait designed for executors that need to be run synchronously
@@ -31,5 +31,5 @@ trait SyncExecutor[E, R] {
     */
   def run(requestEntity: E)
          (implicit ec: ExecutionContext,
-          ctx: RequestContext): R
+          ctx: RequestContext): Future[R]
 }

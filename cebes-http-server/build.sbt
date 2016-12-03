@@ -6,7 +6,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-experimental" % "2.4.11",
   "com.typesafe.akka" %% "akka-http-spray-json-experimental" % "2.4.11",
   "com.typesafe.akka" %% "akka-http-testkit" % "2.4.11" % "test",
-  "com.softwaremill.akka-http-session" %% "core" % "0.2.7",
+  "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
 
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("com.google.inject", "guice")

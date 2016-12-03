@@ -22,7 +22,7 @@ import io.cebes.server.models.SerializableResult
 import io.cebes.server.result.ResultStorage
 import io.cebes.server.routes.common.SyncExecutor
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 class Result @Inject()(resultStorage: ResultStorage) extends SyncExecutor[UUID, SerializableResult] {
 
@@ -31,7 +31,7 @@ class Result @Inject()(resultStorage: ResultStorage) extends SyncExecutor[UUID, 
     */
   override def run(requestEntity: UUID)
                   (implicit ec: ExecutionContext,
-                   ctx: RequestContext): SerializableResult = {
+                   ctx: RequestContext): Future[SerializableResult] = Future {
     resultStorage.get(requestEntity) match {
       case Some(result) => result
       case None => throw new NoSuchElementException(s"Request ID not found: ${requestEntity.toString}")
