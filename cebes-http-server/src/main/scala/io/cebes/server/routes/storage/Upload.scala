@@ -24,7 +24,7 @@ import io.cebes.storage.DataWriter
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Upload @Inject()(dataWriter: DataWriter) extends SyncExecutor[FormData, Future[UploadResponse]] {
+class Upload @Inject()(dataWriter: DataWriter) extends SyncExecutor[FormData, UploadResponse] {
 
   /**
     * Implement this to do the real work

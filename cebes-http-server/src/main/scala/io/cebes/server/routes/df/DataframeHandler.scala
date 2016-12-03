@@ -15,6 +15,7 @@
 package io.cebes.server.routes.df
 
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
 
@@ -23,7 +24,7 @@ import io.cebes.server.http.SecuredSession
   */
 trait DataframeHandler extends SecuredSession with LazyLogging {
 
-  val dataframeApi = pathPrefix("df") {
+  val dataframeApi: Route = pathPrefix("df") {
     path("tmp") {
       post {
         myRequiredSession { session =>

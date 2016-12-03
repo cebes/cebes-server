@@ -65,16 +65,10 @@ package object models {
   // Future response
   case class FutureResult(requestId: UUID)
 
-  case class Request[E](entity: E, uri: String, requestId: UUID)
-
-  // when user asks for results of a particular request
-  case class Result[E, +R](request: Request[E],
-                          status: RequestStatus.RequestStatusEnum,
-                          response: Option[R])
-
   case class SerializableResult(requestId: UUID,
                                 status: RequestStatus.RequestStatusEnum,
-                                response: Option[JsValue])
+                                response: Option[JsValue],
+                                request: Option[JsValue])
 
   /** **************************************************************************/
 
@@ -140,11 +134,7 @@ package object models {
 
     implicit val futureResultFormat = jsonFormat1(FutureResult)
 
-    implicit def requestFormat[T](implicit jf: JsonFormat[T]) = jsonFormat3(Request[T])
-
-    implicit def resultFormat[T, R](implicit jf1: JsonFormat[T], jf2: JsonFormat[R]) = jsonFormat3(Result[T, R])
-
-    implicit val serializableResultFormat = jsonFormat3(SerializableResult)
+    implicit val serializableResultFormat = jsonFormat4(SerializableResult)
 
     //
 

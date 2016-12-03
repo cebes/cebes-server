@@ -33,15 +33,16 @@ import spray.json._
  @Prop(Property.MYSQL_DRIVER) jdbcDriver: String,
  @Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String) extends ResultStorage with LazyLogging {
 
-  case class Store(createdAt: Long, status: String, response: String)
+  case class Store(createdAt: Long, status: String, response: String, request: String)
 
   private lazy val jdbcPersistence = JdbcPersistenceBuilder.newBuilder[UUID, Store]()
     .withCredentials(jdbcUrl, jdbcUsername, jdbcPassword, TableNames.RESULT_STORE, jdbcDriver)
     .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
       JdbcPersistenceColumn("status", "VARCHAR(50)"),
-      JdbcPersistenceColumn("response", "MEDIUMTEXT")))
-    .withValueToSeq(s => Seq(s.createdAt, s.status, s.response))
-    .withSqlToValue(f => Store(f.getLong(1), f.getString(2), f.getString(3)))
+      JdbcPersistenceColumn("response", "MEDIUMTEXT"),
+      JdbcPersistenceColumn("request", "MEDIUMTEXT")))
+    .withValueToSeq(s => Seq(s.createdAt, s.status, s.response, s.request))
+    .withSqlToValue(f => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4)))
     .build()
 
   private lazy val cache: LoadingCache[UUID, Store] = {
@@ -53,7 +54,9 @@ import spray.json._
     cache.put(serializableResult.requestId,
       Store(System.currentTimeMillis,
         serializableResult.status.name,
-        serializableResult.response.map(_.compactPrint).getOrElse("")))
+        serializableResult.response.map(_.compactPrint).getOrElse(""),
+        serializableResult.request.map(_.compactPrint).getOrElse("")
+      ))
   }
 
   override def get(requestId: UUID): Option[SerializableResult] = {
@@ -70,7 +73,12 @@ import spray.json._
         case Some("") => None
         case Some(content) => Some(content.parseJson)
       }
-      Some(SerializableResult(requestId, status, response))
+      val request = Option(r.request) match {
+        case None => None
+        case Some("") => None
+        case Some(content) => Some(content.parseJson)
+      }
+      Some(SerializableResult(requestId, status, response, request))
     } catch {
       case e@(_: UncheckedExecutionException | _: IllegalArgumentException) =>
         logger.warn(s"Failed to get result for request ID $requestId: ${e.getMessage}")

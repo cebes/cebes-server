@@ -19,6 +19,7 @@ import java.util.Base64
 import com.google.inject.Inject
 import io.cebes.df.Dataframe
 import io.cebes.server.models._
+import io.cebes.server.result.ResultStorage
 import io.cebes.server.routes.common.AsyncExecutor
 import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
@@ -26,15 +27,15 @@ import io.cebes.spark.storage.s3.S3DataSource
 import io.cebes.storage.StorageService
 import io.cebes.storage.localfs.LocalFsDataSource
 
-class Read @Inject()(storageService: StorageService)
-  extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
+import scala.concurrent.{ExecutionContext, Future}
 
-  //override def requestType: Class[ReadRequest] = classOf[ReadRequest]
+class Read @Inject()(storageService: StorageService, override val resultStorage: ResultStorage)
+  extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
 
   /**
     * Implement this to do the real work
     */
-  override def runImpl(requestEntity: ReadRequest): Dataframe = {
+  override def runImpl(requestEntity: ReadRequest)(implicit ec: ExecutionContext): Future[Dataframe] = Future {
 
     val dataSrc = requestEntity match {
       case ReadRequest(Some(localFs), None, None, None, None) =>

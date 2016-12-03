@@ -18,6 +18,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.InjectorService
@@ -34,15 +35,17 @@ trait StorageHandler extends SecuredSession {
 
   implicit def actorMaterializer: Materializer
 
-  val storageApi = pathPrefix("storage") {
-    myRequiredSession { session =>
+  val storageApi: Route = pathPrefix("storage") {
+    myRequiredSession { _ =>
       (path("read") & post) {
         entity(as[ReadRequest]) { readRequest =>
-          implicit ctx => ctx.complete(InjectorService.instance(classOf[Read]).run(readRequest))
+          implicit ctx =>
+            InjectorService.instance(classOf[Read]).run(readRequest).flatMap(ctx.complete(_))
         }
       } ~ (path("upload") & put) {
         entity(as[Multipart.FormData]) { formData =>
-          implicit ctx => ctx.complete(InjectorService.instance(classOf[Upload]).run(formData))
+          implicit ctx =>
+            InjectorService.instance(classOf[Upload]).run(formData).flatMap(ctx.complete(_))
         }
       }
     }
