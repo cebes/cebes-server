@@ -18,7 +18,7 @@ case class Md5(child: Expression) extends UnaryExpression
 
 case class Sha1(child: Expression) extends UnaryExpression
 
-case class Sha2(left: Expression, right: Expression) extends BinaryExpression
+case class Sha2(child: Expression, numBits: Int) extends UnaryExpression
 
 case class Crc32(child: Expression) extends UnaryExpression
 

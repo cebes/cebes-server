@@ -20,23 +20,23 @@ case class Base64(child: Expression) extends UnaryExpression
 
 case class Concat(children: Seq[Expression]) extends Expression
 
-case class ConcatWs(children: Seq[Expression]) extends Expression
+case class ConcatWs(sep: String, children: Seq[Expression]) extends Expression
 
 case class Contains(left: Expression, right: Expression) extends BinaryExpression
 
-case class Decode(left: Expression, right: Expression) extends BinaryExpression
+case class Decode(child: Expression, charset: String) extends UnaryExpression
 
-case class Encode(left: Expression, right: Expression) extends BinaryExpression
+case class Encode(child: Expression, charset: String) extends UnaryExpression
 
 case class EndsWith(left: Expression, right: Expression) extends BinaryExpression
 
-case class FormatNumber(left: Expression, right: Expression) extends BinaryExpression
+case class FormatNumber(child: Expression, precision: Int) extends UnaryExpression
 
-case class FormatString(children: Seq[Expression]) extends Expression
+case class FormatString(format: String, children: Seq[Expression]) extends Expression
 
 case class InitCap(child: Expression) extends UnaryExpression
 
-case class StringInstr(left: Expression, right: Expression) extends BinaryExpression
+case class StringInstr(child: Expression, subStr: String) extends UnaryExpression
 
 case class Length(child: Expression) extends UnaryExpression
 
@@ -46,33 +46,23 @@ case class Lower(child: Expression) extends UnaryExpression
 
 case class Levenshtein(left: Expression, right: Expression) extends BinaryExpression
 
-case class StringLocate(substr: Expression, str: Expression, pos: Expression) extends Expression {
-  override def children = Seq(substr, str, pos)
-}
+case class StringLocate(substr: String, child: Expression, pos: Int) extends UnaryExpression
 
-case class StringLPad(str: Expression, len: Expression, pad: Expression) extends Expression {
-  override def children = Seq(str, len, pad)
-}
+case class StringLPad(child: Expression, len: Int, pad: String) extends UnaryExpression
 
 case class StringTrimLeft(child: Expression) extends UnaryExpression
 
-case class RegExpExtract(col: Expression, expr: Expression, groupIdx: Expression) extends Expression {
-  override def children = Seq(col, expr, groupIdx)
-}
+case class RegExpExtract(child: Expression, expr: String, groupIdx: Int) extends UnaryExpression
 
-case class RegExpReplace(col: Expression, pattern: Expression, replacement: Expression) extends Expression {
-  override def children = Seq(col, pattern, replacement)
-}
+case class RegExpReplace(child: Expression, pattern: String, replacement: String) extends UnaryExpression
 
 case class RLike(child: Expression, literal: String) extends UnaryExpression
 
 case class StartsWith(left: Expression, right: Expression) extends BinaryExpression
 
-case class StringRPad(str: Expression, len: Expression, pad: Expression) extends Expression {
-  override def children = Seq(str, len, pad)
-}
+case class StringRPad(child: Expression, len: Int, pad: String) extends UnaryExpression
 
-case class StringRepeat(left: Expression, right: Expression) extends BinaryExpression
+case class StringRepeat(child: Expression, n: Int) extends UnaryExpression
 
 case class StringReverse(child: Expression) extends UnaryExpression
 
@@ -80,21 +70,15 @@ case class StringTrimRight(child: Expression) extends UnaryExpression
 
 case class SoundEx(child: Expression) extends UnaryExpression
 
-case class StringSplit(left: Expression, right: Expression) extends BinaryExpression
+case class StringSplit(child: Expression, pattern: String) extends UnaryExpression
 
-case class StringTranslate(src: Expression, matching: Expression, replace: Expression) extends Expression {
-  override def children = Seq(src, matching, replace)
-}
+case class StringTranslate(child: Expression, matching: String, replace: String) extends UnaryExpression
 
 case class StringTrim(child: Expression) extends UnaryExpression
 
-case class Substring(str: Expression, pos: Expression, len: Expression) extends Expression {
-  override def children: Seq[Expression] = Seq(str, pos, len)
-}
+case class Substring(child: Expression, pos: Int, len: Int) extends UnaryExpression
 
-case class SubstringIndex(str: Expression, delim: Expression, count: Expression) extends Expression {
-  override def children = Seq(str, delim, count)
-}
+case class SubstringIndex(child: Expression, delim: String, count: Int) extends UnaryExpression
 
 case class UnBase64(child: Expression) extends UnaryExpression
 

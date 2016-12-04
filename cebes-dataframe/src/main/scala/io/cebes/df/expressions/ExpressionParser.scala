@@ -92,7 +92,7 @@ abstract class AbstractExpressionParser extends ExpressionParser {
 
   protected def filterMethod(method: universe.MethodSymbol): Boolean = true
 
-  protected def invoke(expr: Expression, method: universe.MethodMirror) = method(expr)
+  protected def invoke(expr: Expression, method: universe.MethodMirror): Any = method(expr)
 
 }
 
@@ -111,7 +111,7 @@ abstract class AbstractExpressionParser extends ExpressionParser {
   */
 abstract class StackExpressionParser[T](implicit typeTag: universe.TypeTag[T]) extends AbstractExpressionParser {
 
-  protected val resultStack = mutable.Stack[T]()
+  protected val resultStack: mutable.Stack[T] = mutable.Stack[T]()
 
   override protected def filterMethod(method: universe.MethodSymbol): Boolean = {
     val paramList = method.paramLists.head

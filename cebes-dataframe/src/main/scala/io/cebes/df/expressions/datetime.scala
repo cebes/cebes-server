@@ -14,17 +14,17 @@
 
 package io.cebes.df.expressions
 
-case class AddMonths(left: Expression, right: Expression) extends BinaryExpression
+case class AddMonths(child: Expression, numMonths: Int) extends UnaryExpression
 
 case class CurrentDate() extends LeafExpression
 
 case class CurrentTimestamp() extends LeafExpression
 
-case class DateFormatClass(left: Expression, right: Expression) extends BinaryExpression
+case class DateFormatClass(child: Expression, format: String) extends UnaryExpression
 
-case class DateAdd(left: Expression, right: Expression) extends BinaryExpression
+case class DateAdd(child: Expression, days: Int) extends UnaryExpression
 
-case class DateSub(left: Expression, right: Expression) extends BinaryExpression
+case class DateSub(child: Expression, days: Int) extends UnaryExpression
 
 case class DateDiff(left: Expression, right: Expression) extends BinaryExpression
 
@@ -46,23 +46,23 @@ case class Minute(child: Expression) extends UnaryExpression
 
 case class MonthsBetween(left: Expression, right: Expression) extends BinaryExpression
 
-case class NextDay(left: Expression, right: Expression) extends BinaryExpression
+case class NextDay(child: Expression, dayOfWeek: String) extends UnaryExpression
 
 case class Second(child: Expression) extends UnaryExpression
 
 case class WeekOfYear(child: Expression) extends UnaryExpression
 
-case class FromUnixTime(left: Expression, right: Expression) extends BinaryExpression
+case class FromUnixTime(child: Expression, format: String) extends UnaryExpression
 
-case class UnixTimestamp(left: Expression, right: Expression) extends BinaryExpression
+case class UnixTimestamp(child: Expression, format: String) extends UnaryExpression
 
 case class ToDate(child: Expression) extends UnaryExpression
 
-case class TruncDate(left: Expression, right: Expression) extends BinaryExpression
+case class TruncDate(child: Expression, format: String) extends UnaryExpression
 
-case class FromUTCTimestamp(left: Expression, right: Expression) extends BinaryExpression
+case class FromUTCTimestamp(child: Expression, tz: String) extends UnaryExpression
 
-case class ToUTCTimestamp(left: Expression, right: Expression) extends BinaryExpression
+case class ToUTCTimestamp(child: Expression, tz: String) extends UnaryExpression
 
 case class TimeWindow(child: Expression, windowDuration: String,
                       slideDuration: String, startTime: String) extends UnaryExpression

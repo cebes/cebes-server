@@ -20,10 +20,10 @@ case class Explode(child: Expression) extends UnaryExpression
 
 case class PosExplode(child: Expression) extends UnaryExpression
 
-case class GetJsonObject(left: Expression, right: Expression) extends BinaryExpression
+case class GetJsonObject(child: Expression, path: String) extends UnaryExpression
 
-case class JsonTuple(children: Seq[Expression]) extends Expression
+case class JsonTuple(child: Expression, fields: Seq[String]) extends UnaryExpression
 
 case class Size(child: Expression) extends UnaryExpression
 
-case class SortArray(left: Expression, right: Expression) extends BinaryExpression
+case class SortArray(child: Expression, asc: Boolean) extends UnaryExpression

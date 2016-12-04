@@ -44,9 +44,7 @@ case class Cbrt(child: Expression) extends UnaryExpression
 
 case class Ceil(child: Expression) extends UnaryExpression
 
-case class Conv(numExpr: Expression, fromBaseExpr: Expression, toBaseExpr: Expression) extends Expression {
-  override def children = Seq(numExpr, fromBaseExpr, toBaseExpr)
-}
+case class Conv(child: Expression, fromBase: Int, toBase: Int) extends UnaryExpression
 
 case class Cos(child: Expression) extends UnaryExpression
 
@@ -72,7 +70,7 @@ case class Least(children: Seq[Expression]) extends Expression
 
 case class Log(child: Expression) extends UnaryExpression
 
-case class Logarithm(left: Expression, right: Expression) extends BinaryExpression
+case class Logarithm(base: Double, child: Expression) extends UnaryExpression
 
 case class Log10(child: Expression) extends UnaryExpression
 
@@ -88,13 +86,13 @@ case class Rint(child: Expression) extends UnaryExpression
 
 case class Round(left: Expression, right: Expression) extends BinaryExpression
 
-case class BRound(left: Expression, right: Expression) extends BinaryExpression
+case class BRound(child: Expression, scale: Int) extends UnaryExpression
 
-case class ShiftLeft(left: Expression, right: Expression) extends BinaryExpression
+case class ShiftLeft(child: Expression, numBits: Int) extends UnaryExpression
 
-case class ShiftRight(left: Expression, right: Expression) extends BinaryExpression
+case class ShiftRight(child: Expression, numBits: Int) extends UnaryExpression
 
-case class ShiftRightUnsigned(left: Expression, right: Expression) extends BinaryExpression
+case class ShiftRightUnsigned(child: Expression, numBits: Int) extends UnaryExpression
 
 case class Signum(child: Expression) extends UnaryExpression
 
