@@ -672,6 +672,15 @@ class Column(val expr: Expression) extends LazyLogging {
   }
 
   /**
+    * Computes bitwise NOT.
+    * {{{
+    *   df.select(df("colA").bitwiseNOT)
+    *   df.select(bitwiseNOT(df("colA"))
+    * }}}
+    */
+  def bitwiseNOT: Column = withExpr { BitwiseNot(expr) }
+
+  /**
     * Define a windowing column.
     *
     * {{{

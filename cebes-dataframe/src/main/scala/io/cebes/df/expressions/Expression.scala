@@ -19,7 +19,7 @@ package io.cebes.df.expressions
 // - Handle semantic stuff: expected input types, output data type, etc...
 
 /**
-  *
+  * Mother of all expressions
   */
 trait Expression {
 
@@ -35,6 +35,9 @@ trait Expression {
   // get the state
 }
 
+/**
+  * Expression with no children
+  */
 abstract class LeafExpression extends Expression {
 
   def children: Seq[Expression] = Nil

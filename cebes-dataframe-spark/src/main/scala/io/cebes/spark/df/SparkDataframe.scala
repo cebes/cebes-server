@@ -27,7 +27,7 @@ import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.CebesSparkUtil
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -198,6 +198,8 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
     val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
     withSparkDataFrame(sparkDf.except(otherDf), schema.copy())
   }
+
+  override def broadcast: Dataframe = withSparkDataFrame(sparkFunctions.broadcast(sparkDf), schema.copy())
 
   ////////////////////////////////////////////////////////////////////////////////////
   // GroupBy-related functions
