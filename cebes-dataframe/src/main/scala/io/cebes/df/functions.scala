@@ -1902,7 +1902,7 @@ object functions {
     * @group string_funcs
     */
   def substring(str: Column, pos: Int, len: Int): Column = withExpr {
-    Substring(str.expr, pos, len)
+    Substring(str.expr, lit(pos).expr, lit(len).expr)
   }
 
   /**

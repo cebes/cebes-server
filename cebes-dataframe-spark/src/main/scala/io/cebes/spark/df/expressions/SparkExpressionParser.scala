@@ -678,7 +678,7 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] {
   }
 
   protected def visitSubstring(expr: Substring, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(sparkFunctions.substring(parsedChildren.head, expr.pos, expr.len))
+    Some(parsedChildren.head.substr(parsedChildren(1), parsedChildren(2)))
   }
 
   protected def visitSubstringIndex(expr: SubstringIndex, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {

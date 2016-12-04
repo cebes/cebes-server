@@ -76,7 +76,9 @@ case class StringTranslate(child: Expression, matching: String, replace: String)
 
 case class StringTrim(child: Expression) extends UnaryExpression
 
-case class Substring(child: Expression, pos: Int, len: Int) extends UnaryExpression
+case class Substring(str: Expression, pos: Expression, len: Expression) extends Expression {
+  override def children = Seq(str, pos, len)
+}
 
 case class SubstringIndex(child: Expression, delim: String, count: Int) extends UnaryExpression
 
