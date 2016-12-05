@@ -16,9 +16,11 @@ package io.cebes.spark.df
 
 import io.cebes.common.CebesBackendException
 import io.cebes.df.functions
-import io.cebes.df.types.storage.{DoubleType, FloatType, IntegerType, LongType}
+import io.cebes.df.types.storage._
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
+
+import scala.collection.mutable
 
 class SparkDataframeSuite extends CebesBaseSuite
   with TestPropertyHelper with TestDataHelper {
@@ -27,7 +29,6 @@ class SparkDataframeSuite extends CebesBaseSuite
     super.beforeAll()
     createOrReplaceCylinderBands()
   }
-
 
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -142,7 +143,7 @@ class SparkDataframeSuite extends CebesBaseSuite
     assert(col4Cn.head < col4Cn(1))
     assert(col4Ts.head > col4Ts.last)
 
-    intercept[CebesBackendException]{
+    intercept[CebesBackendException] {
       df.sort(df.col("timestampZXXXXX"))
     }
   }
@@ -266,7 +267,7 @@ class SparkDataframeSuite extends CebesBaseSuite
     val jobColIdx = df.columns.indexOf("job_number")
     val grainColIdx = df.columns.indexOf("grain_screened")
     assert(df.numRows > 0)
-    assert(sample.rows.forall{ s =>
+    assert(sample.rows.forall { s =>
       s(jobColIdx).asInstanceOf[Int] % 2 === 0 && s(grainColIdx) === "YES"
     })
   }
@@ -296,7 +297,42 @@ class SparkDataframeSuite extends CebesBaseSuite
   }
 
   test("join") {
-    // TODO: implement
+    val df = getCylinderBands
+
+    val df1 = df.select("*").where(df("customer").isin("GUIDEPOSTS", "ECKERD")).alias("small")
+    val df2 = df.select("*").where(df("customer").isin("GUIDEPOSTS", "ECKERD", "TARGET")).alias("big")
+
+    // inner join
+    val dfj1 = df1.join(df2, functions.col("small.customer") === functions.col("big.customer"), "inner")
+      .select(df1("customer").as("small_customer"), df1("cylinder_number"),
+        df2("customer").as("big_customer"), df2("ink_color"))
+    assert(dfj1.numRows === 117)
+    assert(dfj1.columns === Seq("small_customer", "cylinder_number", "big_customer", "ink_color"))
+
+    // outer join
+    val dfj2 = df1.join(df2, functions.col("small.customer") === functions.col("big.customer"), "outer")
+      .select(df1("customer").as("small_customer"), df1("cylinder_number"),
+        df2("customer").as("big_customer"), df2("ink_color"))
+    assert(dfj2.numRows === 157)
+    assert(dfj2.columns === Seq("small_customer", "cylinder_number", "big_customer", "ink_color"))
+
+    intercept[IllegalArgumentException] {
+      df1.join(df2, functions.col("small.customer") === functions.col("big.customer"), "outer_unrecognized")
+    }
+
+    // join with broadcast
+    val dfj3 = df1.broadcast.join(df2, functions.col("small.customer") === functions.col("big.customer"), "inner")
+      .select(df1("customer").as("small_customer"), df1("cylinder_number"),
+        df2("customer").as("big_customer"), df2("ink_color"))
+    assert(dfj3.numRows === 117)
+    assert(dfj3.columns === Seq("small_customer", "cylinder_number", "big_customer", "ink_color"))
+
+    val dfj4 = df1.join(functions.broadcast(df2),
+      functions.col("small.customer") === functions.col("big.customer"), "inner")
+      .select(df1("customer").as("small_customer"), df1("cylinder_number"),
+        df2("customer").as("big_customer"), df2("ink_color"))
+    assert(dfj4.numRows === 117)
+    assert(dfj4.columns === Seq("small_customer", "cylinder_number", "big_customer", "ink_color"))
   }
 
   test("limit") {
@@ -434,18 +470,18 @@ class SparkDataframeSuite extends CebesBaseSuite
     val df = getCylinderBands
 
     val df1 = df.agg(functions.approxCountDistinct("customer"),
-      functions.approxCountDistinct("customer", rsd=0.05))
+      functions.approxCountDistinct("customer", rsd = 0.05))
     assert(df1.numCols === 2)
     assert(df1.numRows === 1)
 
     val df2 = df.agg(functions.approxCountDistinct(df("customer")),
-      functions.approxCountDistinct(df("customer"), rsd=0.05))
+      functions.approxCountDistinct(df("customer"), rsd = 0.05))
     assert(df2.numCols === 2)
     assert(df2.numRows === 1)
 
     // rsd is too high
     intercept[IllegalArgumentException] {
-      df.agg(functions.approxCountDistinct("customer", rsd=0.5))
+      df.agg(functions.approxCountDistinct("customer", rsd = 0.5))
     }
   }
 
@@ -770,4 +806,240 @@ class SparkDataframeSuite extends CebesBaseSuite
     // avg on a string column still gives result, but it is null
     assert(df.agg(functions.varPop("customer")).numRows === 1)
   }
+
+  test("non-agg - array") {
+    val df = getCylinderBands.limit(30)
+
+    // array of strings
+    val df1 = df.select(functions.array("customer", "ink_color", "proof_on_ctd_ink").as("arr1"),
+      df("customer"), df("ink_color"), df("proof_on_ctd_ink"))
+    assert(df1.columns === Seq("arr1", "customer", "ink_color", "proof_on_ctd_ink"))
+    assert(df1.schema("arr1").storageType === ArrayType(StringType))
+    assert(df1.take(10).rows.forall {
+      case Seq(s: mutable.WrappedArray[_], s1, s2, s3) => s === Seq(s1, s2, s3)
+    })
+
+    // array of floats
+    val df2 = df.select(functions.array(df("caliper"), df("ink_temperature"), df("roughness")).as("arr1"))
+    assert(df2.columns === Seq("arr1"))
+    assert(df2.schema("arr1").storageType === ArrayType(FloatType))
+
+    // array of mixed types
+    val df3 = df.select(functions.array("customer", "caliper").as("arr1"))
+    assert(df3.schema("arr1").storageType === ArrayType(StringType))
+    assert(df3.schema("arr1").storageType !== ArrayType(FloatType))
+  }
+
+  test("non-agg - map") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.select(
+      functions.map(df("customer"), df("press"), df("cylinder_number"), df("unit_number")).as("map1"),
+      df("customer"), df("press"), df("cylinder_number"), df("unit_number"))
+    assert(df1.columns === Seq("map1", "customer", "press", "cylinder_number", "unit_number"))
+    assert(df1.schema("map1").storageType === MapType(StringType, IntegerType))
+    assert(df1.take(10).rows.forall {
+      case Seq(m: Map[_, _], k1, v1, k2, v2) => m === Map(k1 -> v1, k2 -> v2)
+    })
+
+    // number of columns is not even
+    intercept[CebesBackendException](df.select(functions.map(df("customer"), df("press"), df("cylinder_number"))))
+  }
+
+  test("non-agg - coalesce") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(
+      functions.coalesce(df("plating_tank"), df("proof_cut"), df("paper_mill_location")).as("coalesce_col"),
+      df("plating_tank"), df("proof_cut"), df("paper_mill_location"))
+    assert(df1.schema("coalesce_col").storageType === StringType)
+    assert(df1.take(10).rows.forall {
+      case Seq(v: String, null, null, v3: String) => v === v3
+      case Seq(v: String, null, v2: Float, _) => v === v2.toString
+      case Seq(v: String, v1: Int, _, _) => v === v1.toString
+    })
+
+    intercept[CebesBackendException] {
+      df.select(functions.coalesce(df("non_existed_column"), df("plating_tank"), df("proof_cut")))
+    }
+  }
+
+  test("non-agg - input_file_name") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.select(functions.input_file_name().as("input_file_name"), df("*"))
+    assert(df1.numCols === df.numCols + 1)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("input_file_name").storageType === StringType)
+    println(df1.take(10).tabulate())
+  }
+
+  test("non-agg - isnull") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.select(df("paper_mill_location"),
+      functions.when(functions.col("paper_mill_location") === "", null)
+        .otherwise(functions.col("paper_mill_location")).as("pml_null"))
+
+    val df2 = df1.select(functions.col("paper_mill_location"), functions.col("pml_null"),
+      functions.isnull(functions.col("pml_null")).as("is_null"))
+    assert(df2.schema("is_null").storageType === BooleanType)
+    assert(df2.take(10).rows.forall {
+      case Seq(_, null, v: Boolean) => v
+      case Seq(_, _: String, v: Boolean) => !v
+    })
+  }
+
+  test("non-agg - isnan") {
+    val df = getCylinderBands.limit(30)
+
+    val df1 = df.select(df("solvent_pct"), df("esa_voltage"),
+      (df("solvent_pct") / df("esa_voltage")).cast(DoubleType).as("div_col"))
+    val df2 = df1.select(functions.col("solvent_pct"), functions.col("esa_voltage"),
+      functions.col("div_col"),
+      functions.isnan(functions.col("div_col")).as("is_nan"),
+      functions.isnull(functions.col("div_col")).as("is_null"))
+    assert(df2.schema("is_nan").storageType === BooleanType)
+    assert(df2.schema("is_null").storageType === BooleanType)
+
+    // actually this test is quite bad: "div_col" is always NULL anyway, and "is_nan" is always false
+    // but I don't know how to create NaNs in Spark, yet.
+    assert(df2.take(10).rows.forall {
+      case Seq(_, _, v: Double, vNaN: Boolean, vNull: Boolean) => vNaN === v.isNaN && !vNull
+      case Seq(_, _, null, vNaN: Boolean, vNull: Boolean) => !vNaN && vNull
+    })
+  }
+
+  test("non-agg - monotonically_increasing_id") {
+    val df = getCylinderBands
+
+    val df1 = df.select(functions.monotonically_increasing_id().as("increasing_id"), df("*"))
+    assert(df1.numCols === df.numCols + 1)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("increasing_id").storageType === LongType)
+  }
+
+  test("non-agg - nanvl") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(functions.nanvl(df("plating_tank"), df("varnish_pct")).cast(DoubleType),
+      df("plating_tank").cast(DoubleType), df("varnish_pct").cast(DoubleType))
+    assert(df1.numCols === 3)
+    assert(df1.numRows === df.numRows)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Double, v1: Double, _) => v === v1
+      case Seq(null, null, _) => true
+    })
+  }
+
+  test("non-agg - negate") {
+    val df = getCylinderBands
+
+    val df1 = df.select(df("plating_tank"), functions.negate(df("plating_tank")).as("negate_col"))
+    assert(df1.numRows === df.numRows)
+    assert(df1.columns === Seq("plating_tank", "negate_col"))
+    assert(df1.schema("negate_col").storageType === IntegerType)
+    assert(df1.take(30).rows.forall {
+      case Seq(null, null) => true
+      case Seq(v1: Int, v2: Int) => v1 === -v2
+    })
+
+    // wrong data type, expect numeric but given string column
+    intercept[CebesBackendException] {
+      df.select(df("cylinder_number"), functions.negate(df("cylinder_number")).as("negate_col_1"))
+    }
+  }
+
+  test("non-agg - not") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select((!(df("grain_screened") === df("ink_color"))).as("not_col"),
+      df("grain_screened"), df("ink_color"))
+    assert(df1.numRows === df.numRows)
+    assert(df1.columns === Seq("not_col", "grain_screened", "ink_color"))
+    assert(df1.schema("not_col").storageType === BooleanType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v: Boolean, s1: String, s2: String) => v === !(s1 === s2)
+      case Seq(v: Boolean, null, _: String) => v
+      case Seq(v: Boolean, _: String, null) => v
+      case Seq(v: Boolean, null, null) => !v
+    })
+  }
+
+  test("non-agg - rand and randn") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(functions.rand().as("rand1"), functions.rand(142).as("rand2"),
+      functions.randn().as("randn1"), functions.randn(42).as("randn2"),
+      df("cylinder_number"))
+    assert(df1.columns === Seq("rand1", "rand2", "randn1", "randn2", "cylinder_number"))
+    assert(df.schema("rand1").storageType === DoubleType)
+    assert(df1.schema("rand2").storageType === DoubleType)
+    assert(df.schema("randn1").storageType === DoubleType)
+    assert(df1.schema("randn2").storageType === DoubleType)
+    assert(df1.numRows === df.numRows)
+  }
+
+  test("non-agg - spark_partition_id") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(functions.spark_partition_id().as("partition_id"), df("customer"))
+    assert(df1.numRows === df.numRows)
+    assert(df1.columns === Seq("partition_id", "customer"))
+    assert(df1.schema("partition_id").storageType === LongType)
+  }
+
+  test("non-agg - struct") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(functions.struct("job_number", "grain_screened").as("struct_col"),
+      df("job_number"), df("grain_screened"))
+    assert(df1.numRows === df.numRows)
+    assert(df1.columns === Seq("struct_col", "job_number", "grain_screened"))
+    assert(df1.schema("struct_col").storageType.isInstanceOf[StructType])
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Map[_, _], v1: Int, v2: String) =>
+        v === Map("job_number" -> v1, "grain_screened" -> v2)
+      case Seq(v: Map[_, _], null, v2: String) =>
+        v === Map("job_number" -> null, "grain_screened" -> v2)
+      case Seq(v: Map[_, _], v1: Int, null) =>
+        v === Map("job_number" -> v1, "grain_screened" -> null)
+      case Seq(v: Map[_, _], null, null) =>
+        v === Map("job_number" -> null, "grain_screened" -> null)
+    })
+
+    val df2 = df.select(functions.struct(df("job_number"), df("grain_screened")).as("struct_col"),
+      df("job_number"), df("grain_screened"))
+    assert(df2.numRows === df.numRows)
+    assert(df2.columns === Seq("struct_col", "job_number", "grain_screened"))
+    assert(df2.schema("struct_col").storageType.isInstanceOf[StructType])
+    assert(df2.take(50).rows.forall {
+      case Seq(v: Map[_, _], v1: Int, v2: String) =>
+        v === Map("job_number" -> v1, "grain_screened" -> v2)
+      case Seq(v: Map[_, _], null, v2: String) =>
+        v === Map("job_number" -> null, "grain_screened" -> v2)
+      case Seq(v: Map[_, _], v1: Int, null) =>
+        v === Map("job_number" -> v1, "grain_screened" -> null)
+      case Seq(v: Map[_, _], null, null) =>
+        v === Map("job_number" -> null, "grain_screened" -> null)
+    })
+  }
+
+  test("non-agg - expr") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer"), functions.expr("length(customer)").as("len"))
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("len").storageType === IntegerType)
+    assert(df1.take(50).rows.forall {
+      case Seq(s: String, l: Int) => l === s.length
+    })
+
+    intercept[CebesBackendException] {
+      df.select(functions.expr("wrong_function(abddddd)"))
+    }
+  }
+
+
+
 }

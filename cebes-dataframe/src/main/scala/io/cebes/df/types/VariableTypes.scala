@@ -61,10 +61,16 @@ object VariableTypes {
     Seq(StorageTypes.DateType, StorageTypes.TimestampType, StorageTypes.CalendarIntervalType))
 
   case object ARRAY extends VariableType("Array", false, false,
-    Seq(StorageTypes.VectorType, StorageTypes.BinaryType),
+    Seq(StorageTypes.BinaryType),
     Some(Seq(classOf[storage.ArrayType])))
 
-  val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY)
+  case object MAP extends VariableType("Map", false, false,
+    Seq(), Some(Seq(classOf[storage.MapType])))
+
+  case object STRUCT extends VariableType("Struct", false, false,
+    Seq(), Some(Seq(classOf[storage.StructType])))
+
+  val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY, MAP)
 
   def fromString(name: String): VariableType = values.find(_.name == name) match {
     case Some(t) => t
@@ -79,9 +85,9 @@ object VariableTypes {
     */
   def fromStorageType(storageType: StorageType): VariableType = {
     storageType match {
-      case StorageTypes.BinaryType | StorageTypes.VectorType =>
+      case StorageTypes.BinaryType =>
         VariableTypes.ARRAY
-      case StorageTypes.TimestampType | StorageTypes.DateType | StorageTypes.CalendarIntervalType  =>
+      case StorageTypes.TimestampType | StorageTypes.DateType | StorageTypes.CalendarIntervalType =>
         VariableTypes.DATETIME
       case StorageTypes.BooleanType =>
         VariableTypes.NOMINAL
@@ -94,6 +100,10 @@ object VariableTypes {
         VariableTypes.TEXT
       case _: storage.ArrayType =>
         VariableTypes.ARRAY
+      case _: storage.MapType =>
+        VariableTypes.MAP
+      case _: storage.StructType =>
+        VariableTypes.STRUCT
     }
   }
 }

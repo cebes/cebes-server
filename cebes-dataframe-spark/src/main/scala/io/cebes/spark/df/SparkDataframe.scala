@@ -27,6 +27,7 @@ import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.CebesSparkUtil
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 
 /**
@@ -94,7 +95,13 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   def take(n: Int = 1): DataSample = {
     val rows = sparkDf.take(n)
     val cols = schema.fieldNames.zipWithIndex.map {
-      case (_, idx) => rows.map(_.get(idx)).toSeq
+      case (_, idx) => rows.map(_.get(idx) match {
+        case r: GenericRowWithSchema =>
+          r.schema.fields.map { f =>
+            f.name -> r.get(r.fieldIndex(f.name))
+          }.toMap
+        case v => v
+      }).toSeq
     }
     new DataSample(schema.copy(), cols)
   }
@@ -224,12 +231,6 @@ object SparkDataframe {
 
   def inferVariableType(storageType: StorageType, sample: Seq[Any]): VariableType = {
     storageType match {
-      case StorageTypes.BinaryType | StorageTypes.VectorType =>
-        VariableTypes.fromStorageType(storageType)
-      case StorageTypes.DateType | StorageTypes.TimestampType | StorageTypes.CalendarIntervalType =>
-        VariableTypes.fromStorageType(storageType)
-      case StorageTypes.BooleanType =>
-        VariableTypes.fromStorageType(storageType)
       case StorageTypes.ByteType | StorageTypes.ShortType |
            StorageTypes.IntegerType | StorageTypes.LongType =>
         val ratio = sample.distinct.length.toFloat / sample.length
@@ -252,6 +253,7 @@ object SparkDataframe {
         } else {
           VariableTypes.NOMINAL
         }
+      case t => VariableTypes.fromStorageType(t)
     }
   }
 }

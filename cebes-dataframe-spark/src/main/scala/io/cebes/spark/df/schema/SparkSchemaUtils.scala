@@ -14,12 +14,13 @@
 
 package io.cebes.spark.df.schema
 
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.StorageTypes
-import io.cebes.df.types.storage.StorageType
+import io.cebes.df.types.storage._
 import org.apache.spark.sql.{DataFrame, types}
 
-object SparkSchemaUtils {
+object SparkSchemaUtils extends LazyLogging {
 
   /**
     * Extract the Schema from a Spark's DataFrame object
@@ -46,12 +47,17 @@ object SparkSchemaUtils {
     case types.LongType => StorageTypes.LongType
     case types.FloatType => StorageTypes.FloatType
     case types.DoubleType => StorageTypes.DoubleType
-    case types.ArrayType(types.DoubleType, true) => StorageTypes.VectorType
-    case types.ArrayType(c, _) => StorageTypes.arrayType(sparkTypesToCebes(c))
     case types.BinaryType => StorageTypes.BinaryType
     case types.DateType => StorageTypes.DateType
     case types.TimestampType => StorageTypes.TimestampType
     case types.CalendarIntervalType => StorageTypes.CalendarIntervalType
+    case types.ArrayType(c, _) => StorageTypes.arrayType(sparkTypesToCebes(c))
+    case types.MapType(c1, c2, _) => StorageTypes.mapType(sparkTypesToCebes(c1), sparkTypesToCebes(c2))
+    case types.StructType(fields) => StorageTypes.structType(fields.map { f =>
+      // TODO: preserve Metadata
+      logger.warn(s"Any metadata in column ${f.name} will lost after the transformation")
+      StorageTypes.structField(f.name, sparkTypesToCebes(f.dataType), Metadata.empty)
+    })
     case t => throw new IllegalArgumentException(s"Unrecognized spark type: ${t.simpleString}")
   }
 
@@ -70,11 +76,17 @@ object SparkSchemaUtils {
     case StorageTypes.LongType => types.LongType
     case StorageTypes.FloatType => types.FloatType
     case StorageTypes.DoubleType => types.DoubleType
-    case StorageTypes.VectorType => types.ArrayType(types.DoubleType)
     case StorageTypes.BinaryType => types.BinaryType
     case StorageTypes.DateType => types.DateType
     case StorageTypes.TimestampType => types.TimestampType
     case StorageTypes.CalendarIntervalType => types.CalendarIntervalType
+    case ArrayType(c) => types.ArrayType(cebesTypesToSpark(c))
+    case MapType(c1, c2) => types.MapType(cebesTypesToSpark(c1), cebesTypesToSpark(c2), valueContainsNull = true)
+    case StructType(fields) => types.StructType(fields.map { f =>
+      // TODO: preserve Metadata
+      logger.warn(s"Any metadata in column ${f.name} will lost after the transformation")
+      types.StructField(f.name, cebesTypesToSpark(f.storageType))
+    })
     case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
   }
 

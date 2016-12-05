@@ -14,6 +14,8 @@
 
 package io.cebes.df.types
 
+import io.cebes.df.types.storage.{StorageType, StructField}
+
 object StorageTypes {
 
   val StringType: storage.StringType = storage.StringType
@@ -31,13 +33,10 @@ object StorageTypes {
   val FloatType: storage.FloatType = storage.FloatType
   val DoubleType: storage.DoubleType = storage.DoubleType
 
-  val VectorType: storage.ArrayType = storage.VectorType
-
   val atomicTypes = Seq(StringType, BinaryType,
     DateType, TimestampType, CalendarIntervalType,
     BooleanType, ByteType, ShortType, IntegerType,
-    LongType, FloatType, DoubleType,
-    VectorType)
+    LongType, FloatType, DoubleType)
 
   def fromString(typeName: String): storage.StorageType = {
     atomicTypes.find(_.typeName.equalsIgnoreCase(typeName)) match {
@@ -49,4 +48,13 @@ object StorageTypes {
   def arrayType(elementType: storage.StorageType): storage.ArrayType = {
     storage.ArrayType(elementType)
   }
+
+  def mapType(keyType: storage.StorageType, valueType: storage.StorageType): storage.MapType =
+    storage.MapType(keyType, valueType)
+
+  def structType(fields: Seq[StructField]): storage.StructType =
+    storage.StructType(fields.toArray)
+
+  def structField(name: String, storageType: storage.StorageType, metadata: storage.Metadata) =
+    storage.StructField(name, storageType, metadata)
 }

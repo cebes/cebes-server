@@ -673,7 +673,7 @@ object functions {
   def isnull(e: Column): Column = e.isNull
 
   /**
-    * A column expression that generates monotonically increasing 64-bit integers.
+    * Spark-specific: A column expression that generates monotonically increasing 64-bit integers.
     *
     * The generated ID is guaranteed to be monotonically increasing and unique, but not consecutive.
     * The current implementation puts the partition ID in the upper 31 bits, and the record number
