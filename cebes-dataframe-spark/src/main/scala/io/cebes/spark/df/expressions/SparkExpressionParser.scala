@@ -389,7 +389,7 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] {
   }
 
   protected def visitSqrt(expr: Sqrt, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(sparkFunctions.abs(parsedChildren.head))
+    Some(sparkFunctions.sqrt(parsedChildren.head))
   }
 
   protected def visitAcos(expr: Acos, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {

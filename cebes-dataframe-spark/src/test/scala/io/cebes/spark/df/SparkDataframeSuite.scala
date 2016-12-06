@@ -1070,13 +1070,17 @@ class SparkDataframeSuite extends CebesBaseSuite
     assert(df1.take(100).rows.forall {
       case Seq(v1: Int, v2: Float, v1s: Double, v2s: Double) =>
         math.sqrt(v1) === v1s && math.sqrt(v2) === v2s
-      case Seq(null, v2: Float, null, v2s: Double) => math.sqrt(v2) === v2s
-      case Seq(v1: Int, null, v1s: Double, null) => math.sqrt(v1) === v1s
+      case Seq(null, v2: Float, null, v2s: Double) =>
+        math.sqrt(v2) === v2s
+      case Seq(v1: Int, null, v1s: Double, null) =>
+        math.sqrt(v1) === v1s
       case Seq(null, null, null, null) => true
     })
 
-    // on string column
-    intercept[CebesBackendException](df.select(functions.sqrt("customer")))
+    // on string column is fine too!
+    val df2 = df.select(functions.sqrt("customer").as("sqrt_col"))
+    assert(df2.schema("sqrt_col").storageType === DoubleType)
+    assert(df2.take(50).get[Any]("sqrt_col").get.forall(_ === null))
   }
 
   test("math - bitwiseNot") {
