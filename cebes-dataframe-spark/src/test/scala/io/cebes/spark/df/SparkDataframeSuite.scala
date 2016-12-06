@@ -15,7 +15,7 @@
 package io.cebes.spark.df
 
 import io.cebes.common.CebesBackendException
-import io.cebes.df.functions
+import io.cebes.df.{Column, functions}
 import io.cebes.df.types.storage._
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
@@ -973,9 +973,9 @@ class SparkDataframeSuite extends CebesBaseSuite
       functions.randn().as("randn1"), functions.randn(42).as("randn2"),
       df("cylinder_number"))
     assert(df1.columns === Seq("rand1", "rand2", "randn1", "randn2", "cylinder_number"))
-    assert(df.schema("rand1").storageType === DoubleType)
+    assert(df1.schema("rand1").storageType === DoubleType)
     assert(df1.schema("rand2").storageType === DoubleType)
-    assert(df.schema("randn1").storageType === DoubleType)
+    assert(df1.schema("randn1").storageType === DoubleType)
     assert(df1.schema("randn2").storageType === DoubleType)
     assert(df1.numRows === df.numRows)
   }
@@ -986,7 +986,7 @@ class SparkDataframeSuite extends CebesBaseSuite
     val df1 = df.select(functions.spark_partition_id().as("partition_id"), df("customer"))
     assert(df1.numRows === df.numRows)
     assert(df1.columns === Seq("partition_id", "customer"))
-    assert(df1.schema("partition_id").storageType === LongType)
+    assert(df1.schema("partition_id").storageType === IntegerType)
   }
 
   test("non-agg - struct") {
@@ -1040,6 +1040,557 @@ class SparkDataframeSuite extends CebesBaseSuite
     }
   }
 
+  test("math - abs") {
+    val df = getCylinderBands.limit(100)
 
+    val df1 = df.select(df("hardener"), functions.rand().as("rand")).select(
+      functions.col("hardener"), functions.col("rand"),
+      functions.abs(functions.col("hardener") - functions.col("rand")).as("abs_col"))
+    assert(df1.columns === Seq("hardener", "rand", "abs_col"))
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("abs_col").storageType === DoubleType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Float, v2: Double, v: Double) => v === math.abs(v1 - v2)
+      case Seq(null, _: Double, null) => true
+    })
 
+    // on a string column
+    intercept[CebesBackendException](df.select(functions.abs(df("customer"))))
+  }
+
+  test("math - sqrt") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), df("caliper"),
+      functions.sqrt("viscosity").as("vis_sqrt"), functions.sqrt(df("caliper")).as("cal_sqrt"))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("vis_sqrt").storageType === DoubleType)
+    assert(df1.schema("cal_sqrt").storageType === DoubleType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v2: Float, v1s: Double, v2s: Double) =>
+        math.sqrt(v1) === v1s && math.sqrt(v2) === v2s
+      case Seq(null, v2: Float, null, v2s: Double) => math.sqrt(v2) === v2s
+      case Seq(v1: Int, null, v1s: Double, null) => math.sqrt(v1) === v1s
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column
+    intercept[CebesBackendException](df.select(functions.sqrt("customer")))
+  }
+
+  test("math - bitwiseNot") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), functions.bitwiseNOT(df("viscosity")).as("vis_not"))
+    assert(df1.numCols === 2)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("vis_not").storageType === IntegerType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v: Int) => v === ~v1
+      case Seq(null, null) => true
+    })
+
+    // float column
+    intercept[CebesBackendException](df.select(functions.bitwiseNOT(df("caliper"))))
+  }
+
+  test("math - acos") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(((functions.rand() * 2) - 1).as("rand")).select(
+      functions.col("rand"),
+      functions.acos("rand").as("acos1"),
+      functions.acos(functions.col("rand")).as("acos2"))
+    assert(df1.columns === Seq("rand", "acos1", "acos2"))
+    assert(df1.schema("acos1").storageType === DoubleType)
+    assert(df1.schema("acos2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Double, ac1: Double, ac2: Double) =>
+        ac1 === ac2 && ac1 === math.acos(v) && 0 <= ac1 && ac1 <= math.Pi
+      case Seq(null, null, null) => true
+    })
+
+    // wrong domain
+    val df2 = df.select(functions.acos("blade_pressure").as("acos_col"))
+    assert(df2.schema("acos_col").storageType === DoubleType)
+
+    // on string column is fine too!
+    val df3 = df.select(functions.acos("customer").as("acos_col"))
+    assert(df3.schema("acos_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("acos_col").get.forall(_ === null))
+  }
+
+  test("math - asin") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(((functions.rand() * 2) - 1).as("rand")).select(
+      functions.col("rand"),
+      functions.asin("rand").as("asin1"),
+      functions.asin(functions.col("rand")).as("asin2"))
+    assert(df1.columns === Seq("rand", "asin1", "asin2"))
+    assert(df1.schema("asin1").storageType === DoubleType)
+    assert(df1.schema("asin2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Double, a1: Double, a2: Double) =>
+        a1 === a2 && a1 === math.asin(v) && -math.Pi / 2 <= a1 && a1 <= math.Pi / 2
+      case Seq(null, null, null) => true
+    })
+
+    // wrong domain
+    val df2 = df.select(functions.asin("blade_pressure").as("asin_col"))
+    assert(df2.schema("asin_col").storageType === DoubleType)
+
+    // on string column is fine too!
+    val df3 = df.select(functions.asin("customer").as("asin_col"))
+    assert(df3.schema("asin_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("asin_col").get.forall(_ === null))
+  }
+
+  test("math - atan") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(
+      functions.col("ink_temperature"),
+      functions.atan("ink_temperature").as("atan1"),
+      functions.atan(functions.col("ink_temperature")).as("atan2"))
+    assert(df1.columns === Seq("ink_temperature", "atan1", "atan2"))
+    assert(df1.schema("atan1").storageType === DoubleType)
+    assert(df1.schema("atan2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, a1: Double, a2: Double) =>
+        a1 === a2 && a1 === math.atan(v) && -math.Pi / 2 <= a1 && a1 <= math.Pi / 2
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.atan("customer").as("atan_col"))
+    assert(df3.schema("atan_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("atan_col").get.forall(_ === null))
+  }
+
+  test("math - atan2") {
+    val df = getCylinderBands.limit(100)
+
+    def test(xCol: => Column, yCol: => Column, f: => Column) = {
+      val df1 = df.select(xCol.as("x"), yCol.as("y"), f.as("atan2_col"))
+      assert(df1.columns === Seq("x", "y", "atan2_col"))
+      assert(df1.numRows === df.numRows)
+      assert(df1.schema("atan2_col").storageType === DoubleType)
+      assert(df1.take(50).rows.forall {
+        case Seq(x: Float, y: Float, v: Double) =>
+          v === math.atan2(x, y)
+        case Seq(null, _, null) => true
+        case Seq(_, null, null) => true
+        case Seq(null, null, null) => true
+      })
+    }
+
+    test(df("caliper"), df("roughness"), functions.atan2("caliper", "roughness"))
+    test(df("caliper"), df("roughness"), functions.atan2(df("caliper"), df("roughness")))
+    test(df("caliper"), df("roughness"), functions.atan2(df("caliper"), "roughness"))
+    test(df("caliper"), df("roughness"), functions.atan2("caliper", df("roughness")))
+    test(df("caliper"), functions.lit(10.0f), functions.atan2(df("caliper"), 10))
+    test(df("caliper"), functions.lit(10.0f), functions.atan2("caliper", 10))
+    test(functions.lit(5.0f), df("roughness"), functions.atan2(5, df("roughness")))
+    test(functions.lit(5.0f), df("roughness"), functions.atan2(5, "roughness"))
+  }
+
+  test("math - bin") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(
+      functions.col("press"),
+      functions.bin("press").as("bin1"),
+      functions.bin(functions.col("press")).as("bin2"))
+    assert(df1.columns === Seq("press", "bin1", "bin2"))
+    assert(df1.schema("bin1").storageType === StringType)
+    assert(df1.schema("bin2").storageType === StringType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Int, s1: String, s2: String) =>
+        s1 === s2 && s1 === v.toBinaryString
+      case Seq(null, null, null) => true
+    })
+
+    // wrong data type (float)
+    val df2 = df.select(functions.bin("roughness").as("bin_col"))
+    assert(df2.schema("bin_col").storageType === StringType)
+
+    // on string column is fine too!
+    val df3 = df.select(functions.bin("customer").as("bin_col"))
+    assert(df3.schema("bin_col").storageType === StringType)
+    assert(df3.take(50).get[Any]("bin_col").get.forall(_ === null))
+  }
+
+  test("math - cbrt") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), df("caliper"),
+      functions.cbrt("viscosity").as("vis_cbrt"), functions.cbrt(df("caliper")).as("cal_cbrt"))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("vis_cbrt").storageType === DoubleType)
+    assert(df1.schema("cal_cbrt").storageType === DoubleType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v2: Float, v1s: Double, v2s: Double) =>
+        math.cbrt(v1) === v1s && math.cbrt(v2) === v2s
+      case Seq(null, v2: Float, null, v2s: Double) => math.cbrt(v2) === v2s
+      case Seq(v1: Int, null, v1s: Double, null) => math.cbrt(v1) === v1s
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine!
+    val df2 = df.select(functions.cbrt("customer").as("cbrt_col"))
+    assert(df2.take(100).get[Any]("cbrt_col").get.forall(_ === null))
+  }
+
+  test("math - ceil") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), df("caliper"),
+      functions.ceil("viscosity").as("vis_ceil"), functions.ceil(df("caliper")).as("cal_ceil"))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("vis_ceil").storageType === LongType)
+    assert(df1.schema("cal_ceil").storageType === LongType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v2: Float, v1s: Long, v2s: Long) =>
+        math.ceil(v1) === v1s && math.ceil(v2) === v2s
+      case Seq(null, v2: Float, null, v2s: Long) => math.ceil(v2) === v2s
+      case Seq(v1: Int, null, v1s: Long, null) => math.ceil(v1) === v1s
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine!
+    val df2 = df.select(functions.ceil("customer").as("ceil_col"))
+    assert(df2.take(100).get[Any]("ceil_col").get.forall(_ === null))
+  }
+
+  test("math - conv") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("press"),
+      functions.conv(functions.bin(df("press")), 2, 8).as("conv8"),
+      functions.conv(functions.bin(df("press")), 2, 9).as("conv9"))
+    assert(df1.schema("conv8").storageType === StringType)
+    assert(df1.schema("conv9").storageType === StringType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v: Int, s1: String, s2: String) =>
+        val v2 = BigInt(v)
+        v2.toString(8) === s1 && v2.toString(9) === s2
+      case Seq(null, null, null) => true
+    })
+
+    val df2 = df.select(functions.conv(df("customer"), 2, 10).as("conv"))
+    assert(df2.take(50).get[Any]("conv").get.forall(_ === "0"))
+  }
+
+  test("math - cos") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("varnish_pct"),
+      functions.cos("varnish_pct").as("cos1"),
+      functions.cos(df("varnish_pct")).as("cos2"))
+    assert(df1.columns === Seq("varnish_pct", "cos1", "cos2"))
+    assert(df1.schema("cos1").storageType === DoubleType)
+    assert(df1.schema("cos2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.cos(v) === v1 && -1 <= v1 && v1 <= 1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.cos("customer").as("cos_col"))
+    assert(df3.schema("cos_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("cos_col").get.forall(_ === null))
+  }
+
+  test("math - cosh") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("varnish_pct"),
+      functions.cosh("varnish_pct").as("cosh1"),
+      functions.cosh(df("varnish_pct")).as("cosh2"))
+    assert(df1.columns === Seq("varnish_pct", "cosh1", "cosh2"))
+    assert(df1.schema("cosh1").storageType === DoubleType)
+    assert(df1.schema("cosh2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.cosh(v) === v1 && 1 <= v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.cos("customer").as("cosh_col"))
+    assert(df3.schema("cosh_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("cosh_col").get.forall(_ === null))
+  }
+
+  test("math - exp") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("roughness"),
+      functions.exp("roughness").as("exp1"),
+      functions.exp(df("roughness")).as("exp2"))
+    assert(df1.columns === Seq("roughness", "exp1", "exp2"))
+    assert(df1.schema("exp1").storageType === DoubleType)
+    assert(df1.schema("exp2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.exp(v) === v1 && 0 <= v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.exp("customer").as("exp_col"))
+    assert(df3.schema("exp_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("exp_col").get.forall(_ === null))
+  }
+
+  test("math - expm1") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("roughness"),
+      functions.expm1("roughness").as("expm1"),
+      functions.expm1(df("roughness")).as("expm2"))
+    assert(df1.columns === Seq("roughness", "expm1", "expm2"))
+    assert(df1.schema("expm1").storageType === DoubleType)
+    assert(df1.schema("expm2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.expm1(v) === v1 && 0 <= v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.expm1("customer").as("expm_col"))
+    assert(df3.schema("expm_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("expm_col").get.forall(_ === null))
+  }
+
+  test("math - factorial") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), functions.factorial(df("viscosity").mod(10)).as("fact"))
+    assert(df1.schema("fact").storageType === LongType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Int, v1: Long) => v1 === (1 to (v % 10)).par.product
+      case Seq(null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.factorial(df("customer")).as("fact_col"))
+    assert(df3.schema("fact_col").storageType === LongType)
+    assert(df3.take(50).get[Any]("fact_col").get.forall(_ === null))
+  }
+
+  test("math - floor") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), df("caliper"),
+      functions.floor("viscosity").as("vis_floor"), functions.floor(df("caliper")).as("cal_floor"))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("vis_floor").storageType === LongType)
+    assert(df1.schema("cal_floor").storageType === LongType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v2: Float, v1s: Long, v2s: Long) =>
+        math.floor(v1) === v1s && math.floor(v2) === v2s
+      case Seq(null, v2: Float, null, v2s: Long) => math.floor(v2) === v2s
+      case Seq(v1: Int, null, v1s: Long, null) => math.floor(v1) === v1s
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine!
+    val df2 = df.select(functions.floor("customer").as("floor_col"))
+    assert(df2.take(100).get[Any]("floor_col").get.forall(_ === null))
+  }
+
+  test("math - greatest") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), df("caliper"),
+      functions.greatest("viscosity", "caliper").as("greatest1"),
+      functions.greatest(df("viscosity"), df("caliper")).as("greatest2"))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("greatest1").storageType === FloatType)
+    assert(df1.schema("greatest2").storageType === FloatType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v2: Float, v1s: Float, v2s: Float) =>
+        v1s === v2s && v1s === math.max(v1, v2)
+      case Seq(null, v2: Float, v1s: Float, v2s: Float) => v2 === v1s && v1s === v2s
+      case Seq(v1: Int, null, v1s: Float, v2s: Float) => v1 === v1s && v1s === v2s
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine!
+    val df2 = df.select(df("customer"), df("type_on_cylinder"),
+      functions.greatest("customer", "type_on_cylinder").as("greatest_col"))
+    assert(df2.schema("greatest_col").storageType === StringType)
+    assert(df2.take(50).rows.forall {
+      case Seq(c: String, t: String, v: String) => v === (if (c > t) c else t)
+      case Seq(null, t: String, v: String) => v === t
+      case Seq(c: String, null, v: String) => v === c
+      case Seq(null, null, null) => true
+    })
+
+    intercept[IllegalArgumentException](df.select(functions.greatest("customer")))
+  }
+
+  test("math - hex") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(functions.hex(df("customer")).as("hex1"),
+      functions.hex(df("plating_tank")).as("hex2"))
+    assert(df1.schema("hex1").storageType === StringType)
+    assert(df1.schema("hex2").storageType === StringType)
+  }
+
+  test("math - unhex") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(functions.unhex(functions.hex(df("customer"))).as("unhex1"))
+    assert(df1.schema("unhex1").storageType === BinaryType)
+    assert(df1.take(50).get[Array[Byte]]("unhex1").get.forall(_.length >= 0))
+  }
+
+  test("math - hypot") {
+    val df = getCylinderBands.limit(100)
+
+    def test(xCol: => Column, yCol: => Column, f: => Column) = {
+      val df1 = df.select(xCol.as("x"), yCol.as("y"), f.as("hypot_col"))
+      assert(df1.columns === Seq("x", "y", "hypot_col"))
+      assert(df1.numRows === df.numRows)
+      assert(df1.schema("hypot_col").storageType === DoubleType)
+      assert(df1.take(50).rows.forall {
+        case Seq(x: Float, y: Float, v: Double) =>
+          v === math.hypot(x, y)
+        case Seq(null, _, null) => true
+        case Seq(_, null, null) => true
+        case Seq(null, null, null) => true
+      })
+    }
+
+    test(df("caliper"), df("roughness"), functions.hypot("caliper", "roughness"))
+    test(df("caliper"), df("roughness"), functions.hypot(df("caliper"), df("roughness")))
+    test(df("caliper"), df("roughness"), functions.hypot(df("caliper"), "roughness"))
+    test(df("caliper"), df("roughness"), functions.hypot("caliper", df("roughness")))
+    test(df("caliper"), functions.lit(10.0f), functions.hypot(df("caliper"), 10))
+    test(df("caliper"), functions.lit(10.0f), functions.hypot("caliper", 10))
+    test(functions.lit(5.0f), df("roughness"), functions.hypot(5, df("roughness")))
+    test(functions.lit(5.0f), df("roughness"), functions.hypot(5, "roughness"))
+  }
+
+  test("math - least") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("viscosity"), df("caliper"),
+      functions.least("viscosity", "caliper").as("least1"),
+      functions.least(df("viscosity"), df("caliper")).as("least2"))
+    assert(df1.numCols === 4)
+    assert(df1.numRows === df.numRows)
+    assert(df1.schema("least1").storageType === FloatType)
+    assert(df1.schema("least2").storageType === FloatType)
+    assert(df1.take(100).rows.forall {
+      case Seq(v1: Int, v2: Float, v1s: Float, v2s: Float) =>
+        v1s === v2s && v1s === math.min(v1, v2)
+      case Seq(null, v2: Float, v1s: Float, v2s: Float) => v2 === v1s && v1s === v2s
+      case Seq(v1: Int, null, v1s: Float, v2s: Float) => v1 === v1s && v1s === v2s
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine!
+    val df2 = df.select(df("customer"), df("type_on_cylinder"),
+      functions.least("customer", "type_on_cylinder").as("least_col"))
+    assert(df2.schema("least_col").storageType === StringType)
+    assert(df2.take(50).rows.forall {
+      case Seq(c: String, t: String, v: String) => v === (if (c < t) c else t)
+      case Seq(null, t: String, v: String) => v === t
+      case Seq(c: String, null, v: String) => v === c
+      case Seq(null, null, null) => true
+    })
+
+    intercept[IllegalArgumentException](df.select(functions.least("customer")))
+  }
+
+  test("math - log") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("ink_pct"),
+      functions.log("ink_pct").as("loge1"), functions.log(df("ink_pct")).as("loge2"),
+      functions.log(3, "ink_pct").as("log31"), functions.log(3, df("ink_pct")).as("log32"),
+      functions.log1p("ink_pct").as("log1p1"), functions.log1p(df("ink_pct")).as("log1p2"),
+      functions.log2("ink_pct").as("log21"), functions.log2(df("ink_pct")).as("log22"),
+      functions.log10("ink_pct").as("log101"), functions.log10(df("ink_pct")).as("log102"))
+    assert(Seq("loge1", "loge2", "log31", "log32", "log1p1", "log1p2",
+      "log21", "log22", "log101", "log102").forall(s => df1.schema(s).storageType === DoubleType))
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, ve1: Double, ve2: Double, v31: Double, v32: Double,
+      v1p1: Double, v1p2: Double, v21: Double, v22: Double, v101: Double, v102: Double) =>
+        math.log(v) === ve1 && ve1 === ve2 &&
+          (math.log(v) / math.log(3)) === v31 && v31 === v32 &&
+          math.log1p(v) === v1p1 && v1p1 === v1p2 &&
+          math.log(v) / math.log(2) === v21 && v21 === v22 &&
+          math.log10(v) === v101 && v101 === v102
+      case s: Seq[_] => s.forall(_ === null)
+    })
+
+    val df2 = df.select(functions.log(df("customer")).as("log_col"))
+    assert(df2.schema("log_col").storageType === DoubleType)
+    assert(df2.take(50).get[Any]("log_col").get.forall(_ === null))
+  }
+
+  test("math - pow") {
+    val df = getCylinderBands.limit(100)
+
+    def test(xCol: => Column, yCol: => Column, f: => Column) = {
+      val df1 = df.select(xCol.as("x"), yCol.as("y"), f.as("pow_col"))
+      assert(df1.columns === Seq("x", "y", "pow_col"))
+      assert(df1.numRows === df.numRows)
+      assert(df1.schema("pow_col").storageType === DoubleType)
+      assert(df1.take(50).rows.forall {
+        case Seq(x: Float, y: Float, v: Double) =>
+          math.abs(v - math.pow(x, y)) <= 1e-6
+        case Seq(null, _, null) => true
+        case Seq(_, null, null) => true
+        case Seq(null, null, null) => true
+      })
+    }
+
+    test(df("caliper"), df("roughness"), functions.pow("caliper", "roughness"))
+    test(df("caliper"), df("roughness"), functions.pow(df("caliper"), df("roughness")))
+    test(df("caliper"), df("roughness"), functions.pow(df("caliper"), "roughness"))
+    test(df("caliper"), df("roughness"), functions.pow("caliper", df("roughness")))
+    test(df("caliper"), functions.lit(1.2f), functions.pow(df("caliper"), 1.2))
+    test(df("caliper"), functions.lit(1.2f), functions.pow("caliper", 1.2))
+    test(functions.lit(1.5f), df("roughness"), functions.pow(1.5, df("roughness")))
+    test(functions.lit(1.5f), df("roughness"), functions.pow(1.5, "roughness"))
+  }
+
+  test("math - pmod") {
+    val df = getCylinderBands.limit(100)
+
+    def pmod(x: Int, y: Int) = {
+      val r = x % y; if (r < 0) r + y else r
+    }
+
+    val df1 = df.select(df("plating_tank"), df("viscosity"),
+      functions.pmod(df("plating_tank"), df("viscosity")).as("pmod1"),
+      functions.pmod(df("plating_tank"), -df("viscosity")).as("pmod2"))
+    assert(df1.schema("pmod1").storageType === IntegerType)
+    assert(df1.schema("pmod2").storageType === IntegerType)
+    assert(df1.take(50).rows.forall {
+      case Seq(p: Int, v: Int, m1: Int, m2: Int) =>
+        m1 === pmod(p, v) && m2 === pmod(p, -v)
+      case Seq(null, _, null, null) => true
+      case Seq(_, null, null, null) => true
+      case Seq(null, null, null, null) => true
+    })
+
+    val df2 = df.select(df("plating_tank"), df("caliper"),
+      functions.pmod(df("plating_tank"), df("caliper")).as("pmod"))
+    assert(df2.schema("pmod").storageType === FloatType)
+  }
 }

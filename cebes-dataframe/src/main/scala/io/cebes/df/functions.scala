@@ -1081,7 +1081,7 @@ object functions {
   }
 
   /**
-    * Computes the exponential of the given column.
+    * Computes the exponential of the given value minus one.
     *
     * @group math_funcs
     */
