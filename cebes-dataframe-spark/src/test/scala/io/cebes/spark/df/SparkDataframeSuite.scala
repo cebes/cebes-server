@@ -1707,4 +1707,130 @@ class SparkDataframeSuite extends CebesBaseSuite
     assert(df3.schema("signum_col").storageType === DoubleType)
     assert(df3.take(50).get[Any]("signum_col").get.forall(_ === null))
   }
+
+  test("math - sin") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("varnish_pct"),
+      functions.sin("varnish_pct").as("sin1"),
+      functions.sin(df("varnish_pct")).as("sin2"))
+    assert(df1.columns === Seq("varnish_pct", "sin1", "sin2"))
+    assert(df1.schema("sin1").storageType === DoubleType)
+    assert(df1.schema("sin2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.sin(v) === v1 && -1 <= v1 && v1 <= 1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.sin("customer").as("sin_col"))
+    assert(df3.schema("sin_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("sin_col").get.forall(_ === null))
+  }
+
+  test("math - sinh") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("varnish_pct"),
+      functions.sinh("varnish_pct").as("sinh1"),
+      functions.sinh(df("varnish_pct")).as("sinh2"))
+    assert(df1.columns === Seq("varnish_pct", "sinh1", "sinh2"))
+    assert(df1.schema("sinh1").storageType === DoubleType)
+    assert(df1.schema("sinh2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.sinh(v) === v1 && v1 * v >= 0
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.sinh("customer").as("sinh_col"))
+    assert(df3.schema("sinh_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("sinh_col").get.forall(_ === null))
+  }
+
+  test("math - tan") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("varnish_pct"),
+      functions.tan("varnish_pct").as("tan1"),
+      functions.tan(df("varnish_pct")).as("tan2"))
+    assert(df1.columns === Seq("varnish_pct", "tan1", "tan2"))
+    assert(df1.schema("tan1").storageType === DoubleType)
+    assert(df1.schema("tan2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.tan(v) === v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.tan("customer").as("tan_col"))
+    assert(df3.schema("tan_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("tan_col").get.forall(_ === null))
+  }
+
+  test("math - tanh") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("varnish_pct"),
+      functions.tanh("varnish_pct").as("tanh1"),
+      functions.tanh(df("varnish_pct")).as("tanh2"))
+    assert(df1.columns === Seq("varnish_pct", "tanh1", "tanh2"))
+    assert(df1.schema("tanh1").storageType === DoubleType)
+    assert(df1.schema("tanh2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.tanh(v) === v1 && v1 * v >= 0
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.tanh("customer").as("tan_col"))
+    assert(df3.schema("tan_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("tan_col").get.forall(_ === null))
+  }
+
+  test("math - toDegrees") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("hardener"),
+      functions.toDegrees("hardener").as("d1"),
+      functions.toDegrees(df("hardener")).as("d2"))
+    assert(df1.columns === Seq("hardener", "d1", "d2"))
+    assert(df1.schema("d1").storageType === DoubleType)
+    assert(df1.schema("d2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.toDegrees(v) === v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.toDegrees("customer").as("d_col"))
+    assert(df3.schema("d_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("d_col").get.forall(_ === null))
+  }
+
+  test("math - toRadians") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("ink_pct"),
+      functions.toRadians("ink_pct").as("r1"),
+      functions.toRadians(df("ink_pct")).as("r2"))
+    assert(df1.columns === Seq("ink_pct", "r1", "r2"))
+    assert(df1.schema("r1").storageType === DoubleType)
+    assert(df1.schema("r2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.toRadians(v) === v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.toRadians("customer").as("r_col"))
+    assert(df3.schema("r_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("r_col").get.forall(_ === null))
+  }
 }
