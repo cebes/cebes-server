@@ -1593,4 +1593,118 @@ class SparkDataframeSuite extends CebesBaseSuite
       functions.pmod(df("plating_tank"), df("caliper")).as("pmod"))
     assert(df2.schema("pmod").storageType === FloatType)
   }
+
+  test("math - rint") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("ink_pct"),
+      functions.rint("ink_pct").as("rint1"),
+      functions.rint(df("ink_pct")).as("rint2"))
+    assert(df1.columns === Seq("ink_pct", "rint1", "rint2"))
+    assert(df1.schema("rint1").storageType === DoubleType)
+    assert(df1.schema("rint2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 === v2 && math.rint(v) === v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.rint("customer").as("rint_col"))
+    assert(df3.schema("rint_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("rint_col").get.forall(_ === null))
+  }
+
+  test("math - round") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("ink_pct"),
+      functions.round(df("ink_pct")).as("round1"),
+      functions.round(df("ink_pct"), 2).as("round2"),
+      functions.round(df("ink_pct"), -2).as("round3"))
+    assert(df1.columns === Seq("ink_pct", "round1", "round2", "round3"))
+    assert(df1.schema("round1").storageType === FloatType)
+    assert(df1.schema("round2").storageType === FloatType)
+    assert(df1.schema("round3").storageType === FloatType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Float, v2: Float, v3: Float) =>
+        Seq(v1, v2, v3).forall(u => math.abs(v - u) <= 0.5)
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.round(df("customer")).as("round_col"))
+    assert(df3.schema("round_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("round_col").get.forall(_ === null))
+  }
+
+  test("math - bround") {
+    val df = getCylinderBands.limit(100)
+
+    def bround(v: Float, p: Int): Float =
+      BigDecimal(v).setScale(p, BigDecimal.RoundingMode.HALF_EVEN).toFloat
+
+    val df1 = df.select(df("ink_pct"),
+      functions.bround(df("ink_pct")).as("bround1"),
+      functions.bround(df("ink_pct"), 2).as("bround2"),
+      functions.bround(df("ink_pct"), -2).as("bround3"))
+    assert(df1.columns === Seq("ink_pct", "bround1", "bround2", "bround3"))
+    assert(df1.schema("bround1").storageType === FloatType)
+    assert(df1.schema("bround2").storageType === FloatType)
+    assert(df1.schema("bround3").storageType === FloatType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Float, v2: Float, v3: Float) =>
+        v1 === bround(v, 0) && v2 === bround(v, 2) && v3 === bround(v, -2)
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.bround(df("customer")).as("bround_col"))
+    assert(df3.schema("bround_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("bround_col").get.forall(_ === null))
+  }
+
+  test("math - shift") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("press"),
+      functions.shiftLeft(df("press"), 2).as("shift1"),
+      functions.shiftRight(df("press"), 2).as("shift2"),
+      functions.shiftRightUnsigned(df("press"), 2).as("shift3"))
+    assert(df1.columns === Seq("press", "shift1", "shift2", "shift3"))
+    assert(df1.schema("shift1").storageType === IntegerType)
+    assert(df1.schema("shift2").storageType === IntegerType)
+    assert(df1.schema("shift3").storageType === IntegerType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Int, v1: Int, v2: Int, v3: Int) =>
+        v1 === (v << 2) && v2 === (v >> 2) && v3 === (v >>> 2)
+      case Seq(null, null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.shiftLeft(df("customer"), 2).as("shift_col"))
+    assert(df3.schema("shift_col").storageType === IntegerType)
+    assert(df3.take(50).get[Any]("shift_col").get.forall(_ === null))
+  }
+
+  test("math - signum") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("ink_pct"),
+      functions.signum("ink_pct").as("signum1"),
+      functions.signum(df("ink_pct")).as("signum2"))
+    assert(df1.columns === Seq("ink_pct", "signum1", "signum2"))
+    assert(df1.schema("signum1").storageType === DoubleType)
+    assert(df1.schema("signum2").storageType === DoubleType)
+    assert(df1.take(50).rows.forall {
+      case Seq(v: Float, v1: Double, v2: Double) =>
+        v1 == math.signum(v) && v2 === v1
+      case Seq(null, null, null) => true
+    })
+
+    // on string column is fine too!
+    val df3 = df.select(functions.signum("customer").as("signum_col"))
+    assert(df3.schema("signum_col").storageType === DoubleType)
+    assert(df3.take(50).get[Any]("signum_col").get.forall(_ === null))
+  }
 }
