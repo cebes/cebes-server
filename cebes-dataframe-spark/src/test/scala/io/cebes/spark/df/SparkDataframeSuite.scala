@@ -1833,4 +1833,90 @@ class SparkDataframeSuite extends CebesBaseSuite
     assert(df3.schema("r_col").storageType === DoubleType)
     assert(df3.take(50).get[Any]("r_col").get.forall(_ === null))
   }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Misc functions
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  test("misc - md5 and sha1") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").cast(BinaryType).as("bin_col")).select(functions.col("bin_col"),
+      functions.md5(functions.col("bin_col")).as("md5"),
+      functions.sha1(functions.col("bin_col")).as("sha1"))
+    assert(df1.columns === Seq("bin_col", "md5", "sha1"))
+    assert(df1.schema("md5").storageType === StringType)
+    assert(df1.schema("sha1").storageType === StringType)
+    assert(df1.take(50).rows.forall {
+      case Seq(_: Array[Byte], v1: String, v2: String) =>
+        v1.length === 32 && v2.length === 40
+      case Seq(null, null, null) => true
+    })
+
+    // not binary column
+    intercept[CebesBackendException](df.select(functions.sha1(df("ink_pct"))))
+  }
+
+  test("misc - sha2") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").cast(BinaryType).as("bin_col")).select(
+      functions.col("bin_col"),
+      functions.sha2(functions.col("bin_col"), 384).as("sha384"),
+      functions.sha2(functions.col("bin_col"), 512).as("sha512"))
+    assert(df1.columns === Seq("bin_col", "sha384", "sha512"))
+    assert(df1.schema("sha384").storageType === StringType)
+    assert(df1.schema("sha512").storageType === StringType)
+    assert(df1.take(50).rows.forall {
+      case Seq(_: Array[Byte], v1: String, v2: String) =>
+        v1.length === 96 && v2.length === 128
+      case Seq(null, null, null) => true
+    })
+
+    // not binary column
+    intercept[CebesBackendException](df.select(functions.sha2(df("ink_pct"), 384)))
+
+    // invalid numBits
+    intercept[IllegalArgumentException] {
+      df.select(df("customer").cast(BinaryType).as("bin_col")).select(
+        functions.sha2(functions.col("bin_col"), 199).as("sha384"))
+    }
+  }
+
+  test("misc - crc32 and hash") {
+    val df = getCylinderBands.limit(100)
+
+    val df1 = df.select(df("customer").cast(BinaryType).as("bin_col"), df("customer")).select(
+      functions.col("bin_col"),
+      functions.crc32(functions.col("bin_col")).as("crc32"),
+      functions.hash(functions.col("bin_col"), functions.col("customer")).as("hash"))
+    assert(df1.columns === Seq("bin_col", "crc32", "hash"))
+    assert(df1.schema("crc32").storageType === LongType)
+    assert(df1.schema("hash").storageType === IntegerType)
+    assert(df1.take(50).rows.forall {
+      case Seq(_: Array[Byte], v1: Long, v2: Int) =>
+        v1.isValidLong && Int.MinValue < v2 && v2 < Int.MaxValue
+      case Seq(null, null, null) => true
+    })
+
+    // not binary column
+    intercept[CebesBackendException](df.select(functions.crc32(df("ink_pct"))))
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // String functions
+  // TODO: add tests
+  ////////////////////////////////////////////////////////////////////////////////////
+
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Datetime functions
+  // TODO: add tests
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Collection functions
+  // TODO: add tests
+  ////////////////////////////////////////////////////////////////////////////////////
+
 }
