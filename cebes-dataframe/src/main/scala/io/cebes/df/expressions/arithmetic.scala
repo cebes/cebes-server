@@ -25,3 +25,85 @@ case class Multiply(left: Expression, right: Expression) extends BinaryExpressio
 case class Divide(left: Expression, right: Expression) extends BinaryExpression
 
 case class Remainder(left: Expression, right: Expression) extends BinaryExpression
+
+case class Abs(child: Expression) extends UnaryExpression
+
+case class Sqrt(child: Expression) extends UnaryExpression
+
+case class Acos(child: Expression) extends UnaryExpression
+
+case class Asin(child: Expression) extends UnaryExpression
+
+case class Atan(child: Expression) extends UnaryExpression
+
+case class Atan2(left: Expression, right: Expression) extends BinaryExpression
+
+case class Bin(child: Expression) extends UnaryExpression
+
+case class Cbrt(child: Expression) extends UnaryExpression
+
+case class Ceil(child: Expression) extends UnaryExpression
+
+case class Conv(child: Expression, fromBase: Int, toBase: Int) extends UnaryExpression
+
+case class Cos(child: Expression) extends UnaryExpression
+
+case class Cosh(child: Expression) extends UnaryExpression
+
+case class Exp(child: Expression) extends UnaryExpression
+
+case class Expm1(child: Expression) extends UnaryExpression
+
+case class Factorial(child: Expression) extends UnaryExpression
+
+case class Floor(child: Expression) extends UnaryExpression
+
+case class Greatest(children: Seq[Expression]) extends Expression
+
+case class Hex(child: Expression) extends UnaryExpression
+
+case class Unhex(child: Expression) extends UnaryExpression
+
+case class Hypot(left: Expression, right: Expression) extends BinaryExpression
+
+case class Least(children: Seq[Expression]) extends Expression
+
+case class Log(child: Expression) extends UnaryExpression
+
+case class Logarithm(base: Double, child: Expression) extends UnaryExpression
+
+case class Log10(child: Expression) extends UnaryExpression
+
+case class Log1p(child: Expression) extends UnaryExpression
+
+case class Log2(child: Expression) extends UnaryExpression
+
+case class Pow(left: Expression, right: Expression) extends BinaryExpression
+
+case class Pmod(left: Expression, right: Expression) extends BinaryExpression
+
+case class Rint(child: Expression) extends UnaryExpression
+
+case class Round(left: Expression, right: Expression) extends BinaryExpression
+
+case class BRound(child: Expression, scale: Int) extends UnaryExpression
+
+case class ShiftLeft(child: Expression, numBits: Int) extends UnaryExpression
+
+case class ShiftRight(child: Expression, numBits: Int) extends UnaryExpression
+
+case class ShiftRightUnsigned(child: Expression, numBits: Int) extends UnaryExpression
+
+case class Signum(child: Expression) extends UnaryExpression
+
+case class Sin(child: Expression) extends UnaryExpression
+
+case class Sinh(child: Expression) extends UnaryExpression
+
+case class Tan(child: Expression) extends UnaryExpression
+
+case class Tanh(child: Expression) extends UnaryExpression
+
+case class ToDegrees(child: Expression) extends UnaryExpression
+
+case class ToRadians(child: Expression) extends UnaryExpression

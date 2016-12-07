@@ -87,9 +87,7 @@ case object DoubleType extends DoubleType
 /**
   *
   */
-case class ArrayType(elementType: StorageType) extends StorageType {
-}
-object VectorType extends ArrayType(DoubleType)
+case class ArrayType(elementType: StorageType) extends StorageType
 
 case class MapType(keyType: StorageType, valueType: StorageType) extends StorageType
 

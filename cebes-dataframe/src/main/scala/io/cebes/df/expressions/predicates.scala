@@ -48,3 +48,5 @@ case class BitwiseOr(left: Expression, right: Expression) extends BinaryExpressi
 case class BitwiseAnd(left: Expression, right: Expression) extends BinaryExpression
 
 case class BitwiseXor(left: Expression, right: Expression) extends BinaryExpression
+
+case class BitwiseNot(child: Expression) extends UnaryExpression

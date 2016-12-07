@@ -287,6 +287,25 @@ trait Dataframe extends HasSchema with HasId {
     */
   def distinct(): Dataframe = dropDuplicates(this.columns)
 
+  /**
+    * Marks a DataFrame as small enough for use in broadcast joins.
+    *
+    * The following example marks the right DataFrame for broadcast hash join using `joinKey`.
+    * {{{
+    *   // left and right are DataFrames
+    *   left.join(right.broadcast, "joinKey")
+    *   left.join(broadcast(right), "joinKey")
+    * }}}
+    *
+    * @group sql-api
+    */
+  def broadcast: Dataframe
+
+  /**
+    * Number of rows in this [[Dataframe]]. Alias of [[numRows]]
+    */
+  def count(): Long = numRows
+
   ////////////////////////////////////////////////////////////////////////////////////
   // GroupBy-related functions
   ////////////////////////////////////////////////////////////////////////////////////
