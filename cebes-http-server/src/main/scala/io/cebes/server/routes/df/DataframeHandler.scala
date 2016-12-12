@@ -18,6 +18,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
+import spray.json.JsValue
 
 /**
   * Handle all requests related to dataframe
@@ -25,12 +26,14 @@ import io.cebes.server.http.SecuredSession
 trait DataframeHandler extends SecuredSession with LazyLogging {
 
   val dataframeApi: Route = pathPrefix("df") {
-    path("tmp") {
+    myRequiredSession { session =>
       post {
-        myRequiredSession { session =>
-          myInvalidateSession { ctx =>
-            logger.info(s"Logging out $session")
-            ctx.complete("ok")
+        path(Segment) { command =>
+          entity(as[JsValue]) { requestEntity =>
+            myInvalidateSession { ctx =>
+              logger.info(s"Logging out $session")
+              ctx.complete("ok")
+            }
           }
         }
       }

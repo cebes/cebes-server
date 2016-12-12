@@ -25,7 +25,7 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.server.models.{FailResponse, FutureResult, RequestStatus, SerializableResult}
+import io.cebes.server.models.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
 import spray.json.JsonFormat
 
 import scala.collection.immutable
@@ -86,7 +86,7 @@ class Client extends LazyLogging {
 
     val result = wait(futureResult)
     result.status match {
-      case RequestStatus.FINISHED =>
+      case RequestStatuses.FINISHED =>
         result.response.map(_.convertTo[ResponseType])
       case s =>
         throw new RuntimeException(s"Request status: $s")
@@ -113,7 +113,7 @@ class Client extends LazyLogging {
       result match {
         case Success(serializableResult) =>
           serializableResult.status match {
-            case RequestStatus.FAILED =>
+            case RequestStatuses.FAILED =>
               // TODO: decide on whether we should throw exception here
               // try to throw an exception if it is a FailResponse
               serializableResult.response match {
@@ -131,7 +131,7 @@ class Client extends LazyLogging {
                   throw ServerException(Some(serializableResult.requestId),
                     "Unknown server error", None)
               }
-            case RequestStatus.FINISHED =>
+            case RequestStatuses.FINISHED =>
               return serializableResult
             case _ =>
               cnt += 1

@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.{Prop, Property}
-import io.cebes.server.models.{RequestStatus, SerializableResult}
+import io.cebes.server.models.{RequestStatuses, SerializableResult}
 import spray.json._
 
 @Singleton class JdbcResultStorage @Inject()
@@ -62,7 +62,7 @@ import spray.json._
   override def get(requestId: UUID): Option[SerializableResult] = {
     try {
       val r = cache.get(requestId)
-      val status = RequestStatus.fromString(r.status) match {
+      val status = RequestStatuses.fromString(r.status) match {
         case Some(s) => s
         case None =>
           throw new IllegalArgumentException(s"Invalid job status (${r.status}) " +

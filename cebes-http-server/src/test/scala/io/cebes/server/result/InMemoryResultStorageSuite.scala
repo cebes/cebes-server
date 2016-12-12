@@ -17,7 +17,7 @@ package io.cebes.server.result
 import java.util.UUID
 
 import io.cebes.server.helpers.TestInjector
-import io.cebes.server.models.{RequestStatus, SerializableResult}
+import io.cebes.server.models.{RequestStatuses, SerializableResult}
 import org.scalatest.FunSuite
 import spray.json._
 
@@ -29,21 +29,21 @@ class InMemoryResultStorageSuite extends FunSuite {
     val requestId = UUID.randomUUID()
     assert(jdbcStorage.get(requestId).isEmpty)
 
-    jdbcStorage.save(SerializableResult(requestId, RequestStatus.SCHEDULED,
+    jdbcStorage.save(SerializableResult(requestId, RequestStatuses.SCHEDULED,
       Some("""{ "some": "JSON source" }""".parseJson), Some("""{ "some": "request" }""".parseJson)))
     val result = jdbcStorage.get(requestId)
     assert(result.nonEmpty)
-    assert(result.get.status === RequestStatus.SCHEDULED)
+    assert(result.get.status === RequestStatuses.SCHEDULED)
     assert(result.get.requestId === requestId)
     assert(result.get.response.nonEmpty)
     assert(result.get.response.get.prettyPrint.length > 0)
     assert(result.get.request.nonEmpty)
 
     // replace
-    jdbcStorage.save(SerializableResult(requestId, RequestStatus.FAILED, None, None))
+    jdbcStorage.save(SerializableResult(requestId, RequestStatuses.FAILED, None, None))
     val result2 = jdbcStorage.get(requestId)
     assert(result2.nonEmpty)
-    assert(result2.get.status === RequestStatus.FAILED)
+    assert(result2.get.status === RequestStatuses.FAILED)
     assert(result2.get.requestId === requestId)
     assert(result2.get.response.isEmpty)
     assert(result2.get.request.isEmpty)
@@ -55,10 +55,10 @@ class InMemoryResultStorageSuite extends FunSuite {
     val requestId = UUID.randomUUID()
     assert(jdbcStorage.get(requestId).isEmpty)
 
-    jdbcStorage.save(SerializableResult(requestId, RequestStatus.SCHEDULED, None, None))
+    jdbcStorage.save(SerializableResult(requestId, RequestStatuses.SCHEDULED, None, None))
     val result = jdbcStorage.get(requestId)
     assert(result.nonEmpty)
-    assert(result.get.status === RequestStatus.SCHEDULED)
+    assert(result.get.status === RequestStatuses.SCHEDULED)
     assert(result.get.requestId === requestId)
     assert(result.get.response.isEmpty)
   }

@@ -46,7 +46,7 @@ trait AuthHandler extends SecuredSession {
         }
       }
     } ~ (path("logout") & post) {
-      myRequiredSession { session =>
+      myRequiredSession { _ =>
         myInvalidateSession { ctx =>
           ctx.complete(OkResponse("ok"))
         }
