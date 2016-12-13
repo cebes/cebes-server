@@ -14,20 +14,42 @@
 
 package io.cebes.server.routes.df
 
-import io.cebes.server.helpers.{Client, TestDataHelper, TestPropertyHelper}
+import java.util.UUID
+
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import io.cebes.server.helpers.{ServerException, TestPropertyHelper}
+import io.cebes.server.models._
+import io.cebes.server.routes.Routes
+import io.cebes.server.routes.df.CebesDfProtocol._
+import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 
-class DataframeHandlerSuite(override val client: Client) extends FunSuite with TestPropertyHelper with TestDataHelper {
+import scala.util.{Failure, Success, Try}
+
+class DataframeHandlerSuite extends FunSuite with TestPropertyHelper with ScalatestRouteTest with Routes {
+
+
 
   test("sample") {
+
+
+
+    Post("/v1/df/sql", "SHOW TABLES").withHeaders(authHeaders) ~>
+      routes ~> check {
+      println(response)
+      assert(responseAs[DataframeResponse].id.clockSequence() > 0)
+    }
+
     //val result = client.requestAndWait[SampleRequest, DataframeResponse](HttpMethods.POST, "df/sample",
     //  SampleRequest()
     //  )
     //assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
   }
 
-  test("sql") {
-    //val dfId = getCylinderBands
-    //println(dfId)
-  }
+  //test("sql") {
+  //val dfId = getCylinderBands
+  //println(dfId)
+  //}
 }

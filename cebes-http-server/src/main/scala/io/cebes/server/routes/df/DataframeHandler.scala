@@ -45,7 +45,7 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     */
   private def operation[W <: DataframeOperation[E], E](implicit jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
     val workerCls = implicitly[ClassTag[W]].runtimeClass.asInstanceOf[Class[W]]
-    (path(workerCls.getClass.getSimpleName.toLowerCase) & post) {
+    (path(workerCls.getSimpleName.toLowerCase) & post) {
       entity(as[JsValue]) { requestEntity =>
         implicit ctx: RequestContext =>
           InjectorService.instance(workerCls).run(requestEntity.convertTo[E]).flatMap(ctx.complete(_))

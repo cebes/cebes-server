@@ -33,7 +33,7 @@ class CebesClientSuites extends Suite with BeforeAndAfterAll {
 
   override def nestedSuites: IndexedSeq[Suite] = IndexedSeq(
     new AuthHandlerSuite(client),
-    new DataframeHandlerSuite(client),
+    //new DataframeHandlerSuite(client),
     new StorageHandlerSuite(client))
 
   /**

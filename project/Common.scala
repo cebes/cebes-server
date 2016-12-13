@@ -6,5 +6,6 @@ object Common {
   val typeSafeConfigVersion = "1.3.0"
   val scalaLoggingVersion = "3.5.0"
   val scalaTestVersion = "3.0.0"
+  val akkaHttpVersion = "10.0.0"
   val log4j12Version = "1.7.16"    // should be the same with log4j12 in spark-core
 }
