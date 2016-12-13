@@ -14,14 +14,16 @@
 
 package io.cebes.server.routes
 
-import java.util.UUID
-
-import akka.http.scaladsl.model.{HttpHeader, StatusCodes, headers => akkaHeaders}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import io.cebes.server.helpers.TestPropertyHelper
-import io.cebes.server.models.UserLogin
-import io.cebes.server.routes.df.SampleRequest
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import io.cebes.server.helpers.{ServerException, TestPropertyHelper}
+import io.cebes.server.models._
+import io.cebes.server.routes.df.CebesDfProtocol._
+import io.cebes.server.util.Retries
+import org.scalatest.FunSuite
+
+import scala.util.{Failure, Success, Try}
 
 abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
   with ScalatestRouteTest with Routes {
@@ -31,7 +33,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
   implicit val actorExecutor = executor
   implicit val scheduler = actorSystem.scheduler
 
-  val authHeaders: Seq[HttpHeader] = Post("/v1/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
+  val authHeaders = Post("/v1/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
     assert(status === StatusCodes.OK)
     val responseCookies = headers.filter(_.name().startsWith("Set-"))
     assert(responseCookies.nonEmpty)
@@ -47,13 +49,17 @@ abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
     }
   }
 
-  def requestAndWait() = {
-    Post("/v1/df/sample", SampleRequest(UUID.randomUUID(), withReplacement = true, 0.5, 42)).withHeaders(authHeaders) ~>
-      routes ~> check {
+  def post[E, T](url: String, entity: E)(op: => T) =
+    Post(s"/v1/$url", entity).withHeaders(authHeaders) ~> routes ~> check {
+      op
+    }
+
+  def requestAndWait[E](url: String, entity: E) = {
+    post(url, entity) {
       val futureResult = responseAs[FutureResult]
 
       Retries.retryUntil(Retries.expBackOff(100, max_count = 6))(
-        Post(s"/v1/request/${futureResult.requestId}").withHeaders(authHeaders) ~> routes ~> check {
+        post(s"request/${futureResult.requestId}", "") {
           responseAs[SerializableResult]
         }
       )(_.status != RequestStatuses.SCHEDULED).map { serializableResult =>
