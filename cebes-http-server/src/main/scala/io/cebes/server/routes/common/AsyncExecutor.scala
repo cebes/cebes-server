@@ -48,6 +48,11 @@ trait AsyncExecutor[E, T, R] extends LazyLogging {
   val resultStorage: ResultStorage
 
   /**
+    * Name of the current executor
+    */
+  val name: String = getClass.getName.toLowerCase
+
+  /**
     * Implement this to do the real work
     */
   protected def runImpl(requestEntity: E)(implicit ec: ExecutionContext): Future[T]

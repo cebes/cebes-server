@@ -14,6 +14,8 @@
 
 package io.cebes.spark.df
 
+import java.util.UUID
+
 import com.google.inject.Inject
 import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.spark.config.HasSparkSession
@@ -27,13 +29,9 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession) extends 
 
   val sparkSession = hasSparkSession.session
 
-  /**
-    * Executes a SQL query, returning the result as a [[Dataframe]].
-    *
-    * @param sqlText the SQL command to run
-    * @return a [[Dataframe]] object
-    */
   def sql(sqlText: String): Dataframe = {
     new SparkDataframe(sparkSession.sql(sqlText))
   }
+
+  override def sample(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = ???
 }

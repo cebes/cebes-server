@@ -14,29 +14,47 @@
 
 package io.cebes.server.routes.df
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{RequestContext, Route}
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
-import spray.json.JsValue
+import io.cebes.server.inject.InjectorService
+import io.cebes.server.routes.df.CebesDfProtocol._
+import spray.json._
+
+import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 
 /**
   * Handle all requests related to dataframe
   */
 trait DataframeHandler extends SecuredSession with LazyLogging {
 
-  val dataframeApi: Route = pathPrefix("df") {
-    myRequiredSession { session =>
-      post {
-        path(Segment) { command =>
-          entity(as[JsValue]) { requestEntity =>
-            myInvalidateSession { ctx =>
-              logger.info(s"Logging out $session")
-              ctx.complete("ok")
-            }
-          }
-        }
+  implicit def actorSystem: ActorSystem
+
+  implicit def actorExecutor: ExecutionContext
+
+  implicit def actorMaterializer: Materializer
+
+  private def operation[W <: DataframeOperation[E] : ClassTag, E]()(implicit jfE: JsonFormat[E]): Route = {
+    val workerCls = classOf[W]
+    (path(workerCls.getClass.getSimpleName.toLowerCase) & post) {
+      entity(as[JsValue]) { requestEntity =>
+        implicit ctx: RequestContext =>
+          InjectorService.instance(workerCls).run(requestEntity.convertTo[E]).flatMap(ctx.complete(_))
       }
+    }
+  }
+
+  val dataframeApi: Route = pathPrefix("df") {
+    myRequiredSession { _ =>
+      concat(
+        operation[Sample, SampleRequest](),
+        operation[Sample, SampleRequest]()
+      )
     }
   }
 }

@@ -9,25 +9,20 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/08/16.
+ * Created by phvu on 13/12/2016.
  */
 
-package io.cebes.df
+package io.cebes.server.routes.df
 
 import java.util.UUID
 
-trait DataframeService {
+import io.cebes.server.models.CebesJsonProtocol
 
-  /**
-    * Executes a SQL query, returning the result as a [[Dataframe]].
-    *
-    * @param sqlText the SQL command to run
-    * @return a [[Dataframe]] object
-    */
-  def sql(sqlText: String): Dataframe
+private[df] case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
 
-  /**
-    * Sample the given [[Dataframe]]
-    */
-  def sample(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
+private[df] trait CebesDfProtocol extends CebesJsonProtocol {
+
+  implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
 }
+
+private[df] object CebesDfProtocol extends CebesDfProtocol
