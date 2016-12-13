@@ -14,15 +14,19 @@
 
 package io.cebes.server.routes.df
 
-import java.util.UUID
+import com.google.inject.Inject
+import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.server.result.ResultStorage
 
-import io.cebes.server.models.CebesJsonProtocol
+import scala.concurrent.{ExecutionContext, Future}
 
-private[server] case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
+/**
+  * Runs the given SQL string, and returns a [[Dataframe]]
+  */
+class Sql @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends DataframeOperation[String] {
 
-private[server] trait CebesDfProtocol extends CebesJsonProtocol {
-
-  implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
+  override protected def runImpl(requestEntity: String)(implicit ec: ExecutionContext): Future[Dataframe] = Future {
+    dfService.sql(requestEntity)
+  }
 }
-
-private[server] object CebesDfProtocol extends CebesDfProtocol

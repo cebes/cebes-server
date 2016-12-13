@@ -39,8 +39,12 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
 
   implicit def actorMaterializer: Materializer
 
-  private def operation[W <: DataframeOperation[E] : ClassTag, E]()(implicit jfE: JsonFormat[E]): Route = {
-    val workerCls = classOf[W]
+  /**
+    * An operation done by class [[W]] (subclass of [[DataframeOperation]],
+    * with entity of type [[E]]
+    */
+  private def operation[W <: DataframeOperation[E], E](implicit jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
+    val workerCls = implicitly[ClassTag[W]].runtimeClass.asInstanceOf[Class[W]]
     (path(workerCls.getClass.getSimpleName.toLowerCase) & post) {
       entity(as[JsValue]) { requestEntity =>
         implicit ctx: RequestContext =>
@@ -52,8 +56,8 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
   val dataframeApi: Route = pathPrefix("df") {
     myRequiredSession { _ =>
       concat(
-        operation[Sample, SampleRequest](),
-        operation[Sample, SampleRequest]()
+        operation[Sample, SampleRequest],
+        operation[Sql, String]
       )
     }
   }

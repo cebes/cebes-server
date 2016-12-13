@@ -20,6 +20,7 @@ import io.cebes.server.models._
 import io.cebes.server.models.CebesJsonProtocol._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.server.routes.auth.AuthHandlerSuite
+import io.cebes.server.routes.df.DataframeHandlerSuite
 import io.cebes.server.routes.storage.StorageHandlerSuite
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
@@ -32,6 +33,7 @@ class CebesClientSuites extends Suite with BeforeAndAfterAll {
 
   override def nestedSuites: IndexedSeq[Suite] = IndexedSeq(
     new AuthHandlerSuite(client),
+    new DataframeHandlerSuite(client),
     new StorageHandlerSuite(client))
 
   /**

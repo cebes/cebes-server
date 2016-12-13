@@ -64,6 +64,21 @@ class Client extends LazyLogging {
 
 
   /**
+    * Send a POST request.
+    * This is an alias of [[requestAndWait()]] with method = [[HttpMethods.POST]]
+    */
+  def postAndWait[RequestType, ResponseType](uri: String,
+                                             content: RequestType)
+                                            (implicit ma: ToEntityMarshaller[RequestType],
+                                             ua: FromEntityUnmarshaller[FutureResult],
+                                             uaSerializableResult: FromEntityUnmarshaller[SerializableResult],
+                                             uaFail: FromEntityUnmarshaller[FailResponse],
+                                             jfResponse: JsonFormat[ResponseType],
+                                             jfFail: JsonFormat[FailResponse],
+                                             ec: ExecutionContext): Option[ResponseType] =
+    requestAndWait(HttpMethods.POST, uri, content)(ma, ua, uaSerializableResult, uaFail, jfResponse, jfFail, ec)
+
+  /**
     * Send an asynchronous request, and wait for a result
     *
     * @param method  HTTP method to use

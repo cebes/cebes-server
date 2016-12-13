@@ -20,6 +20,9 @@ import io.cebes.server.result.ResultStorage
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Sample a Dataframe, returns another [[Dataframe]]
+  */
 class Sample @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
   extends DataframeOperation[SampleRequest] {
 

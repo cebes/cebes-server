@@ -14,15 +14,20 @@
 
 package io.cebes.server.routes.df
 
-import java.util.UUID
+import io.cebes.server.helpers.{Client, TestDataHelper, TestPropertyHelper}
+import org.scalatest.FunSuite
 
-import io.cebes.server.models.CebesJsonProtocol
+class DataframeHandlerSuite(override val client: Client) extends FunSuite with TestPropertyHelper with TestDataHelper {
 
-private[server] case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
+  test("sample") {
+    //val result = client.requestAndWait[SampleRequest, DataframeResponse](HttpMethods.POST, "df/sample",
+    //  SampleRequest()
+    //  )
+    //assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
+  }
 
-private[server] trait CebesDfProtocol extends CebesJsonProtocol {
-
-  implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
+  test("sql") {
+    //val dfId = getCylinderBands
+    //println(dfId)
+  }
 }
-
-private[server] object CebesDfProtocol extends CebesDfProtocol
