@@ -18,6 +18,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{RequestContext, Route}
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
@@ -43,12 +44,13 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     * An operation done by class [[W]] (subclass of [[DataframeOperation]],
     * with entity of type [[E]]
     */
-  private def operation[W <: DataframeOperation[E], E](implicit jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
+  private def operation[W <: DataframeOperation[E], E](implicit umE: FromRequestUnmarshaller[E],
+                                                       jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
     val workerCls = implicitly[ClassTag[W]].runtimeClass.asInstanceOf[Class[W]]
     (path(workerCls.getSimpleName.toLowerCase) & post) {
-      entity(as[JsValue]) { requestEntity =>
+      entity(as[E]) { requestEntity =>
         implicit ctx: RequestContext =>
-          InjectorService.instance(workerCls).run(requestEntity.convertTo[E]).flatMap(ctx.complete(_))
+          InjectorService.instance(workerCls).run(requestEntity).flatMap(ctx.complete(_))
       }
     }
   }

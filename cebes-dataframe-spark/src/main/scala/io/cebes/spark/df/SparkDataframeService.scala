@@ -27,7 +27,7 @@ import io.cebes.spark.config.HasSparkSession
   */
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession) extends DataframeService {
 
-  val sparkSession = hasSparkSession.session
+  private val sparkSession = hasSparkSession.session
 
   def sql(sqlText: String): Dataframe = {
     new SparkDataframe(sparkSession.sql(sqlText))

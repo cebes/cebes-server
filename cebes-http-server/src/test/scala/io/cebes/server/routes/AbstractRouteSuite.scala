@@ -14,54 +14,50 @@
 
 package io.cebes.server.routes
 
+import akka.actor.{ActorSystem, Scheduler}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.stream.ActorMaterializer
 import io.cebes.server.helpers.{ServerException, TestPropertyHelper}
 import io.cebes.server.models._
 import io.cebes.server.routes.df.CebesDfProtocol._
 import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
+/**
+  * Mother of all Route test, with helpers for using akka test-kit,
+  * logging in and storing cookies, etc...
+  */
 abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
   with ScalatestRouteTest with Routes {
 
-  implicit val actorSystem = system
-  implicit val actorMaterializer = materializer
-  implicit val actorExecutor = executor
-  implicit val scheduler = actorSystem.scheduler
+  implicit val actorSystem: ActorSystem = system
+  implicit val actorMaterializer: ActorMaterializer = materializer
+  implicit val actorExecutor: ExecutionContextExecutor = executor
+  implicit val scheduler: Scheduler = actorSystem.scheduler
 
-  val authHeaders = Post("/v1/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
-    assert(status === StatusCodes.OK)
-    val responseCookies = headers.filter(_.name().startsWith("Set-"))
-    assert(responseCookies.nonEmpty)
+  private val authHeaders = login()
 
-    responseCookies.flatMap {
-      case akkaHeaders.`Set-Cookie`(c) => c.name.toUpperCase() match {
-        case "XSRF-TOKEN" =>
-          Seq(akkaHeaders.RawHeader("X-XSRF-TOKEN", c.value), akkaHeaders.Cookie(c.name, c.value))
-        case _ => Seq(akkaHeaders.Cookie(c.name, c.value))
-      }
-      case h =>
-        Seq(akkaHeaders.RawHeader(h.name().substring(4), h.value()))
-    }
-  }
-
-  def post[E, T](url: String, entity: E)(op: => T) =
-    Post(s"/v1/$url", entity).withHeaders(authHeaders) ~> routes ~> check {
+  def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
+    Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> routes ~> check {
       op
     }
 
-  def requestAndWait[E](url: String, entity: E) = {
+  /**
+    * Send an asynchronous command and wait for the result, using exponential-backoff
+    */
+  def postAndWait[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E]): Future[SerializableResult] =
     post(url, entity) {
-      val futureResult = responseAs[FutureResult]
+      responseAs[FutureResult]
+    } ~> { futureResult =>
 
       Retries.retryUntil(Retries.expBackOff(100, max_count = 6))(
-        post(s"request/${futureResult.requestId}", "") {
-          responseAs[SerializableResult]
-        }
+        post(s"request/${futureResult.requestId}", "")(responseAs[SerializableResult])
       )(_.status != RequestStatuses.SCHEDULED).map { serializableResult =>
         serializableResult.status match {
           case RequestStatuses.FAILED =>
@@ -81,8 +77,24 @@ abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
                   "Unknown server error", None)
             }
           case RequestStatuses.FINISHED => serializableResult
+          case s => throw new IllegalStateException(s"Invalid result status: $s")
         }
       }
+    }
+
+  private def login() = Post(s"/${Routes.API_VERSION}/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
+    assert(status === StatusCodes.OK)
+    val responseCookies = headers.filter(_.name().startsWith("Set-"))
+    assert(responseCookies.nonEmpty)
+
+    responseCookies.flatMap {
+      case akkaHeaders.`Set-Cookie`(c) => c.name.toUpperCase() match {
+        case "XSRF-TOKEN" =>
+          Seq(akkaHeaders.RawHeader("X-XSRF-TOKEN", c.value), akkaHeaders.Cookie(c.name, c.value))
+        case _ => Seq(akkaHeaders.Cookie(c.name, c.value))
+      }
+      case h =>
+        Seq(akkaHeaders.RawHeader(h.name().substring(4), h.value()))
     }
   }
 }

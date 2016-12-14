@@ -17,39 +17,35 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import io.cebes.server.helpers.{ServerException, TestPropertyHelper}
 import io.cebes.server.models._
-import io.cebes.server.routes.Routes
+import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.df.CebesDfProtocol._
-import io.cebes.server.util.Retries
-import org.scalatest.FunSuite
 
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
-class DataframeHandlerSuite extends FunSuite with TestPropertyHelper with ScalatestRouteTest with Routes {
+class DataframeHandlerSuite extends AbstractRouteSuite {
 
-
-
-  test("sample") {
-
-
-
-    Post("/v1/df/sql", "SHOW TABLES").withHeaders(authHeaders) ~>
-      routes ~> check {
-      println(response)
-      assert(responseAs[DataframeResponse].id.clockSequence() > 0)
+  test("sql") {
+    val fu = postAndWait("df/sql", "SHOW TABLES")
+    fu.onComplete {
+      case Success(r) =>
+        println(r)
+        assert(r.response.get.convertTo[DataframeResponse].id.clockSequence() > 0)
+      case Failure(f) =>
+        println(f)
     }
-
-    //val result = client.requestAndWait[SampleRequest, DataframeResponse](HttpMethods.POST, "df/sample",
-    //  SampleRequest()
-    //  )
-    //assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
+    Await.result(fu, Duration.Inf)
   }
 
-  //test("sql") {
-  //val dfId = getCylinderBands
-  //println(dfId)
-  //}
+  test("sample") {
+    postAndWait("df/sample", SampleRequest(UUID.randomUUID(), withReplacement = true, 0.5, 42)).onComplete {
+      case Success(r) =>
+        println(r)
+        assert(r.response.get.convertTo[DataframeResponse].id.clockSequence() > 0)
+      case Failure(f) =>
+        println(f)
+    }
+  }
 }

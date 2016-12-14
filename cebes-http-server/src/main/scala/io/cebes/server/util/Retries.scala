@@ -63,16 +63,16 @@ object Retries {
     * Generate a sequence of _retries_ [[FiniteDuration]]s, using exponential-backoff
     * with the base of _delta_ milliseconds.
     * for i from 0 to retries:
-    *   delta * (pow(2, rand(0, min(i, max_count))) - 1)
+    * delta * pow(2, rand(0, min(i, max_count)))
     *
-    * @param delta in milliseconds
+    * @param delta     in milliseconds
     * @param max_count the maximum value of the exponentials (cut-off value)
     * @return
     */
-  def expBackOff(retries: Int = 10, delta: Long = 500, max_count: Int = 4): Seq[FiniteDuration] =
+  def expBackOff(retries: Int = 10, delta: Long = 500, max_count: Int = 4): Seq[FiniteDuration] = {
     (1 to retries).map { i =>
-      val s = delta * ((1 << Random.nextInt(math.min(i, max_count))) - 1)
+      val s = delta * (1 << Random.nextInt(math.min(i, max_count)))
       FiniteDuration(s, TimeUnit.MILLISECONDS)
     }
-
+  }
 }
