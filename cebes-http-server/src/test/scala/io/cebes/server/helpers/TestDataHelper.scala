@@ -14,29 +14,16 @@
 
 package io.cebes.server.helpers
 
-import java.util.UUID
-
-import io.cebes.server.models.DataframeResponse
 import io.cebes.util.ResourceUtil
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.server.routes.df.CebesDfProtocol._
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Helper trait for all the test, containing the services
   */
 trait TestDataHelper {
 
-  val client: Client
+  def sendSql(sqlText: String): RemoteDataframe
 
-  def sendSql(sqlText: String): UUID = {
-    val result = client.postAndWait[String, DataframeResponse]("df/sql", sqlText)
-    assert(result.isDefined && result.get.isInstanceOf[DataframeResponse])
-    result.get.id
-  }
-
-  def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): UUID = {
+  def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): RemoteDataframe = {
     sendSql(s"DROP TABLE IF EXISTS $tableName")
     sendSql(s"CREATE TABLE $tableName ($schema) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','")
     sendSql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
@@ -44,9 +31,9 @@ trait TestDataHelper {
 
   val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
 
-  def getCylinderBands: UUID = sendSql(s"SELECT * FROM $cylinderBandsTableName")
+  def getCylinderBands: RemoteDataframe = sendSql(s"SELECT * FROM $cylinderBandsTableName")
 
-  def createOrReplaceCylinderBands(tableName: Option[String] = None): UUID = {
+  def createOrReplaceCylinderBands(tableName: Option[String] = None): RemoteDataframe = {
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
     createOrReplaceHiveTable(tableName.getOrElse(cylinderBandsTableName),
       "timestamp LONG, cylinder_number STRING, " +

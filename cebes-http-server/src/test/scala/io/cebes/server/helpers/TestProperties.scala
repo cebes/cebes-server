@@ -22,5 +22,5 @@ class TestProperties @Inject()
 (@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
 @Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String) {
 
-  def hasS3Credentials = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
+  def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
 }

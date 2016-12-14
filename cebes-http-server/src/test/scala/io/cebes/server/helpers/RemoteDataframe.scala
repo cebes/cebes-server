@@ -9,22 +9,23 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 13/12/2016.
+ * Created by phvu on 14/12/2016.
  */
 
-package io.cebes.server.routes.df
+package io.cebes.server.helpers
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.server.models._
-import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.df.CebesDfProtocol._
+import java.util.UUID
 
-class DataframeHandlerSuite extends AbstractRouteSuite {
+import io.cebes.server.models.DataframeResponse
 
-  test("sample") {
-    val df = getCylinderBands
+/**
+  * A dummy object for representing the Dataframe on the server.
+  * This is only used for the client
+  * @param id ID of the Dataframe
+  */
+case class RemoteDataframe(id: UUID)
 
-    val df2 = waitDf(postAsync[SampleRequest, DataframeResponse]("df/sample",
-      SampleRequest(df.id, withReplacement = true, 0.5, 42)))
-  }
+object RemoteDataframe {
+
+  def apply(result: DataframeResponse): RemoteDataframe = new RemoteDataframe(result.id)
 }

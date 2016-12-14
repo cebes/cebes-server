@@ -20,21 +20,24 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
-import io.cebes.server.helpers.{ServerException, TestPropertyHelper}
+import io.cebes.server.helpers.{RemoteDataframe, ServerException, TestDataHelper}
 import io.cebes.server.models._
 import io.cebes.server.routes.df.CebesDfProtocol._
 import io.cebes.server.util.Retries
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Awaitable, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
   * Mother of all Route test, with helpers for using akka test-kit,
   * logging in and storing cookies, etc...
   */
-abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
-  with ScalatestRouteTest with Routes {
+abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
+  with ScalatestRouteTest with Routes with BeforeAndAfterAll {
+
+  //TODO: implement a better way to load the data (e.g. create a HTTP endpoint for testing purpose)
 
   implicit val actorSystem: ActorSystem = system
   implicit val actorMaterializer: ActorMaterializer = materializer
@@ -42,6 +45,27 @@ abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
   implicit val scheduler: Scheduler = actorSystem.scheduler
 
   private val authHeaders = login()
+
+  ////////////////////////////////////////////////////////////////////
+  // implement traits
+  ////////////////////////////////////////////////////////////////////
+
+  override def sendSql(sqlText: String): RemoteDataframe = {
+    RemoteDataframe(wait(postAsync[String, DataframeResponse]("df/sql", sqlText)))
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  // Test suite
+  ////////////////////////////////////////////////////////////////////
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createOrReplaceCylinderBands()
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  // REST APIs
+  ////////////////////////////////////////////////////////////////////
 
   def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
     Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> routes ~> check {
@@ -51,7 +75,9 @@ abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
   /**
     * Send an asynchronous command and wait for the result, using exponential-backoff
     */
-  def postAndWait[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E]): Future[SerializableResult] =
+  def postAsync[E, R](url: String, entity: E)
+                     (implicit emE: ToEntityMarshaller[E],
+                      emR: ToEntityMarshaller[R]): Future[R] = {
     post(url, entity) {
       responseAs[FutureResult]
     } ~> { futureResult =>
@@ -76,25 +102,39 @@ abstract class AbstractRouteSuite extends FunSuite with TestPropertyHelper
                 throw ServerException(Some(serializableResult.requestId),
                   "Unknown server error", None)
             }
-          case RequestStatuses.FINISHED => serializableResult
+          case RequestStatuses.FINISHED =>
+            assert(serializableResult.response.nonEmpty)
+            serializableResult.response.get.convertTo[R]
           case s => throw new IllegalStateException(s"Invalid result status: $s")
         }
       }
     }
+  }
 
-  private def login() = Post(s"/${Routes.API_VERSION}/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
-    assert(status === StatusCodes.OK)
-    val responseCookies = headers.filter(_.name().startsWith("Set-"))
-    assert(responseCookies.nonEmpty)
+  ////////////////////////////////////////////////////////////////////
+  // Helpers
+  ////////////////////////////////////////////////////////////////////
 
-    responseCookies.flatMap {
-      case akkaHeaders.`Set-Cookie`(c) => c.name.toUpperCase() match {
-        case "XSRF-TOKEN" =>
-          Seq(akkaHeaders.RawHeader("X-XSRF-TOKEN", c.value), akkaHeaders.Cookie(c.name, c.value))
-        case _ => Seq(akkaHeaders.Cookie(c.name, c.value))
+  private def login() = {
+    Post(s"/${Routes.API_VERSION}/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
+      assert(status === StatusCodes.OK)
+      val responseCookies = headers.filter(_.name().startsWith("Set-"))
+      assert(responseCookies.nonEmpty)
+
+      responseCookies.flatMap {
+        case akkaHeaders.`Set-Cookie`(c) => c.name.toUpperCase() match {
+          case "XSRF-TOKEN" =>
+            Seq(akkaHeaders.RawHeader("X-XSRF-TOKEN", c.value), akkaHeaders.Cookie(c.name, c.value))
+          case _ => Seq(akkaHeaders.Cookie(c.name, c.value))
+        }
+        case h =>
+          Seq(akkaHeaders.RawHeader(h.name().substring(4), h.value()))
       }
-      case h =>
-        Seq(akkaHeaders.RawHeader(h.name().substring(4), h.value()))
     }
   }
+
+  protected def wait[T](awaitable: Awaitable[T]): T = Await.result(awaitable, Duration.Inf)
+
+  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe = RemoteDataframe(wait(awaitable))
+
 }
