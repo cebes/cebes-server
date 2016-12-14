@@ -12,7 +12,7 @@
  * Created by phvu on 10/09/16.
  */
 
-package io.cebes.server.helpers
+package io.cebes.client
 
 import java.util.concurrent.TimeUnit
 
@@ -36,15 +36,14 @@ import scala.util.{Failure, Random, Success, Try}
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
   */
-class Client extends LazyLogging {
+class Client(host: String, port: Int) extends LazyLogging {
 
   implicit val actorSystem: ActorSystem = Client.system
   implicit val actorMaterializer: ActorMaterializer = Client.materializer
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
-  lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](
-    HttpServerTest.httpInterface, HttpServerTest.httpPort)
+  lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](host, port)
 
   lazy val cebesQueue = Source.queue[(HttpRequest, Promise[HttpResponse])](10, OverflowStrategy.dropNew)
     .via(cebesPoolFlow).toMat(Sink.foreach({

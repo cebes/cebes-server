@@ -20,11 +20,13 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
-import io.cebes.server.helpers.{RemoteDataframe, ServerException, TestDataHelper}
+import io.cebes.client.{RemoteDataframe, ServerException}
+import io.cebes.server.helpers.TestDataHelper
 import io.cebes.server.models._
 import io.cebes.server.routes.df.CebesDfProtocol._
 import io.cebes.server.util.Retries
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import org.scalatest.FunSuite
+import spray.json.JsonFormat
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable, ExecutionContextExecutor, Future}
@@ -35,7 +37,7 @@ import scala.util.{Failure, Success, Try}
   * logging in and storing cookies, etc...
   */
 abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
-  with ScalatestRouteTest with Routes with BeforeAndAfterAll {
+  with ScalatestRouteTest with Routes {
 
   //TODO: implement a better way to load the data (e.g. create a HTTP endpoint for testing purpose)
 
@@ -51,16 +53,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   override def sendSql(sqlText: String): RemoteDataframe = {
-    RemoteDataframe(wait(postAsync[String, DataframeResponse]("df/sql", sqlText)))
-  }
-
-  ////////////////////////////////////////////////////////////////////
-  // Test suite
-  ////////////////////////////////////////////////////////////////////
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    createOrReplaceCylinderBands()
+    RemoteDataframe(wait(postAsync[String, DataframeResponse]("df/sql", sqlText)).id)
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -77,7 +70,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
     */
   def postAsync[E, R](url: String, entity: E)
                      (implicit emE: ToEntityMarshaller[E],
-                      emR: ToEntityMarshaller[R]): Future[R] = {
+                      jfR: JsonFormat[R]): Future[R] = {
     post(url, entity) {
       responseAs[FutureResult]
     } ~> { futureResult =>
@@ -135,6 +128,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
 
   protected def wait[T](awaitable: Awaitable[T]): T = Await.result(awaitable, Duration.Inf)
 
-  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe = RemoteDataframe(wait(awaitable))
+  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe =
+    RemoteDataframe(wait(awaitable).id)
 
 }

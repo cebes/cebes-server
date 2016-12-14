@@ -18,8 +18,14 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.server.models._
 import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.df.CebesDfProtocol._
+import org.scalatest.BeforeAndAfterAll
 
-class DataframeHandlerSuite extends AbstractRouteSuite {
+class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createOrReplaceCylinderBands()
+  }
 
   test("sample") {
     val df = getCylinderBands

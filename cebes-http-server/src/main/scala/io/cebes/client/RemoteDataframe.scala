@@ -12,11 +12,9 @@
  * Created by phvu on 14/12/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.client
 
 import java.util.UUID
-
-import io.cebes.server.models.DataframeResponse
 
 /**
   * A dummy object for representing the Dataframe on the server.
@@ -24,8 +22,3 @@ import io.cebes.server.models.DataframeResponse
   * @param id ID of the Dataframe
   */
 case class RemoteDataframe(id: UUID)
-
-object RemoteDataframe {
-
-  def apply(result: DataframeResponse): RemoteDataframe = new RemoteDataframe(result.id)
-}

@@ -14,14 +14,12 @@
 
 package io.cebes.server.routes.auth
 
-import io.cebes.server.helpers.Client
-import org.scalatest.FunSuite
+import io.cebes.server.routes.AbstractRouteSuite
 
 
-class AuthHandlerSuite(val client: Client) extends FunSuite {
+class AuthHandlerSuite extends AbstractRouteSuite {
 
   test("login") {
-    Thread.sleep(1000)
     assert((3 + 1) !== 2)
   }
 }

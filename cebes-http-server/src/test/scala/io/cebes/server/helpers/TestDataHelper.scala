@@ -14,6 +14,7 @@
 
 package io.cebes.server.helpers
 
+import io.cebes.client.RemoteDataframe
 import io.cebes.util.ResourceUtil
 
 /**
