@@ -22,4 +22,6 @@ object TableNames {
   val REFRESH_TOKENS = "persistence_refresh_tokens"
 
   val RESULT_STORE = "persistence_result_store"
+
+  val DF_STORE = "dataframe_store"
 }

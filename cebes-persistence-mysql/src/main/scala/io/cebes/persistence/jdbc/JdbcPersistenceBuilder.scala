@@ -41,7 +41,7 @@ case class JdbcPersistenceBuilder[K, V] private(url: String,
                                                 suggestedTableName: String,
                                                 driver: String = "com.mysql.cj.jdbc.Driver",
                                                 valueSchema: Seq[JdbcPersistenceColumn] = Nil,
-                                                sqlToValue: Option[ResultSet => V] = None,
+                                                sqlToValue: Option[(K, ResultSet) => V] = None,
                                                 valueToSeq: Option[V => Seq[Any]] = None
                                                ) {
 
@@ -76,7 +76,7 @@ case class JdbcPersistenceBuilder[K, V] private(url: String,
     JdbcPersistenceBuilder[K, V](url, userName, password, suggestedTableName,
       driver, schema, sqlToValue, valueToSeq)
 
-  def withSqlToValue(f: ResultSet => V): JdbcPersistenceBuilder[K, V] =
+  def withSqlToValue(f: (K, ResultSet) => V): JdbcPersistenceBuilder[K, V] =
     JdbcPersistenceBuilder[K, V](url, userName, password, suggestedTableName,
       driver, valueSchema, Some(f), valueToSeq)
 

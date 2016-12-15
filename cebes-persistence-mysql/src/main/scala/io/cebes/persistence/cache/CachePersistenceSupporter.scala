@@ -28,14 +28,14 @@ class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V]
 
   @throws[NoSuchElementException]("If the key doesn't exist")
   override def load(key: K): V = {
-    persistence.lookup(key) match {
+    persistence.get(key) match {
       case Some(v) => v
       case None => throw new NoSuchElementException(s"Key ${key.toString} not found in the persistence storage")
     }
   }
 
   override def onRemoval(notification: RemovalNotification[K, V]): Unit = {
-    persistence.store(notification.getKey, notification.getValue)
+    persistence.add(notification.getKey, notification.getValue)
   }
 
 }

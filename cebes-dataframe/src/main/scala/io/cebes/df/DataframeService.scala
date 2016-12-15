@@ -18,6 +18,8 @@ import java.util.UUID
 
 trait DataframeService {
 
+  protected val dfStore: DataframeStore
+
   /**
     * Executes a SQL query, returning the result as a [[Dataframe]].
     *
@@ -29,5 +31,18 @@ trait DataframeService {
   /**
     * Sample the given [[Dataframe]]
     */
-  def sample(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
+  def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
+
+  /////////////////////////////////////////////////////////////////////
+  // Helpers
+  /////////////////////////////////////////////////////////////////////
+
+  /**
+    * Add the Dataframe to the store, and return the dataframe
+    */
+  def addToStore(op: => Dataframe): Dataframe = {
+    val df = op
+    dfStore.add(df)
+    df
+  }
 }

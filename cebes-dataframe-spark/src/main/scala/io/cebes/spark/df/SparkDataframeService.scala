@@ -17,7 +17,7 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import com.google.inject.Inject
-import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.df.{Dataframe, DataframeService, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 
 /**
@@ -25,13 +25,17 @@ import io.cebes.spark.config.HasSparkSession
   *
   * This class can be instantiated multiple times from the DI framework
   */
-class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession) extends DataframeService {
+class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
+                                      override val dfStore: DataframeStore) extends DataframeService {
 
   private val sparkSession = hasSparkSession.session
 
-  def sql(sqlText: String): Dataframe = {
+
+  def sql(sqlText: String): Dataframe = addToStore {
     new SparkDataframe(sparkSession.sql(sqlText))
   }
 
-  override def sample(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = ???
+  override def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = addToStore {
+    dfStore(dfId).sample(withReplacement, fraction, seed)
+  }
 }

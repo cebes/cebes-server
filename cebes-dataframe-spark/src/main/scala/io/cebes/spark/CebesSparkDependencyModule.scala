@@ -15,6 +15,7 @@
 package io.cebes.spark
 
 import com.google.inject.AbstractModule
+import io.cebes.df.DataframeStore
 import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
 
 
@@ -22,5 +23,6 @@ class CebesSparkDependencyModule extends AbstractModule {
 
   protected def configure(): Unit = {
     bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
+    bind(classOf[DataframeStore])
   }
 }
