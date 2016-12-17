@@ -38,14 +38,14 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
                                                  val keyColumnName: String = "key",
                                                  val valueSchema: Seq[JdbcPersistenceColumn],
                                                  val valueToSql: V => Seq[Any],
-                                                 val sqlToValue: ResultSet => V
+                                                 val sqlToValue: (K, ResultSet) => V
                                                 ) extends KeyValuePersistence[K, V] with LazyLogging {
 
   /////////////////////////////////////////////////////////////////////////////
   // KeyValuePersistence APIs
   /////////////////////////////////////////////////////////////////////////////
 
-  override def store(key: K, value: V): Unit = withConnection { c =>
+  override def add(key: K, value: V): Unit = withConnection { c =>
     val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
     val updatePlaceHolder = valueSchema.map(col => s"`${col.name}` = ?").mkString(", ")
 
@@ -67,14 +67,14 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
   }
 
-  override def lookup(key: K): Option[V] = withConnection { c =>
+  override def get(key: K): Option[V] = withConnection { c =>
     val stmt = c.prepareStatement(s"SELECT * FROM $tableName WHERE `$keyColumnName` = ?")
     stmt.setString(1, key.toString)
 
     JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
       JdbcUtil.cleanJdbcCall(s.executeQuery())(_.close()) { result =>
         if (result.next()) {
-          Some(sqlToValue(result))
+          Some(sqlToValue(key, result))
         } else {
           None
         }

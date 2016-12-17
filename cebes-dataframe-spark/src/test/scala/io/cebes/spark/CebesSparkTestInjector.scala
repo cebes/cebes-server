@@ -17,9 +17,13 @@ package io.cebes.spark
 import com.google.inject.{Guice, Injector, Stage}
 import io.cebes.prop.PropertyModule
 
+import scala.reflect.ClassTag
+
 object CebesSparkTestInjector {
 
-  lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
+  private lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
     new PropertyModule(true),
     new CebesSparkDependencyModule)
+
+  def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

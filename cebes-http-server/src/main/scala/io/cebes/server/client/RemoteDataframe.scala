@@ -9,23 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 09/09/16.
+ * Created by phvu on 14/12/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.server.client
 
-import com.google.inject.{Guice, Injector, Stage}
-import io.cebes.prop.PropertyModule
-import io.cebes.server.inject.CebesHttpDependencyModule
-import io.cebes.spark.CebesSparkDependencyModule
+import java.util.UUID
 
-object TestInjector {
-
-  lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
-    new PropertyModule(true),
-    new CebesHttpDependencyModule,
-    new CebesSparkDependencyModule)
-
-
-  def instance[T](t: Class[T]):T = injector.getInstance(t)
-}
+/**
+  * A dummy object for representing the Dataframe on the server.
+  * This is only used for the client
+  * @param id ID of the Dataframe
+  */
+case class RemoteDataframe(id: UUID)

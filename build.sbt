@@ -22,21 +22,21 @@ lazy val cebesProperties = project.in(file("cebes-properties")).
 lazy val cebesAuth = project.in(file("cebes-auth")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
-lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
-  disablePlugins(AssemblyPlugin).
-  settings(commonSettings: _*).
-  dependsOn(cebesProperties)
-
 lazy val cebesDataframe = project.in(file("cebes-dataframe")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
+
+lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
+  disablePlugins(AssemblyPlugin).
+  settings(commonSettings: _*).
+  dependsOn(cebesProperties, cebesDataframe)
 lazy val cebesDataframeSpark = project.in(file("cebes-dataframe-spark")).
   settings(commonSettings: _*).
   disablePlugins(AssemblyPlugin).
-  dependsOn(cebesDataframe, cebesProperties)
+  dependsOn(cebesPersistenceMysql)
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
-  dependsOn(cebesAuth, cebesPersistenceMysql, cebesDataframeSpark)
+  dependsOn(cebesAuth, cebesDataframeSpark)
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).

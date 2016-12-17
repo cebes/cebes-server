@@ -14,33 +14,20 @@
 
 package io.cebes.server.helpers
 
-import io.cebes.server.http.HttpServer
-import io.cebes.server.inject.InjectorService
+import com.google.inject.{Guice, Injector, Stage}
+import io.cebes.prop.PropertyModule
+import io.cebes.server.inject.CebesHttpDependencyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
-object HttpServerTest {
+import scala.reflect.ClassTag
 
-  private val server = InjectorService.injector.getInstance(classOf[HttpServer])
-  @volatile private var counter: Int = 0
+object CebesHttpServerTestInjector {
 
-  lazy val httpInterface = server.httpInterface
+  private lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
+    new PropertyModule(true),
+    new CebesHttpDependencyModule,
+    new CebesSparkDependencyModule)
 
-  lazy val httpPort = server.httpPort
 
-  def register(): Unit = {
-    synchronized {
-      if (counter <= 0) {
-        server.start()
-      }
-      counter += 1
-    }
-  }
-
-  def unregister(): Unit = {
-    synchronized {
-      counter -= 1
-      if (counter <= 0) {
-        server.stop()
-      }
-    }
-  }
+  def instance[T](implicit tag: ClassTag[T]):T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

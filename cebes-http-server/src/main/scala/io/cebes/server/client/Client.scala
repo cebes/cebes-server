@@ -12,7 +12,7 @@
  * Created by phvu on 10/09/16.
  */
 
-package io.cebes.server.helpers
+package io.cebes.server.client
 
 import java.util.concurrent.TimeUnit
 
@@ -25,7 +25,7 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.server.models.{FailResponse, FutureResult, RequestStatus, SerializableResult}
+import io.cebes.server.models.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
 import spray.json.JsonFormat
 
 import scala.collection.immutable
@@ -36,15 +36,14 @@ import scala.util.{Failure, Random, Success, Try}
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
   */
-class Client extends LazyLogging {
+class Client(host: String, port: Int) extends LazyLogging {
 
   implicit val actorSystem: ActorSystem = Client.system
   implicit val actorMaterializer: ActorMaterializer = Client.materializer
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
-  lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](
-    HttpServerTest.httpInterface, HttpServerTest.httpPort)
+  lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](host, port)
 
   lazy val cebesQueue = Source.queue[(HttpRequest, Promise[HttpResponse])](10, OverflowStrategy.dropNew)
     .via(cebesPoolFlow).toMat(Sink.foreach({
@@ -62,6 +61,21 @@ class Client extends LazyLogging {
 
   @volatile var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
 
+
+  /**
+    * Send a POST request.
+    * This is an alias of [[requestAndWait()]] with method = [[HttpMethods.POST]]
+    */
+  def postAndWait[RequestType, ResponseType](uri: String,
+                                             content: RequestType)
+                                            (implicit ma: ToEntityMarshaller[RequestType],
+                                             ua: FromEntityUnmarshaller[FutureResult],
+                                             uaSerializableResult: FromEntityUnmarshaller[SerializableResult],
+                                             uaFail: FromEntityUnmarshaller[FailResponse],
+                                             jfResponse: JsonFormat[ResponseType],
+                                             jfFail: JsonFormat[FailResponse],
+                                             ec: ExecutionContext): Option[ResponseType] =
+    requestAndWait(HttpMethods.POST, uri, content)(ma, ua, uaSerializableResult, uaFail, jfResponse, jfFail, ec)
 
   /**
     * Send an asynchronous request, and wait for a result
@@ -86,7 +100,7 @@ class Client extends LazyLogging {
 
     val result = wait(futureResult)
     result.status match {
-      case RequestStatus.FINISHED =>
+      case RequestStatuses.FINISHED =>
         result.response.map(_.convertTo[ResponseType])
       case s =>
         throw new RuntimeException(s"Request status: $s")
@@ -113,7 +127,7 @@ class Client extends LazyLogging {
       result match {
         case Success(serializableResult) =>
           serializableResult.status match {
-            case RequestStatus.FAILED =>
+            case RequestStatuses.FAILED =>
               // TODO: decide on whether we should throw exception here
               // try to throw an exception if it is a FailResponse
               serializableResult.response match {
@@ -131,7 +145,7 @@ class Client extends LazyLogging {
                   throw ServerException(Some(serializableResult.requestId),
                     "Unknown server error", None)
               }
-            case RequestStatus.FINISHED =>
+            case RequestStatuses.FINISHED =>
               return serializableResult
             case _ =>
               cnt += 1

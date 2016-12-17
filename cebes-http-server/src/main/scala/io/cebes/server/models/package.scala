@@ -16,24 +16,23 @@ package io.cebes.server
 
 import java.util.UUID
 
-import io.cebes.server.models.RequestStatus.RequestStatusEnum
+import io.cebes.server.models.RequestStatuses.RequestStatus
 import io.cebes.storage.DataFormats
 import io.cebes.storage.DataFormats.DataFormat
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, deserializationError}
 
 package object models {
 
-  object RequestStatus {
-    sealed abstract class RequestStatusEnum(val name: String)
+  object RequestStatuses {
+    sealed abstract class RequestStatus(val name: String)
 
-    case object SCHEDULED extends RequestStatusEnum("scheduled")
-    case object STARTED extends RequestStatusEnum("started")
-    case object FINISHED extends RequestStatusEnum("finished")
-    case object FAILED extends RequestStatusEnum("failed")
+    case object SCHEDULED extends RequestStatus("scheduled")
+    case object FINISHED extends RequestStatus("finished")
+    case object FAILED extends RequestStatus("failed")
 
-    val values = Seq(SCHEDULED, STARTED, FINISHED, FAILED)
+    val values = Seq(SCHEDULED, FINISHED, FAILED)
 
-    def fromString(name: String): Option[RequestStatusEnum] = values.find(_.name == name)
+    def fromString(name: String): Option[RequestStatus] = values.find(_.name == name)
   }
 
   // Objects in requests
@@ -66,7 +65,7 @@ package object models {
   case class FutureResult(requestId: UUID)
 
   case class SerializableResult(requestId: UUID,
-                                status: RequestStatus.RequestStatusEnum,
+                                status: RequestStatuses.RequestStatus,
                                 response: Option[JsValue],
                                 request: Option[JsValue])
 
@@ -99,7 +98,7 @@ package object models {
       }
     }
 
-    implicit object DataFormatEnumFormat extends JsonFormat[DataFormat] {
+    implicit object DataFormatFormat extends JsonFormat[DataFormat] {
       override def write(obj: DataFormat): JsValue = JsString(obj.name)
 
       override def read(json: JsValue): DataFormat = json match {
@@ -111,11 +110,11 @@ package object models {
       }
     }
 
-    implicit object RequestStatusEnumFormat extends JsonFormat[RequestStatusEnum] {
-      override def write(obj: RequestStatusEnum): JsValue = JsString(obj.name)
+    implicit object RequestStatusFormat extends JsonFormat[RequestStatus] {
+      override def write(obj: RequestStatus): JsValue = JsString(obj.name)
 
-      override def read(json: JsValue): RequestStatusEnum = json match {
-        case JsString(fmtName) => RequestStatus.fromString(fmtName) match {
+      override def read(json: JsValue): RequestStatus = json match {
+        case JsString(fmtName) => RequestStatuses.fromString(fmtName) match {
           case Some(fmt) => fmt
           case None => deserializationError(s"Unrecognized Request Status: $fmtName")
         }

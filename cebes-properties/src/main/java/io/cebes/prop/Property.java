@@ -36,9 +36,13 @@ public enum Property {
     HIVE_METASTORE_PASSWORD("CEBES_HIVE_METASTORE_PASSWORD", "cebes.hive.metastore.password", "",
             "Password for the hive metastore"),
 
+    CACHESPEC_DF_STORE("CEBES_CACHESPEC_DF_STORE", "cebes.cachespec.df.store",
+            "maximumSize=1000,expireAfterAccess=30m",
+            "Spec for the cache used for dataframe storage in cebes-dataframe-spark"),
+
     // Non-essential properties
     CACHESPEC_RESULT_STORE("CEBES_CACHESPEC_RESULT_STORE", "cebes.cachespec.result.store",
-            "maximumSize=1000,expireAfterAccess=30m",
+            "maximumSize=100,expireAfterAccess=30m",
             "Spec for the cache used for result storage in cebes-http-server"),
 
     // MYSQL backend

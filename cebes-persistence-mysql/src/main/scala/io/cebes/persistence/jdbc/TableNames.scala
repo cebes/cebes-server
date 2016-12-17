@@ -15,11 +15,13 @@
 package io.cebes.persistence.jdbc
 
 /**
-  * Names of all MySQL tables used in cebes-server
+  * Names of all MySQL tables used in the MySQL backend of cebes-server
   */
 object TableNames {
 
   val REFRESH_TOKENS = "persistence_refresh_tokens"
 
   val RESULT_STORE = "persistence_result_store"
+
+  val DF_STORE = "dataframe_store"
 }

@@ -9,23 +9,29 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/11/2016.
+ * Created by phvu on 29/11/2016.
  */
 
 package io.cebes.persistence
 
+import scala.collection.mutable
+
 /**
-  * A general trait for key-value persistent storage
+  * A simple implementation of [[KeyValuePersistence]], using a mutable HashMap
   */
-trait KeyValuePersistence[K, V] {
+class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyValuePersistence[K, V] {
+
+  def this() = this(mutable.HashMap.empty[K, V])
+
+  def this(initials: Map[K, V]) = this(mutable.HashMap(initials.toSeq: _*))
 
   /**
     * Store the value associated with the key.
     * When the key is existed, its value will be updated
     */
-  def store(key: K, value: V): Unit
+  override def add(key: K, value: V): Unit = map.put(key, value)
 
-  def lookup(key: K): Option[V]
+  override def get(key: K): Option[V] = map.get(key)
 
-  def remove(key: K): Unit
+  override def remove(key: K): Unit = map.remove(key)
 }

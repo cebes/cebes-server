@@ -22,23 +22,23 @@ import io.cebes.storage.{DataFormats, DataSource, DataWriter}
 /**
   * A JDBC data source
   *
-  * @param url            JDBC URL
-  * @param tableName      name of the table
-  * @param userName       user name
-  * @param password password, encoded with base64 (with UTF-8 charset)
+  * @param url       JDBC URL
+  * @param tableName name of the table
+  * @param userName  user name
+  * @param password  password, encoded with base64 (with UTF-8 charset)
   */
-class JdbcDataSource(val url: String,
-                     val tableName: String,
-                     val userName: String,
-                     val password: String,
-                     val driver: Option[String]) extends DataSource {
+case class JdbcDataSource(url: String,
+                          tableName: String,
+                          userName: String,
+                          password: String,
+                          driver: Option[String]) extends DataSource {
 
   /**
     * Ignored. Data format doesn't play any role in this data source.
     */
   override val format: DataFormat = DataFormats.UNKNOWN
 
-  def sparkProperties() = {
+  def sparkProperties(): Properties = {
     val prop = new Properties()
     prop.setProperty("user", userName)
     prop.setProperty("password", password)

@@ -48,6 +48,11 @@ trait AsyncExecutor[E, T, R] extends LazyLogging {
   val resultStorage: ResultStorage
 
   /**
+    * Name of the current executor
+    */
+  val name: String = getClass.getName.toLowerCase
+
+  /**
     * Implement this to do the real work
     */
   protected def runImpl(requestEntity: E)(implicit ec: ExecutionContext): Future[T]
@@ -76,11 +81,11 @@ trait AsyncExecutor[E, T, R] extends LazyLogging {
     val requestId = java.util.UUID.randomUUID()
 
     resultStorage.saveWithRetry {
-      SerializableResult(requestId, RequestStatus.SCHEDULED, None, requestJson)
+      SerializableResult(requestId, RequestStatuses.SCHEDULED, None, requestJson)
     }.map { _ =>
       runImpl(requestEntity).onComplete {
         case Success(t) =>
-          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatus.FINISHED,
+          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatuses.FINISHED,
             this.transformResult(requestEntity, t).map(_.toJson), requestJson)).onFailure {
             case f => logger.error(s"Failed to save FINISHED result for request $requestId", f)
           }
@@ -90,9 +95,9 @@ trait AsyncExecutor[E, T, R] extends LazyLogging {
           val pw = new PrintWriter(sw)
           t.printStackTrace(pw)
 
-          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatus.FAILED,
+          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatuses.FAILED,
             Some(FailResponse(Option(t.getMessage), Option(sw.toString)).toJson), requestJson)).onFailure {
-            case f => logger.error(s"Failed to save FINISHED result for request $requestId", f)
+            case f => logger.error(s"Failed to save FAILED result for request $requestId", f)
           }
       }
       FutureResult(requestId)

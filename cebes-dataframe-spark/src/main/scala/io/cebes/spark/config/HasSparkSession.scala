@@ -48,7 +48,7 @@ class HasSparkSessionProvider @Inject()
                                       hiveMetastoreUser: String,
                                       hiveMetastorePwd: String) extends HasSparkSession {
 
-  lazy val session = localSessionBuilder.getOrCreate()
+  lazy val session: SparkSession = localSessionBuilder.getOrCreate()
 
   lazy val localSessionBuilder: SparkSession.Builder = {
     val builder = SparkSession.builder()
@@ -78,7 +78,7 @@ class HasSparkSessionProvider @Inject()
 
 @Singleton class HasSparkSessionYarn extends HasSparkSession {
 
-  lazy val session = SparkSession.builder()
+  lazy val session: SparkSession = SparkSession.builder()
     .appName("Cebes service on Spark (YARN)")
     .enableHiveSupport()
     .master("yarn").getOrCreate()

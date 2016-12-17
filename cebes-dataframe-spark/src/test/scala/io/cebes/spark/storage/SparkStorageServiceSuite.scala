@@ -26,6 +26,8 @@ import io.cebes.storage.DataFormats
 import io.cebes.storage.localfs.LocalFsDataSource
 import io.cebes.util.ResourceUtil
 
+import scala.util.Try
+
 class SparkStorageServiceSuite extends CebesBaseSuite with TestPropertyHelper with TestDataHelper
   with StrictLogging {
 
@@ -85,14 +87,10 @@ class SparkStorageServiceSuite extends CebesBaseSuite with TestPropertyHelper wi
   }
 
   test("Read/write data from/to JDBC", JdbcTestsEnabled) {
-    val jdbcSrc = new JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
+    val jdbcSrc = JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
       properties.jdbcUsername, properties.jdbcPassword, Option(properties.jdbcDriver))
 
-    try {
-      val df2 = sparkStorageService.read(jdbcSrc)
-      assert(df2.numCols === 40)
-      assert(df2.numRows === 540)
-    } catch {
+    val tryVal = Try(sparkStorageService.read(jdbcSrc)).recoverWith {
       case ex: Exception =>
         logger.error("Exception when reading from JDBC", ex)
 
@@ -101,10 +99,11 @@ class SparkStorageServiceSuite extends CebesBaseSuite with TestPropertyHelper wi
         assert(df.numRows === 540)
 
         sparkStorageService.write(df, jdbcSrc)
-        val df2 = sparkStorageService.read(jdbcSrc)
-        assert(df2.numCols === 40)
-        assert(df2.numRows === 540)
+        Try(df)
     }
+    assert(tryVal.isSuccess)
+    assert(tryVal.get.numCols === 40)
+    assert(tryVal.get.numRows === 540)
   }
 
   test("Read/write data from/to HDFS") {

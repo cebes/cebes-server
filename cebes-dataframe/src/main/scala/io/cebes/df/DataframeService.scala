@@ -14,6 +14,8 @@
 
 package io.cebes.df
 
+import java.util.UUID
+
 trait DataframeService {
 
   /**
@@ -24,4 +26,8 @@ trait DataframeService {
     */
   def sql(sqlText: String): Dataframe
 
+  /**
+    * Sample the given [[Dataframe]]
+    */
+  def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
 }

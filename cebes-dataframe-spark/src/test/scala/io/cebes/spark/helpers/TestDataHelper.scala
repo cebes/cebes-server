@@ -26,11 +26,9 @@ import io.cebes.util.ResourceUtil
   */
 trait TestDataHelper {
 
-  val sparkStorageService: StorageService =
-    CebesSparkTestInjector.injector.getInstance(classOf[SparkStorageService])
+  val sparkStorageService: StorageService = CebesSparkTestInjector.instance[SparkStorageService]
 
-  val sparkDataframeService: DataframeService =
-    CebesSparkTestInjector.injector.getInstance(classOf[SparkDataframeService])
+  val sparkDataframeService: DataframeService = CebesSparkTestInjector.instance[SparkDataframeService]
 
   def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): Dataframe = {
     sparkDataframeService.sql(s"DROP TABLE IF EXISTS $tableName")

@@ -21,7 +21,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
-import io.cebes.server.inject.InjectorService
+import io.cebes.server.inject.CebesHttpServerInjector
 import io.cebes.server.models.CebesJsonProtocol._
 import io.cebes.server.models.ReadRequest
 
@@ -40,12 +40,12 @@ trait StorageHandler extends SecuredSession {
       (path("read") & post) {
         entity(as[ReadRequest]) { readRequest =>
           implicit ctx =>
-            InjectorService.instance(classOf[Read]).run(readRequest).flatMap(ctx.complete(_))
+            CebesHttpServerInjector.instance[Read].run(readRequest).flatMap(ctx.complete(_))
         }
       } ~ (path("upload") & put) {
         entity(as[Multipart.FormData]) { formData =>
           implicit ctx =>
-            InjectorService.instance(classOf[Upload]).run(formData).flatMap(ctx.complete(_))
+            CebesHttpServerInjector.instance[Upload].run(formData).flatMap(ctx.complete(_))
         }
       }
     }

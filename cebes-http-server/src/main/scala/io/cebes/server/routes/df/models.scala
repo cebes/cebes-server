@@ -9,26 +9,20 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 21/09/16.
+ * Created by phvu on 13/12/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.server.routes.df
 
 import java.util.UUID
 
-case class ServerException(requestId: Option[UUID],
-                           message: String,
-                           serverStacktrace: Option[String]) extends Exception(message) {
+import io.cebes.server.models.CebesJsonProtocol
 
-  override def toString: String = {
-    val s = getClass.getName
-    val result = Option(getLocalizedMessage) match {
-      case Some(msg) => s"$s: $msg"
-      case None => s
-    }
-    serverStacktrace match {
-      case Some(str) => s"$result\nServer Stacktrace: $str"
-      case None => result
-    }
-  }
+private[server] case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
+
+private[server] trait CebesDfProtocol extends CebesJsonProtocol {
+
+  implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
 }
+
+private[server] object CebesDfProtocol extends CebesDfProtocol

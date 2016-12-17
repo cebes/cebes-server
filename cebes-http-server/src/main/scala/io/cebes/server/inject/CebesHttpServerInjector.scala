@@ -18,9 +18,11 @@ import com.google.inject.{Guice, Injector, Stage}
 import io.cebes.prop.PropertyModule
 import io.cebes.spark.CebesSparkDependencyModule
 
-object InjectorService {
+import scala.reflect.ClassTag
 
-  lazy val injector: Injector = Guice.createInjector(Stage.PRODUCTION,
+object CebesHttpServerInjector {
+
+  private lazy val injector: Injector = Guice.createInjector(Stage.PRODUCTION,
     new PropertyModule(false),
     new CebesHttpDependencyModule,
     new CebesSparkDependencyModule)
@@ -28,9 +30,8 @@ object InjectorService {
   /**
     * Short-hand for getting an instance from the DI framework
     *
-    * @param t normally classOf[T]
     * @tparam T type of the class to obtain an instance
     * @return instance of type T
     */
-  def instance[T](t: Class[T]): T = injector.getInstance(t)
+  def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

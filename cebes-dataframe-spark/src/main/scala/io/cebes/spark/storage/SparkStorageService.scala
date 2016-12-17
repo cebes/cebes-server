@@ -15,7 +15,7 @@
 package io.cebes.spark.storage
 
 import com.google.inject.Inject
-import io.cebes.df.Dataframe
+import io.cebes.df.{Dataframe, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 import io.cebes.spark.df.SparkDataframe
 import io.cebes.spark.storage.hdfs.HdfsDataSource
@@ -31,7 +31,8 @@ import io.cebes.storage.{DataFormats, DataSource, StorageService}
   *
   * This class can be instantiated multiple times from the DI framework
   */
-class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends StorageService with CebesSparkUtil {
+class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
+                                    dfStore: DataframeStore) extends StorageService with CebesSparkUtil {
 
   private val sparkSession = hasSparkSession.session
 
@@ -105,6 +106,8 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession) extends St
           case DataFormats.UNKNOWN => sparkSession.read.load(srcPath)
         }
     }
-    new SparkDataframe(sparkDf)
+    val df = new SparkDataframe(sparkDf)
+    dfStore.add(df)
+    df
   }
 }

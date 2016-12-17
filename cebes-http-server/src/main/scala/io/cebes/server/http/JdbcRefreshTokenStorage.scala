@@ -38,16 +38,18 @@ class JdbcRefreshTokenStorage @Inject()
         JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),
         JdbcPersistenceColumn("expires", "Long"))).
       withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires)).
-      withSqlToValue(r => Store(r.getString(1), r.getString(2), r.getLong(3))).build()
+      withSqlToValue {
+        case (_, r) => Store(r.getString(1), r.getString(2), r.getLong(3))
+      }.build()
 
   override def lookup(selector: String): Future[Option[RefreshTokenLookupResult[SessionData]]] = Future.successful {
-    persistence.lookup(selector).map { s =>
+    persistence.get(selector).map { s =>
       RefreshTokenLookupResult[SessionData](s.tokenHash, s.expires, () => SessionData(s.userName))
     }
   }
 
   override def store(data: RefreshTokenData[SessionData]): Future[Unit] = {
-    Future.successful(persistence.store(data.selector, Store(data.forSession.userName, data.tokenHash, data.expires)))
+    Future.successful(persistence.add(data.selector, Store(data.forSession.userName, data.tokenHash, data.expires)))
   }
 
   override def remove(selector: String): Future[Unit] = {

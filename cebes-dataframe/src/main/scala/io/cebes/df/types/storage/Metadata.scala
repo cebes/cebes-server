@@ -14,9 +14,7 @@
 
 package io.cebes.df.types.storage
 
-import scala.collection.mutable
-
-class Metadata(private[storage] val map: Map[String, Any]) {
+class Metadata(private[df] val map: Map[String, Any]) {
 
   /** Tests whether this Metadata contains a binding for a key. */
   def contains(key: String): Boolean = map.contains(key)
@@ -62,6 +60,12 @@ class Metadata(private[storage] val map: Map[String, Any]) {
               (ourValue, otherValue) match {
                 case (v0: Array[Long], v1: Array[Long]) => java.util.Arrays.equals(v0, v1)
                 case (v0: Array[Double], v1: Array[Double]) => java.util.Arrays.equals(v0, v1)
+                case (v0: Array[Long], v1: Array[Double]) =>
+                  // try to match Array[Long] and Array[Double] because of the confusion in JSON-serialization
+                  java.util.Arrays.equals(v0.map(_.toDouble), v1)
+                case (v0: Array[Double], v1: Array[Long]) =>
+                  // try to match Array[Long] and Array[Double] because of the confusion in JSON-serialization
+                  java.util.Arrays.equals(v0, v1.map(_.toDouble))
                 case (v0: Array[Boolean], v1: Array[Boolean]) => java.util.Arrays.equals(v0, v1)
                 case (v0: Array[AnyRef], v1: Array[AnyRef]) => java.util.Arrays.equals(v0, v1)
                 case (v0, v1) => v0 == v1
@@ -69,7 +73,7 @@ class Metadata(private[storage] val map: Map[String, Any]) {
             case None => false
           }
         }
-      case other =>
+      case _ =>
         false
     }
   }
@@ -92,6 +96,7 @@ object Metadata {
   /** Computes the hash code for the types we support. */
   private def hash(obj: Any): Int = {
     obj match {
+      case null => 0
       case map: Map[_, _] =>
         map.mapValues(hash).##
       case arr: Array[_] =>
@@ -110,71 +115,5 @@ object Metadata {
       case other =>
         throw new RuntimeException(s"Do not support type ${other.getClass}.")
     }
-  }
-}
-
-/**
-  *
-  * Builder for [[Metadata]]. If there is a key collision, the latter will overwrite the former.
-  */
-class MetadataBuilder {
-
-  private val map: mutable.Map[String, Any] = mutable.Map.empty
-
-  /** Returns the immutable version of this map.  Used for java interop. */
-  protected def getMap: Map[String, Any] = map.toMap
-
-  /** Include the content of an existing [[Metadata]] instance. */
-  def withMetadata(metadata: Metadata): this.type = {
-    map ++= metadata.map
-    this
-  }
-
-  /** Puts a null. */
-  def putNull(key: String): this.type = put(key, null)
-
-  /** Puts a Long. */
-  def putLong(key: String, value: Long): this.type = put(key, value)
-
-  /** Puts a Double. */
-  def putDouble(key: String, value: Double): this.type = put(key, value)
-
-  /** Puts a Boolean. */
-  def putBoolean(key: String, value: Boolean): this.type = put(key, value)
-
-  /** Puts a String. */
-  def putString(key: String, value: String): this.type = put(key, value)
-
-  /** Puts a [[Metadata]]. */
-  def putMetadata(key: String, value: Metadata): this.type = put(key, value)
-
-  /** Puts a Long array. */
-  def putLongArray(key: String, value: Array[Long]): this.type = put(key, value)
-
-  /** Puts a Double array. */
-  def putDoubleArray(key: String, value: Array[Double]): this.type = put(key, value)
-
-  /** Puts a Boolean array. */
-  def putBooleanArray(key: String, value: Array[Boolean]): this.type = put(key, value)
-
-  /** Puts a String array. */
-  def putStringArray(key: String, value: Array[String]): this.type = put(key, value)
-
-  /** Puts a [[Metadata]] array. */
-  def putMetadataArray(key: String, value: Array[Metadata]): this.type = put(key, value)
-
-  /** Builds the [[Metadata]] instance. */
-  def build(): Metadata = {
-    new Metadata(map.toMap)
-  }
-
-  private def put(key: String, value: Any): this.type = {
-    map.put(key, value)
-    this
-  }
-
-  def remove(key: String): this.type = {
-    map.remove(key)
-    this
   }
 }

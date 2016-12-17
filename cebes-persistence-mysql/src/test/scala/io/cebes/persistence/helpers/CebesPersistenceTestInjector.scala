@@ -17,7 +17,11 @@ package io.cebes.persistence.helpers
 import com.google.inject.{Guice, Injector, Stage}
 import io.cebes.prop.PropertyModule
 
+import scala.reflect.ClassTag
+
 object CebesPersistenceTestInjector {
 
-  lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT, new PropertyModule(true))
+  private lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT, new PropertyModule(true))
+
+  def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

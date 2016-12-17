@@ -14,8 +14,10 @@
 
 package io.cebes.spark.df
 
+import java.util.UUID
+
 import com.google.inject.Inject
-import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.df.{Dataframe, DataframeService, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 
 /**
@@ -23,17 +25,30 @@ import io.cebes.spark.config.HasSparkSession
   *
   * This class can be instantiated multiple times from the DI framework
   */
-class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession) extends DataframeService {
+class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
+                                      dfStore: DataframeStore) extends DataframeService {
 
-  val sparkSession = hasSparkSession.session
+  private val sparkSession = hasSparkSession.session
+
+
+  def sql(sqlText: String): Dataframe = addToStore {
+    new SparkDataframe(sparkSession.sql(sqlText))
+  }
+
+  override def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = addToStore {
+    dfStore(dfId).sample(withReplacement, fraction, seed)
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Helpers
+  /////////////////////////////////////////////////////////////////////////////
 
   /**
-    * Executes a SQL query, returning the result as a [[Dataframe]].
-    *
-    * @param sqlText the SQL command to run
-    * @return a [[Dataframe]] object
+    * Add the Dataframe to the store, and return the dataframe
     */
-  def sql(sqlText: String): Dataframe = {
-    new SparkDataframe(sparkSession.sql(sqlText))
+  private def addToStore(op: => Dataframe): Dataframe = {
+    val df = op
+    dfStore.add(df)
+    df
   }
 }

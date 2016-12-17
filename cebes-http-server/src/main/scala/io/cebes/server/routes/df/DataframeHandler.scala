@@ -14,26 +14,53 @@
 
 package io.cebes.server.routes.df
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{RequestContext, Route}
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
+import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
+import io.cebes.server.inject.CebesHttpServerInjector
+import io.cebes.server.routes.df.CebesDfProtocol._
+import spray.json._
+
+import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 
 /**
   * Handle all requests related to dataframe
   */
 trait DataframeHandler extends SecuredSession with LazyLogging {
 
-  val dataframeApi: Route = pathPrefix("df") {
-    path("tmp") {
-      post {
-        myRequiredSession { session =>
-          myInvalidateSession { ctx =>
-            logger.info(s"Logging out $session")
-            ctx.complete("ok")
-          }
-        }
+  implicit def actorSystem: ActorSystem
+
+  implicit def actorExecutor: ExecutionContext
+
+  implicit def actorMaterializer: Materializer
+
+  /**
+    * An operation done by class [[W]] (subclass of [[DataframeOperation]],
+    * with entity of type [[E]]
+    */
+  private def operation[W <: DataframeOperation[E], E](implicit umE: FromRequestUnmarshaller[E],
+                                                       jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
+    val workerName = tag.runtimeClass.asInstanceOf[Class[W]].getSimpleName.toLowerCase
+    (path(workerName) & post) {
+      entity(as[E]) { requestEntity =>
+        implicit ctx: RequestContext =>
+          CebesHttpServerInjector.instance[W].run(requestEntity).flatMap(ctx.complete(_))
       }
+    }
+  }
+
+  val dataframeApi: Route = pathPrefix("df") {
+    myRequiredSession { _ =>
+      concat(
+        operation[Sample, SampleRequest],
+        operation[Sql, String]
+      )
     }
   }
 }

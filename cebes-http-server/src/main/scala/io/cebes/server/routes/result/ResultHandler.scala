@@ -18,7 +18,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import io.cebes.server.http.SecuredSession
-import io.cebes.server.inject.InjectorService
+import io.cebes.server.inject.CebesHttpServerInjector
 import io.cebes.server.models.CebesJsonProtocol._
 
 import scala.concurrent.ExecutionContext
@@ -31,7 +31,7 @@ trait ResultHandler extends SecuredSession {
     (path(JavaUUID) & post) { requestId =>
       myRequiredSession { _ =>
         implicit ctx =>
-          InjectorService.instance(classOf[Result]).run(requestId).flatMap(r => ctx.complete(r))
+          CebesHttpServerInjector.instance[Result].run(requestId).flatMap(r => ctx.complete(r))
       }
     }
   }

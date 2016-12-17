@@ -18,7 +18,7 @@ import org.scalatest.{Ignore, Tag}
 
 trait TestPropertyHelper {
 
-  val properties: TestProperties = CebesPersistenceTestInjector.injector.getInstance(classOf[TestProperties])
+  val properties: TestProperties = CebesPersistenceTestInjector.instance[TestProperties]
 
   object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
 }

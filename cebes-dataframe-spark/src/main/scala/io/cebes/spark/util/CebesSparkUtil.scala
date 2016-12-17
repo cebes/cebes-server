@@ -64,8 +64,9 @@ trait CebesSparkUtil {
   /**
     * short-hand for returning a SparkDataframe, with proper exception handling
     */
-  @inline def withSparkDataFrame(df: => DataFrame, schema: Schema): SparkDataframe =
-  new SparkDataframe(safeSparkCall(df), schema)
+  @inline def withSparkDataFrame(df: => DataFrame, schema: Schema): SparkDataframe = {
+    new SparkDataframe(safeSparkCall(df), schema)
+  }
 }
 
 object CebesSparkUtil extends CebesSparkUtil
