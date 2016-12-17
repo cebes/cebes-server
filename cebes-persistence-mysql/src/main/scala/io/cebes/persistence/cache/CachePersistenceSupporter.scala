@@ -15,6 +15,7 @@
 package io.cebes.persistence.cache
 
 import com.google.common.cache._
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.KeyValuePersistence
 
 /**
@@ -22,9 +23,12 @@ import io.cebes.persistence.KeyValuePersistence
   * When the [[LoadingCache]] asks for a value, this will query the [[KeyValuePersistence]]
   * When an element is evicted from the [[LoadingCache]], it will get persisted into the [[KeyValuePersistence]]
   *
+  * If [[removalFilter]] is specified, the evicted value will only be persisted
+  * when removalFilter(key, value) returns true
   */
-class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V])
-  extends CacheLoader[K, V] with RemovalListener[K, V] {
+class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V],
+                                      val removalFilter: Option[(K, V) => Boolean] = None)
+  extends CacheLoader[K, V] with RemovalListener[K, V] with LazyLogging {
 
   @throws[NoSuchElementException]("If the key doesn't exist")
   override def load(key: K): V = {
@@ -35,7 +39,16 @@ class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V]
   }
 
   override def onRemoval(notification: RemovalNotification[K, V]): Unit = {
-    persistence.add(notification.getKey, notification.getValue)
+    if (removalFilter.isEmpty || removalFilter.get(notification.getKey, notification.getValue)) {
+      persistence.add(notification.getKey, notification.getValue)
+    } else {
+      logger.info(s"Item evicted from LoadingCache without being persisted: ${notification.toString}")
+    }
   }
 
+  /**
+    * Returns a new [[CachePersistenceSupporter]] object with the given removalFilter
+    */
+  def withRemovalFilter(removalFilter: (K, V) => Boolean): CachePersistenceSupporter[K, V] =
+    new CachePersistenceSupporter[K, V](persistence, Some(removalFilter))
 }

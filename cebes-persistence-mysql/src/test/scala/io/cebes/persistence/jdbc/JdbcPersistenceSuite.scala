@@ -33,7 +33,7 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
         properties.jdbcPassword, tableName, properties.jdbcDriver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
       .withValueToSeq(v => Seq(v.field1, v.field2))
-      .withSqlToValue(s => Foo(s.getInt("field1"), s.getFloat("field2")))
+      .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
       .build()
 
     val key = UUID.randomUUID()
@@ -72,7 +72,7 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
         properties.jdbcPassword, tableName, properties.jdbcDriver)
       .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
       .withValueToSeq(v => Seq(v.f2, v.f3))
-      .withSqlToValue(s => Bar(s.getFloat("f2"), s.getInt("f3")))
+      .withSqlToValue { case (_, s) => Bar(s.getFloat("f2"), s.getInt("f3")) }
       .build()
 
     val key = 100
@@ -112,7 +112,7 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
         properties.jdbcPassword, tableName, properties.jdbcDriver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
       .withValueToSeq(v => Seq(v.field1, v.field2))
-      .withSqlToValue(s => Foo(s.getInt("field1"), s.getFloat("field2")))
+      .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
       .build()
     assert(persistence.tableName === tableName)
 
@@ -146,7 +146,7 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
         properties.jdbcPassword, tableName, properties.jdbcDriver)
       .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
       .withValueToSeq(v => Seq(v.f2, v.f3))
-      .withSqlToValue(s => Bar(s.getFloat("f2"), s.getInt("f3")))
+      .withSqlToValue { case (_, s) => Bar(s.getFloat("f2"), s.getInt("f3")) }
       .build()
     assert(persistenceBar.tableName !== tableName)
 

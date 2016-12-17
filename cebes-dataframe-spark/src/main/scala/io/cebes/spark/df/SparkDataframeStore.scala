@@ -18,7 +18,7 @@ import java.util.UUID
 
 import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import com.google.inject.Inject
+import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.schema.Schema
 import io.cebes.df.schema.SchemaJsonProtocol._
@@ -30,7 +30,7 @@ import io.cebes.spark.config.HasSparkSession
 import org.apache.spark.sql.SaveMode
 import spray.json._
 
-class SparkDataframeStore @Inject()
+@Singleton class SparkDataframeStore @Inject()
 (@Prop(Property.MYSQL_URL) jdbcUrl: String,
  @Prop(Property.MYSQL_USERNAME) jdbcUsername: String,
  @Prop(Property.MYSQL_PASSWORD) jdbcPassword: String,
@@ -63,6 +63,10 @@ class SparkDataframeStore @Inject()
 
   private lazy val cache: LoadingCache[UUID, Dataframe] = {
     val supporter = new CachePersistenceSupporter[UUID, Dataframe](jdbcPersistence)
+      .withRemovalFilter { case (_, _) =>
+        //TODO: implement this: only store dataframes that are pinned
+          true
+      }
     CacheBuilder.from(cacheSpec).removalListener(supporter).build[UUID, Dataframe](supporter)
   }
 
