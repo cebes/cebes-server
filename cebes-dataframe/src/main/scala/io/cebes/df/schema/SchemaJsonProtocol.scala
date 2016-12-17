@@ -48,15 +48,15 @@ trait SchemaJsonProtocol extends DefaultJsonProtocol {
             } else {
               value.head match {
                 case v: JsNumber if v.value.isValidLong =>
-                  builder.putLongArray(key, value.asInstanceOf[List[JsNumber]].map(_.value.longValue()).toArray)
+                  builder.putLongArray(key, value.map(_.asInstanceOf[JsNumber].value.longValue()).toArray)
                 case _: JsNumber =>
-                  builder.putDoubleArray(key, value.asInstanceOf[List[JsNumber]].map(_.value.doubleValue()).toArray)
+                  builder.putDoubleArray(key, value.map(_.asInstanceOf[JsNumber].value.doubleValue()).toArray)
                 case _: JsBoolean =>
-                  builder.putBooleanArray(key, value.asInstanceOf[List[JsBoolean]].map(_.value).toArray)
+                  builder.putBooleanArray(key, value.map(_.asInstanceOf[JsBoolean].value).toArray)
                 case _: JsString =>
-                  builder.putStringArray(key, value.asInstanceOf[List[JsString]].map(_.value).toArray)
+                  builder.putStringArray(key, value.map(_.asInstanceOf[JsString].value).toArray)
                 case _: JsObject =>
-                  builder.putMetadataArray(key, value.asInstanceOf[List[JsObject]].map(read).toArray)
+                  builder.putMetadataArray(key, value.map(entry => read(entry.asInstanceOf[JsObject])).toArray)
                 case other =>
                   serializationError(s"Do not support array of type ${other.getClass}.")
               }
@@ -83,6 +83,7 @@ trait SchemaJsonProtocol extends DefaultJsonProtocol {
       case x: Double => JsNumber(x)
       case x: Boolean => JsBoolean(x)
       case x: String => JsString(x)
+      case null => JsNull
       case other =>
         serializationError(s"Fail to serialize object of class ${other.getClass.getCanonicalName}")
     }
@@ -106,14 +107,17 @@ trait SchemaJsonProtocol extends DefaultJsonProtocol {
     def read(json: JsValue): StorageType = json match {
       case JsString(x) => Try(StorageTypes.fromString(x)) match {
         case Success(t) => t
-        case Failure(_) => deserializationError(s"Failed to deserialize ${json.compactPrint}")
+        case Failure(f) =>
+          deserializationError(s"Failed to deserialize ${json.compactPrint}: ${f.getMessage}", f)
       }
-      case _ => Seq(Try(json.convertTo[ArrayType]),
-        Try(json.convertTo[MapType]),
-        Try(json.convertTo[StructType])).find(_.isSuccess) match {
-        case Some(t) => t.get
-        case None => deserializationError(s"Failed to deserialize ${json.compactPrint}")
-      }
+      case _ =>
+        Try(json.convertTo[ArrayType])
+          .orElse(Try(json.convertTo[MapType]))
+          .orElse(Try(json.convertTo[StructType])) match {
+          case Success(t) => t
+          case Failure(f) =>
+            deserializationError(s"Failed to deserialize ${json.compactPrint}: ${f.getMessage}", f)
+        }
     }
   }
 

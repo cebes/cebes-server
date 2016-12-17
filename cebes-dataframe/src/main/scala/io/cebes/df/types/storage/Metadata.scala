@@ -62,6 +62,12 @@ class Metadata(private[df] val map: Map[String, Any]) {
               (ourValue, otherValue) match {
                 case (v0: Array[Long], v1: Array[Long]) => java.util.Arrays.equals(v0, v1)
                 case (v0: Array[Double], v1: Array[Double]) => java.util.Arrays.equals(v0, v1)
+                case (v0: Array[Long], v1: Array[Double]) =>
+                  // try to match Array[Long] and Array[Double] because of the confusion in JSON-serialization
+                  java.util.Arrays.equals(v0.map(_.toDouble), v1)
+                case (v0: Array[Double], v1: Array[Long]) =>
+                  // try to match Array[Long] and Array[Double] because of the confusion in JSON-serialization
+                  java.util.Arrays.equals(v0, v1.map(_.toDouble))
                 case (v0: Array[Boolean], v1: Array[Boolean]) => java.util.Arrays.equals(v0, v1)
                 case (v0: Array[AnyRef], v1: Array[AnyRef]) => java.util.Arrays.equals(v0, v1)
                 case (v0, v1) => v0 == v1
@@ -69,7 +75,7 @@ class Metadata(private[df] val map: Map[String, Any]) {
             case None => false
           }
         }
-      case other =>
+      case _ =>
         false
     }
   }
@@ -92,11 +98,13 @@ object Metadata {
   /** Computes the hash code for the types we support. */
   private def hash(obj: Any): Int = {
     obj match {
+      case null => 0
       case map: Map[_, _] =>
         map.mapValues(hash).##
       case arr: Array[_] =>
         // Seq.empty[T] has the same hashCode regardless of T.
-        arr.toSeq.map(hash).##
+        val v = arr.toSeq.map(hash).##
+        v
       case x: Long =>
         x.##
       case x: Double =>
@@ -120,9 +128,6 @@ object Metadata {
 class MetadataBuilder {
 
   private val map: mutable.Map[String, Any] = mutable.Map.empty
-
-  /** Returns the immutable version of this map.  Used for java interop. */
-  protected def getMap: Map[String, Any] = map.toMap
 
   /** Include the content of an existing [[Metadata]] instance. */
   def withMetadata(metadata: Metadata): this.type = {

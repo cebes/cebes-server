@@ -53,6 +53,9 @@ object StorageTypes {
     storage.MapType(keyType, valueType)
 
   def structType(fields: Seq[StructField]): storage.StructType =
+      structType(fields.head, fields.tail: _*)
+
+  def structType(field: StructField, fields: StructField*): storage.StructType =
     storage.StructType(fields.toArray)
 
   def structField(name: String, storageType: storage.StorageType, metadata: storage.Metadata) =
