@@ -17,14 +17,14 @@ package io.cebes.server.result
 import java.util.UUID
 
 import spray.json._
-import io.cebes.server.helpers.TestInjector
+import io.cebes.server.helpers.CebesHttpServerTestInjector
 import io.cebes.server.models.{RequestStatuses, SerializableResult}
 import org.scalatest.FunSuite
 
 class JdbcResultStorageSuite extends FunSuite {
 
   test("save and get") {
-    val jdbcStorage = TestInjector.instance(classOf[JdbcResultStorage])
+    val jdbcStorage = CebesHttpServerTestInjector.instance[JdbcResultStorage]
 
     val requestId = UUID.randomUUID()
     assert(jdbcStorage.get(requestId).isEmpty)
@@ -55,7 +55,7 @@ class JdbcResultStorageSuite extends FunSuite {
   }
 
   test("empty json response") {
-    val jdbcStorage = TestInjector.instance(classOf[JdbcResultStorage])
+    val jdbcStorage = CebesHttpServerTestInjector.instance[JdbcResultStorage]
 
     val requestId = UUID.randomUUID()
     assert(jdbcStorage.get(requestId).isEmpty)

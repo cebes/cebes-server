@@ -26,7 +26,7 @@ import io.cebes.spark.config.HasSparkSession
   * This class can be instantiated multiple times from the DI framework
   */
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
-                                      override val dfStore: DataframeStore) extends DataframeService {
+                                      dfStore: DataframeStore) extends DataframeService {
 
   private val sparkSession = hasSparkSession.session
 
@@ -37,5 +37,18 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   override def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = addToStore {
     dfStore(dfId).sample(withReplacement, fraction, seed)
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Helpers
+  /////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Add the Dataframe to the store, and return the dataframe
+    */
+  private def addToStore(op: => Dataframe): Dataframe = {
+    val df = op
+    dfStore.add(df)
+    df
   }
 }

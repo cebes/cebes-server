@@ -22,7 +22,7 @@ import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
-import io.cebes.server.inject.InjectorService
+import io.cebes.server.inject.CebesHttpServerInjector
 import io.cebes.server.routes.df.CebesDfProtocol._
 import spray.json._
 
@@ -46,11 +46,11 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     */
   private def operation[W <: DataframeOperation[E], E](implicit umE: FromRequestUnmarshaller[E],
                                                        jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
-    val workerCls = implicitly[ClassTag[W]].runtimeClass.asInstanceOf[Class[W]]
-    (path(workerCls.getSimpleName.toLowerCase) & post) {
+    val workerName = tag.runtimeClass.asInstanceOf[Class[W]].getSimpleName.toLowerCase
+    (path(workerName) & post) {
       entity(as[E]) { requestEntity =>
         implicit ctx: RequestContext =>
-          InjectorService.instance(workerCls).run(requestEntity).flatMap(ctx.complete(_))
+          CebesHttpServerInjector.instance[W].run(requestEntity).flatMap(ctx.complete(_))
       }
     }
   }

@@ -18,6 +18,7 @@ import java.util.UUID
 
 /**
   * Storing dataframes, maybe backed by a LoadingCache
+  * Subclasses of this trait should be singleton.
   */
 trait DataframeStore {
 

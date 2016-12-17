@@ -9,16 +9,22 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 17/12/2016.
  */
 
-package io.cebes.persistence.helpers
+package io.cebes.spark.df
 
-import org.scalatest.{Ignore, Tag}
+import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
 
-trait TestPropertyHelper {
+class SparkDataframeStoreSuite extends CebesBaseSuite
+  with TestPropertyHelper with TestDataHelper {
 
-  val properties: TestProperties = CebesPersistenceTestInjector.instance[TestProperties]
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    createOrReplaceCylinderBands()
+  }
 
-  object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
+  test("") {
+    //val
+  }
 }

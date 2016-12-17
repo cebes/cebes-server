@@ -19,13 +19,15 @@ import io.cebes.prop.PropertyModule
 import io.cebes.server.inject.CebesHttpDependencyModule
 import io.cebes.spark.CebesSparkDependencyModule
 
-object TestInjector {
+import scala.reflect.ClassTag
 
-  lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
+object CebesHttpServerTestInjector {
+
+  private lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
     new PropertyModule(true),
     new CebesHttpDependencyModule,
     new CebesSparkDependencyModule)
 
 
-  def instance[T](t: Class[T]):T = injector.getInstance(t)
+  def instance[T](implicit tag: ClassTag[T]):T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

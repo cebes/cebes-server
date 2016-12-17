@@ -20,7 +20,7 @@ import com.softwaremill.session.CsrfOptions._
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import com.softwaremill.session._
-import io.cebes.server.inject.InjectorService
+import io.cebes.server.inject.CebesHttpServerInjector
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -33,7 +33,7 @@ trait SecuredSession {
   implicit val sessionManager = new SessionManager[SessionData](sessionConfig)
 
   implicit val refreshTokenStorage: RefreshTokenStorage[SessionData] =
-    InjectorService.instance(classOf[JdbcRefreshTokenStorage])
+    CebesHttpServerInjector.instance[JdbcRefreshTokenStorage]
 
   def mySetSession(v: SessionData): Directive0 = setSession(refreshable, usingHeaders, v)
 
