@@ -14,6 +14,10 @@
 
 package io.cebes.spark.df
 
+import java.util.UUID
+
+import io.cebes.df.DataframeStore
+import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
 
 class SparkDataframeStoreSuite extends CebesBaseSuite
@@ -24,7 +28,16 @@ class SparkDataframeStoreSuite extends CebesBaseSuite
     createOrReplaceCylinderBands()
   }
 
-  test("") {
-    //val
+  test("simple operations") {
+    val dfStore = CebesSparkTestInjector.instance[DataframeStore]
+    val df = getCylinderBands
+    val dfId = df.id
+    dfStore.add(df)
+
+    val df2 = dfStore(dfId)
+    assert(df2.eq(df))
+
+    val ex = intercept[IllegalArgumentException](dfStore(UUID.randomUUID()))
+    assert(ex.getMessage.startsWith("Dataframe ID not found"))
   }
 }
