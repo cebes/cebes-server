@@ -20,13 +20,15 @@ import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.df.schema.Schema
+import io.cebes.df.schema.SchemaJsonProtocol._
 import io.cebes.df.{Dataframe, DataframeStore}
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.{Prop, Property}
 import io.cebes.spark.config.HasSparkSession
-import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.SaveMode
+import spray.json._
 
 class SparkDataframeStore @Inject()
 (@Prop(Property.MYSQL_URL) jdbcUrl: String,
@@ -41,7 +43,8 @@ class SparkDataframeStore @Inject()
   private lazy val jdbcPersistence = JdbcPersistenceBuilder.newBuilder[UUID, Dataframe]()
     .withCredentials(jdbcUrl, jdbcUsername, jdbcPassword, TableNames.DF_STORE, jdbcDriver)
     .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
-      JdbcPersistenceColumn("table_name", "VARCHAR(200)")))
+      JdbcPersistenceColumn("table_name", "VARCHAR(200)"),
+      JdbcPersistenceColumn("schema", "MEDIUMTEXT")))
     .withValueToSeq { df =>
       val sparkDf = df match {
         case d: SparkDataframe => d
@@ -49,12 +52,12 @@ class SparkDataframeStore @Inject()
       }
       val tbName = s"spark_${sparkDf.id.toString}"
       sparkDf.sparkDf.write.mode(SaveMode.Overwrite).saveAsTable(tbName)
-      sparkDf.schema.toString()
-      Seq(System.currentTimeMillis(), tbName)
+      Seq(System.currentTimeMillis(), tbName, sparkDf.schema.toJson.compactPrint)
     }
     .withSqlToValue { case (id, entry) =>
       val sparkDf = session.table(entry.getString(2))
-      new SparkDataframe(sparkDf, id)
+      val schema = entry.getString(3).parseJson.convertTo[Schema]
+      new SparkDataframe(sparkDf, schema, id)
     }
     .build()
 

@@ -38,7 +38,9 @@ class JdbcRefreshTokenStorage @Inject()
         JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),
         JdbcPersistenceColumn("expires", "Long"))).
       withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires)).
-      withSqlToValue(r => Store(r.getString(1), r.getString(2), r.getLong(3))).build()
+      withSqlToValue {
+        case (_, r) => Store(r.getString(1), r.getString(2), r.getLong(3))
+      }.build()
 
   override def lookup(selector: String): Future[Option[RefreshTokenLookupResult[SessionData]]] = Future.successful {
     persistence.get(selector).map { s =>

@@ -14,9 +14,10 @@
 
 package io.cebes.df.schema
 
+
 import io.cebes.df.types.VariableTypes
 import io.cebes.df.types.VariableTypes.VariableType
-import io.cebes.df.types.storage.StorageType
+import io.cebes.df.types.storage._
 
 case class SchemaField(name: String, storageType: StorageType, variableType: VariableType) {
 
@@ -101,7 +102,7 @@ case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaFi
     * }}}
     */
   def add(name: String, storageType: StorageType, variableType: VariableType): Schema =
-  add(SchemaField(name, storageType, variableType))
+    add(SchemaField(name, storageType, variableType))
 
   /**
     * Creates a new [[Schema]] by adding a new field, or replace the current field
@@ -128,7 +129,7 @@ case class Schema(fields: Array[SchemaField] = Array.empty) extends Seq[SchemaFi
     * that has the same name.
     */
   def withField(name: String, storageType: StorageType, variableType: VariableType): Schema =
-  withField(SchemaField(name, storageType, variableType))
+    withField(SchemaField(name, storageType, variableType))
 
   /**
     * Returns a new [[Schema]] with a field renamed.

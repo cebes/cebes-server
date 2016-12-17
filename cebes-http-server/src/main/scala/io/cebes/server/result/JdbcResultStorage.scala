@@ -42,7 +42,9 @@ import spray.json._
       JdbcPersistenceColumn("response", "MEDIUMTEXT"),
       JdbcPersistenceColumn("request", "MEDIUMTEXT")))
     .withValueToSeq(s => Seq(s.createdAt, s.status, s.response, s.request))
-    .withSqlToValue(f => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4)))
+    .withSqlToValue {
+      case (_, f) => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4))
+    }
     .build()
 
   private lazy val cache: LoadingCache[UUID, Store] = {

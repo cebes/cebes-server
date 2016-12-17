@@ -14,7 +14,7 @@
 
 package io.cebes.df.types
 
-import io.cebes.df.types.storage.{StorageType, StructField}
+import io.cebes.df.types.storage.StructField
 
 object StorageTypes {
 

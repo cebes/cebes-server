@@ -70,12 +70,9 @@ object VariableTypes {
   case object STRUCT extends VariableType("Struct", false, false,
     Seq(), Some(Seq(classOf[storage.StructType])))
 
-  val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, ARRAY, MAP)
+  val values = Seq(DISCRETE, CONTINUOUS, NOMINAL, ORDINAL, TEXT, DATETIME, ARRAY, MAP, STRUCT)
 
-  def fromString(name: String): VariableType = values.find(_.name == name) match {
-    case Some(t) => t
-    case None => throw new IllegalArgumentException(s"Unrecognized variable type: $name")
-  }
+  def fromString(name: String): Option[VariableType] = values.find(_.name == name)
 
   /**
     * Rude guess to infer variable type from storage type
