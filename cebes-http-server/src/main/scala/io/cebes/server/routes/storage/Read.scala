@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import io.cebes.df.Dataframe
 import io.cebes.server.models._
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncExecutor
+import io.cebes.server.routes.common.{AsyncExecutor, AsyncDataframeOperation}
 import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
@@ -30,7 +30,7 @@ import io.cebes.storage.localfs.LocalFsDataSource
 import scala.concurrent.{ExecutionContext, Future}
 
 class Read @Inject()(storageService: StorageService, override val resultStorage: ResultStorage)
-  extends AsyncExecutor[ReadRequest, Dataframe, DataframeResponse] {
+  extends AsyncDataframeOperation[ReadRequest] {
 
   /**
     * Implement this to do the real work
@@ -53,19 +53,5 @@ class Read @Inject()(storageService: StorageService, override val resultStorage:
       case _ => throw new IllegalArgumentException("Invalid read request")
     }
     storageService.read(dataSrc)
-  }
-
-
-  /**
-    * Transform the actual result (of type T)
-    * into something that will be returned to the clients
-    * Normally R should be Json-serializable.
-    *
-    * @param requestEntity The request entity
-    * @param result        The actual result, returned by `runImpl`
-    * @return a JSON-serializable object, to be returned to the clients
-    */
-  override def transformResult(requestEntity: ReadRequest, result: Dataframe): Option[DataframeResponse] = {
-    Some(DataframeResponse(result.id))
   }
 }

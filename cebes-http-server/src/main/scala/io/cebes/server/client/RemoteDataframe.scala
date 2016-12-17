@@ -16,9 +16,11 @@ package io.cebes.server.client
 
 import java.util.UUID
 
+import io.cebes.df.schema.Schema
+
 /**
   * A dummy object for representing the Dataframe on the server.
   * This is only used for the client
   * @param id ID of the Dataframe
   */
-case class RemoteDataframe(id: UUID)
+case class RemoteDataframe(id: UUID, schema: Schema)

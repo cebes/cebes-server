@@ -23,6 +23,7 @@ import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
+import io.cebes.server.routes.common.AsyncDataframeOperation
 import io.cebes.server.routes.df.CebesDfProtocol._
 import spray.json._
 
@@ -41,11 +42,11 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
   implicit def actorMaterializer: Materializer
 
   /**
-    * An operation done by class [[W]] (subclass of [[DataframeOperation]],
+    * An operation done by class [[W]] (subclass of [[AsyncDataframeOperation]],
     * with entity of type [[E]]
     */
-  private def operation[W <: DataframeOperation[E], E](implicit umE: FromRequestUnmarshaller[E],
-                                                       jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
+  private def operation[W <: AsyncDataframeOperation[E], E](implicit umE: FromRequestUnmarshaller[E],
+                                                            jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
     val workerName = tag.runtimeClass.asInstanceOf[Class[W]].getSimpleName.toLowerCase
     (path(workerName) & post) {
       entity(as[E]) { requestEntity =>

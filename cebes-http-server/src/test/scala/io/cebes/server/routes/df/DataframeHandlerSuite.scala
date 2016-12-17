@@ -32,5 +32,6 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
 
     val df2 = waitDf(postAsync[SampleRequest, DataframeResponse]("df/sample",
       SampleRequest(df.id, withReplacement = true, 0.5, 42)))
+    assert(df2.schema === df.schema)
   }
 }

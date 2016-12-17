@@ -16,6 +16,7 @@ package io.cebes.server
 
 import java.util.UUID
 
+import io.cebes.df.schema.{Schema, SchemaJsonProtocol}
 import io.cebes.server.models.RequestStatuses.RequestStatus
 import io.cebes.storage.DataFormats
 import io.cebes.storage.DataFormats.DataFormat
@@ -77,7 +78,7 @@ package object models {
   // Results of synchronous commands will belong to following classes
   case class OkResponse(message: String)
 
-  case class DataframeResponse(id: UUID)
+  case class DataframeResponse(id: UUID, schema: Schema)
 
   case class UploadResponse(path: String, size: Int)
 
@@ -85,7 +86,7 @@ package object models {
   // Contains all JsonProtocol for Cebes HTTP server
   /** **************************************************************************/
 
-  trait CebesJsonProtocol extends DefaultJsonProtocol {
+  trait CebesJsonProtocol extends DefaultJsonProtocol with SchemaJsonProtocol {
 
     // clumsy custom JsonFormats
     implicit object UUIDFormat extends JsonFormat[UUID] {
@@ -139,7 +140,7 @@ package object models {
 
     implicit val failResponseFormat = jsonFormat2(FailResponse)
     implicit val okResponseFormat = jsonFormat1(OkResponse)
-    implicit val dataframeResponseFormat = jsonFormat1(DataframeResponse)
+    implicit val dataframeResponseFormat = jsonFormat2(DataframeResponse)
     implicit val uploadResponseFormat = jsonFormat2(UploadResponse)
   }
 

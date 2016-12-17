@@ -53,7 +53,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   override def sendSql(sqlText: String): RemoteDataframe = {
-    RemoteDataframe(wait(postAsync[String, DataframeResponse]("df/sql", sqlText)).id)
+    waitDf(postAsync[String, DataframeResponse]("df/sql", sqlText))
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -128,7 +128,9 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
 
   protected def wait[T](awaitable: Awaitable[T]): T = Await.result(awaitable, Duration.Inf)
 
-  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe =
-    RemoteDataframe(wait(awaitable).id)
+  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe = {
+    val df = wait(awaitable)
+    RemoteDataframe(df.id, df.schema)
+  }
 
 }

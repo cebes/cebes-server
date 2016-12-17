@@ -17,6 +17,7 @@ package io.cebes.server.routes.df
 import com.google.inject.Inject
 import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.server.result.ResultStorage
+import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -24,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Runs the given SQL string, and returns a [[Dataframe]]
   */
 class Sql @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends DataframeOperation[String] {
+  extends AsyncDataframeOperation[String] {
 
   override protected def runImpl(requestEntity: String)(implicit ec: ExecutionContext): Future[Dataframe] = Future {
     dfService.sql(requestEntity)
