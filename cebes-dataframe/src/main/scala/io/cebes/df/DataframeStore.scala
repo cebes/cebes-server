@@ -33,6 +33,10 @@ trait DataframeStore {
     */
   def get(id: UUID): Option[Dataframe]
 
+  /**
+    * Get the [[Dataframe]] with the given ID
+    * Throws [[IllegalArgumentException]] if the ID doesn't exist in the store
+    */
   def apply(id: UUID): Dataframe = get(id) match {
     case Some(df) => df
     case None =>

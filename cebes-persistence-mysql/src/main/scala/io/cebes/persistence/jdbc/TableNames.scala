@@ -15,7 +15,7 @@
 package io.cebes.persistence.jdbc
 
 /**
-  * Names of all MySQL tables used in cebes-server
+  * Names of all MySQL tables used in the MySQL backend of cebes-server
   */
 object TableNames {
 

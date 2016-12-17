@@ -12,7 +12,7 @@
  * Created by phvu on 21/09/16.
  */
 
-package io.cebes.client
+package io.cebes.server.client
 
 import java.util.UUID
 

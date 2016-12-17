@@ -12,7 +12,7 @@
  * Created by phvu on 10/09/16.
  */
 
-package io.cebes.client
+package io.cebes.server.client
 
 import java.util.concurrent.TimeUnit
 

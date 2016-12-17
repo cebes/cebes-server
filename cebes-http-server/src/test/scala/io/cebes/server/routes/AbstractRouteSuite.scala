@@ -20,7 +20,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
-import io.cebes.client.{RemoteDataframe, ServerException}
+import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.helpers.TestDataHelper
 import io.cebes.server.models._
 import io.cebes.server.routes.df.CebesDfProtocol._
