@@ -46,12 +46,19 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
   val dataframeApi: Route = pathPrefix("df") {
     myRequiredSession { _ =>
       concat(
-        operationDf[Sample, SampleRequest],
         operationDf[Sql, String],
-        operation[Take, TakeRequest, DataSample]
+        operation[Count, CountRequest, Long],
+        operationDf[Sample, SampleRequest],
+        operation[Take, TakeRequest, DataSample],
+        operationDf[DropColumns, ColumnsRequest],
+        operationDf[DropDuplicates, ColumnsRequest]
       )
     }
   }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Helpers
+  /////////////////////////////////////////////////////////////////////////////
 
   /**
     * An operation done by class [[W]] (subclass of [[AsyncDataframeOperation]],

@@ -22,10 +22,16 @@ case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, s
 
 case class TakeRequest(df: UUID, n: Int)
 
+case class ColumnsRequest(df: UUID, columns: Array[String])
+
+case class CountRequest(df: UUID)
+
 trait HttpDfJsonProtocol extends HttpJsonProtocol {
 
   implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
   implicit val takeRequestFormat = jsonFormat2(TakeRequest)
+  implicit val columnsRequestFormat = jsonFormat2(ColumnsRequest)
+  implicit val countRequestFormat = jsonFormat1(CountRequest)
 }
 
 object HttpDfJsonProtocol extends HttpDfJsonProtocol

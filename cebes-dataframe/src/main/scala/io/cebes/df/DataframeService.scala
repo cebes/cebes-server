@@ -29,6 +29,11 @@ trait DataframeService {
   def sql(sqlText: String): Dataframe
 
   /**
+    * Returns the number of rows in the given [[Dataframe]]
+    */
+  def count(dfId: UUID): Long
+
+  /**
     * Take some rows from the given [[Dataframe]], returns a [[DataSample]]
     */
   def take(dfId: UUID, n: Int): DataSample
@@ -37,4 +42,19 @@ trait DataframeService {
     * Sample the given [[Dataframe]]
     */
   def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Returns a new Dataframe with columns dropped.
+    * This is a no-op if schema doesn't contain column name(s).
+    */
+  def drop(dfId: UUID, colNames: Seq[String]): Dataframe
+
+  /**
+    * Returns a new Dataframe that contains only the unique rows from this Dataframe.
+    */
+  def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe
 }

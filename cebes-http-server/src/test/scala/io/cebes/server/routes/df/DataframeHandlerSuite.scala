@@ -30,6 +30,18 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     createOrReplaceCylinderBands()
   }
 
+  test("count") {
+    val df = getCylinderBands
+
+    val rows = wait[Long](postAsync[CountRequest, Long]("df/count", CountRequest(df.id)))
+    assert(rows === 540)
+
+    val ex = intercept[ServerException] {
+      wait[Long](postAsync[CountRequest, Long]("df/count", CountRequest(UUID.randomUUID())))
+    }
+    assert(ex.message.startsWith("Dataframe ID not found"))
+  }
+
   test("sample") {
     val df = getCylinderBands
 
@@ -62,5 +74,40 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
       wait[DataSample](postAsync[TakeRequest, DataSample]("df/take", TakeRequest(UUID.randomUUID(), 15)))
     }
     assert(ex2.message.startsWith("Dataframe ID not found"))
+  }
+
+  test("drop") {
+    val df = getCylinderBands
+
+    val df1 = waitDf(postAsync[ColumnsRequest, DataframeResponse]("df/dropcolumns",
+      ColumnsRequest(df.id, Array("TimeStamp", "ink_cOlor", "wrong_column"))))
+    assert(df1.schema.size === df.schema.size - 2)
+    assert(df1.schema.get("timestamp").isEmpty)
+    assert(df1.schema.get("ink_cOlor").isEmpty)
+
+    val df2 = waitDf(postAsync[ColumnsRequest, DataframeResponse]("df/dropcolumns",
+      ColumnsRequest(df.id, Array())))
+    assert(df2.schema.size === df.schema.size)
+    assert(df2.schema.get("timestamp").nonEmpty)
+    assert(df2.schema.get("ink_cOlor").nonEmpty)
+    assert(df2.schema === df.schema)
+  }
+
+  test("dropDuplicates") {
+    val df = getCylinderBands
+
+    val df1 = waitDf(postAsync[ColumnsRequest, DataframeResponse]("df/dropduplicates",
+      ColumnsRequest(df.id, Array("TimeStamp", "ink_cOlor"))))
+    assert(df1.schema === df.schema)
+
+    val ex1 = intercept[ServerException] {
+      waitDf(postAsync[ColumnsRequest, DataframeResponse]("df/dropduplicates",
+        ColumnsRequest(df.id, Array("TimeStamp", "ink_cOlor", "wrong_column"))))
+    }
+    assert(ex1.getMessage.startsWith("Spark query analysis exception: Cannot resolve column name \"wrong_column\""))
+
+    val df2 = waitDf(postAsync[ColumnsRequest, DataframeResponse]("df/dropcolumns",
+      ColumnsRequest(df.id, Array())))
+    assert(df2.schema === df.schema)
   }
 }
