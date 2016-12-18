@@ -14,11 +14,10 @@
 
 package io.cebes.server.routes.storage
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.server.helpers.TestPropertyHelper
-import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.{DataframeResponse, ReadRequest, S3ReadRequest}
-import io.cebes.server.routes.AbstractRouteSuite
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
+import io.cebes.server.routes.{AbstractRouteSuite, DataframeResponse}
 import io.cebes.storage.DataFormats
 
 class StorageHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {

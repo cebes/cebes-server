@@ -14,9 +14,9 @@
 
 package io.cebes.df.types.storage
 
+import io.cebes.df.CebesCoreJsonProtocol._
 import org.scalatest.FunSuite
 import spray.json._
-import io.cebes.df.schema.SchemaJsonProtocol._
 
 class MetadataSuite extends FunSuite {
 

@@ -12,7 +12,7 @@
  * Created by phvu on 24/08/16.
  */
 
-package io.cebes.server.http
+package io.cebes.server.routes
 
 import java.io.{PrintWriter, StringWriter}
 
@@ -22,8 +22,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.ExceptionHandler
-import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.FailResponse
+import io.cebes.server.routes.HttpJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 

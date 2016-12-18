@@ -15,7 +15,7 @@
 package io.cebes.server.routes.common
 
 import io.cebes.df.Dataframe
-import io.cebes.server.models.DataframeResponse
+import io.cebes.server.routes.DataframeResponse
 
 /**
   * Abstract class for *asynchronous* operations that return a Dataframe.

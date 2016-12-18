@@ -20,8 +20,8 @@ import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.df.CebesCoreJsonProtocol._
 import io.cebes.df.schema.Schema
-import io.cebes.df.schema.SchemaJsonProtocol._
 import io.cebes.df.{Dataframe, DataframeStore}
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
@@ -65,7 +65,7 @@ import spray.json._
     val supporter = new CachePersistenceSupporter[UUID, Dataframe](jdbcPersistence)
       .withRemovalFilter { case (_, _) =>
         //TODO: implement this: only store dataframes that are pinned
-          true
+        true
       }
     CacheBuilder.from(cacheSpec).removalListener(supporter).build[UUID, Dataframe](supporter)
   }

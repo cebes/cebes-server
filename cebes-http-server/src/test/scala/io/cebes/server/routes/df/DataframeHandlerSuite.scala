@@ -14,10 +14,12 @@
 
 package io.cebes.server.routes.df
 
+import java.util.UUID
+
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.server.models._
-import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.df.CebesDfProtocol._
+import io.cebes.server.client.ServerException
+import io.cebes.server.routes.{AbstractRouteSuite, DataframeResponse}
+import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import org.scalatest.BeforeAndAfterAll
 
 class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
@@ -33,5 +35,13 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val df2 = waitDf(postAsync[SampleRequest, DataframeResponse]("df/sample",
       SampleRequest(df.id, withReplacement = true, 0.5, 42)))
     assert(df2.schema === df.schema)
+    assert(df2.id !== df.id)
+
+    val ex = intercept[ServerException] {
+      waitDf(postAsync[SampleRequest, DataframeResponse]("df/sample",
+        SampleRequest(UUID.randomUUID(), withReplacement = true, 0.5, 42)))
+    }
+    assert(ex.message.startsWith("Dataframe ID not found"))
+
   }
 }

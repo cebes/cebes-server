@@ -18,8 +18,8 @@ import java.util.UUID
 
 import akka.http.scaladsl.server.RequestContext
 import com.google.inject.Inject
-import io.cebes.server.models.SerializableResult
 import io.cebes.server.result.ResultStorage
+import io.cebes.server.routes.SerializableResult
 import io.cebes.server.routes.common.SyncExecutor
 
 import scala.concurrent.{ExecutionContext, Future}

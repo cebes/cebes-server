@@ -22,8 +22,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.helpers.TestDataHelper
-import io.cebes.server.models._
-import io.cebes.server.routes.df.CebesDfProtocol._
+import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
+import io.cebes.server.routes.auth.LoginRequest
 import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 import spray.json.JsonFormat
@@ -109,7 +109,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   private def login() = {
-    Post(s"/${Routes.API_VERSION}/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
+    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> routes ~> check {
       assert(status === StatusCodes.OK)
       val responseCookies = headers.filter(_.name().startsWith("Set-"))
       assert(responseCookies.nonEmpty)

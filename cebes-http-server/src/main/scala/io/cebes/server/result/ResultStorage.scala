@@ -18,7 +18,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Scheduler
-import io.cebes.server.models.SerializableResult
+import io.cebes.server.routes.SerializableResult
 import io.cebes.server.util.Retries
 
 import scala.concurrent.duration.FiniteDuration

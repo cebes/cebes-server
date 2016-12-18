@@ -14,11 +14,11 @@
 
 package io.cebes.df.schema
 
-import io.cebes.df.types.{StorageTypes, VariableTypes}
+import io.cebes.df.CebesCoreJsonProtocol._
 import io.cebes.df.types.storage._
+import io.cebes.df.types.{StorageTypes, VariableTypes}
 import org.scalatest.FunSuite
 import spray.json._
-import SchemaJsonProtocol._
 
 class SchemaSuite extends FunSuite {
 

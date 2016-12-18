@@ -18,9 +18,8 @@ import java.util.Base64
 
 import com.google.inject.Inject
 import io.cebes.df.Dataframe
-import io.cebes.server.models._
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.{AsyncExecutor, AsyncDataframeOperation}
+import io.cebes.server.routes.common.AsyncDataframeOperation
 import io.cebes.spark.storage.hdfs.HdfsDataSource
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource

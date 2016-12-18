@@ -18,7 +18,7 @@ import java.util.UUID
 
 import spray.json._
 import io.cebes.server.helpers.CebesHttpServerTestInjector
-import io.cebes.server.models.{RequestStatuses, SerializableResult}
+import io.cebes.server.routes.{RequestStatuses, SerializableResult}
 import org.scalatest.FunSuite
 
 class JdbcResultStorageSuite extends FunSuite {

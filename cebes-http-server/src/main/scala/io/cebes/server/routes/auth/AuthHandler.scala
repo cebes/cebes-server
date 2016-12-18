@@ -22,8 +22,8 @@ import com.softwaremill.session.CsrfOptions._
 import io.cebes.auth.AuthService
 import io.cebes.server.http.{SecuredSession, SessionData}
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.{OkResponse, UserLogin}
+import io.cebes.server.routes.OkResponse
+import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
 
 /**
   * Handle all authentication requests
@@ -34,7 +34,7 @@ trait AuthHandler extends SecuredSession {
 
   val authApi: Route = pathPrefix("auth") {
     (path("login") & post) {
-      entity(as[UserLogin]) { userLogin =>
+      entity(as[LoginRequest]) { userLogin =>
         if (authService.login(userLogin.userName, userLogin.passwordHash)) {
           mySetSession(SessionData(userLogin.userName)) {
             setNewCsrfToken(checkHeader) { ctx =>

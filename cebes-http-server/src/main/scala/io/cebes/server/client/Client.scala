@@ -25,7 +25,7 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.server.models.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
+import io.cebes.server.routes.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
 import spray.json.JsonFormat
 
 import scala.collection.immutable

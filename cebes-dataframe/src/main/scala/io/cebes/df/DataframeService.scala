@@ -16,6 +16,8 @@ package io.cebes.df
 
 import java.util.UUID
 
+import io.cebes.df.sample.DataSample
+
 trait DataframeService {
 
   /**
@@ -25,6 +27,11 @@ trait DataframeService {
     * @return a [[Dataframe]] object
     */
   def sql(sqlText: String): Dataframe
+
+  /**
+    * Take some rows from the given [[Dataframe]], returns a [[DataSample]]
+    */
+  def take(dfId: UUID, n: Int): DataSample
 
   /**
     * Sample the given [[Dataframe]]

@@ -17,6 +17,7 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import com.google.inject.Inject
+import io.cebes.df.sample.DataSample
 import io.cebes.df.{Dataframe, DataframeService, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 
@@ -33,6 +34,10 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   def sql(sqlText: String): Dataframe = addToStore {
     new SparkDataframe(sparkSession.sql(sqlText))
+  }
+
+  override def take(dfId: UUID, n: Int): DataSample = {
+    dfStore(dfId).take(n)
   }
 
   override def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = addToStore {

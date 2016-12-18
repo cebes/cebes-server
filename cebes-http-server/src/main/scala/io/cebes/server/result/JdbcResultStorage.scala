@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.{Prop, Property}
-import io.cebes.server.models.{RequestStatuses, SerializableResult}
+import io.cebes.server.routes.{RequestStatuses, SerializableResult}
 import spray.json._
 
 @Singleton class JdbcResultStorage @Inject()

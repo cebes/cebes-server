@@ -16,7 +16,6 @@ package io.cebes.server.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.http.ApiErrorHandler
 import io.cebes.server.routes.auth.AuthHandler
 import io.cebes.server.routes.df.DataframeHandler
 import io.cebes.server.routes.result.ResultHandler

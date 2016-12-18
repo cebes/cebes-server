@@ -9,14 +9,23 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 17/12/2016.
+ * Created by phvu on 18/12/2016.
  */
 
-package io.cebes.df.types.storage
+package io.cebes.df
 
-import spray.json._
+import io.cebes.df.schema.{Schema, SchemaField}
+import io.cebes.df.types.{StorageTypes, VariableTypes}
+import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.types.storage._
+import spray.json.{JsString, _}
 
-trait MetadataJsonProtocol extends DefaultJsonProtocol {
+import scala.util.{Failure, Success, Try}
+
+/**
+  * All JSON protocols for all JSON-serializable classes in cebes-dataframe
+  */
+trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
 
   implicit object MetadataFormat extends JsonFormat[Metadata] {
 
@@ -65,7 +74,7 @@ trait MetadataJsonProtocol extends DefaultJsonProtocol {
     }
 
     def write(obj: Metadata): JsValue = {
-      val fields = obj.map.map {
+      val fields = obj.getMap.map {
         case (k: String, v) => k -> jsonifyValue(v)
       }
       JsObject(fields)
@@ -83,6 +92,72 @@ trait MetadataJsonProtocol extends DefaultJsonProtocol {
         serializationError(s"Fail to serialize object of class ${other.getClass.getCanonicalName}")
     }
   }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Storage types
+  /////////////////////////////////////////////////////////////////////////////
+
+  implicit object StorageTypeFormat extends JsonFormat[StorageType] {
+
+    def write(obj: StorageType): JsValue = {
+      if (StorageTypes.atomicTypes.contains(obj)) {
+        JsString(obj.typeName)
+      } else {
+        obj match {
+          case t: ArrayType => t.toJson
+          case t: MapType => t.toJson
+          case t: StructType => t.toJson
+          case _ => serializationError(s"Unknown storage type: ${obj.typeName}")
+        }
+      }
+    }
+
+    def read(json: JsValue): StorageType = json match {
+      case JsString(x) => Try(StorageTypes.fromString(x)) match {
+        case Success(t) => t
+        case Failure(f) =>
+          deserializationError(s"Failed to deserialize ${json.compactPrint}: ${f.getMessage}", f)
+      }
+      case _ =>
+        Try(json.convertTo[ArrayType])
+          .orElse(Try(json.convertTo[MapType]))
+          .orElse(Try(json.convertTo[StructType])) match {
+          case Success(t) => t
+          case Failure(f) =>
+            deserializationError(s"Failed to deserialize ${json.compactPrint}: ${f.getMessage}", f)
+        }
+    }
+  }
+
+  implicit val arrayTypeFormat = jsonFormat1(ArrayType)
+  implicit val mapTypeFormat = jsonFormat2(MapType)
+  implicit val structFieldFormat = jsonFormat3(StructField)
+  implicit val structTypeFormat = jsonFormat1(StructType)
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Variable types
+  /////////////////////////////////////////////////////////////////////////////
+
+  implicit object VariableTypeFormat extends JsonFormat[VariableType] {
+
+    override def write(obj: VariableType): JsValue = JsString(obj.name)
+
+    override def read(json: JsValue): VariableType = json match {
+      case JsString(typeName) => VariableTypes.fromString(typeName) match {
+        case Some(t) => t
+        case None => deserializationError(s"Unrecognized variable type: $typeName")
+      }
+      case _ => deserializationError(s"Expected VariableType as a string")
+    }
+
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Schema
+  /////////////////////////////////////////////////////////////////////////////
+
+  implicit val schemaFieldFormat = jsonFormat3(SchemaField)
+  implicit val schemaFormat = jsonFormat1(Schema)
 }
 
-object MetadataJsonProtocol extends MetadataJsonProtocol
+object CebesCoreJsonProtocol extends CebesCoreJsonProtocol
