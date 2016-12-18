@@ -14,9 +14,7 @@
 
 package io.cebes.df.types.storage
 
-import io.cebes.df.CebesCoreJsonProtocol._
 import org.scalatest.FunSuite
-import spray.json._
 
 class MetadataSuite extends FunSuite {
 
@@ -37,22 +35,4 @@ class MetadataSuite extends FunSuite {
     assert(metadata.getLong("long") === 160)
     assert(metadata.getStringArray("str_array") === Array("s1", "s2", "s3"))
   }
-
-  test("serialization/deserialization") {
-    val metadata = new MetadataBuilder()
-      .putDouble("dbl", 150.0).putNull("null").putLong("long", 160)
-      .putBoolean("bool", value = false).putString("str", "blah blah")
-      .putMetadata("metadata", new MetadataBuilder().putNull("empty").build())
-      .putDoubleArray("dbl_array", Array(1.4, 1.5, 1.6))
-      .putLongArray("long_array", Array(1, 2, 3, 4))
-      .putBooleanArray("bool_array", Array(true, false, true, true))
-      .putStringArray("str_array", Array("s1", "s2", "s3"))
-      .putMetadataArray("metadata_array", Array(new MetadataBuilder().putNull("empty").build()))
-      .build()
-
-    val s = metadata.toJson.compactPrint
-    val metadata2 = s.parseJson.convertTo[Metadata]
-    assert(metadata2.equals(metadata2))
-  }
-
 }

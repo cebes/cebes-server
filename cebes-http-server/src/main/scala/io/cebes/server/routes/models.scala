@@ -16,12 +16,9 @@ package io.cebes.server.routes
 
 import java.util.UUID
 
-import io.cebes.df.CebesCoreJsonProtocol
 import io.cebes.df.schema.Schema
-import io.cebes.storage.DataFormats
-import io.cebes.storage.DataFormats.DataFormat
+import io.cebes.json.CebesCoreJsonProtocol
 import spray.json._
-
 
 object RequestStatuses {
 
@@ -63,7 +60,7 @@ case class DataframeResponse(id: UUID, schema: Schema)
 // Contains all common JsonProtocol
 /** **************************************************************************/
 
-trait HttpJsonProtocol extends DefaultJsonProtocol with CebesCoreJsonProtocol {
+trait HttpJsonProtocol extends CebesCoreJsonProtocol {
 
   // clumsy custom JsonFormats
   implicit object UUIDFormat extends JsonFormat[UUID] {
@@ -73,18 +70,6 @@ trait HttpJsonProtocol extends DefaultJsonProtocol with CebesCoreJsonProtocol {
     def read(json: JsValue): UUID = json match {
       case JsString(x) => UUID.fromString(x)
       case _ => deserializationError("Expected UUID as JsString")
-    }
-  }
-
-  implicit object DataFormatFormat extends JsonFormat[DataFormat] {
-    override def write(obj: DataFormat): JsValue = JsString(obj.name)
-
-    override def read(json: JsValue): DataFormat = json match {
-      case JsString(fmtName) => DataFormats.fromString(fmtName) match {
-        case Some(fmt) => fmt
-        case None => deserializationError(s"Unrecognized Data format: $fmtName")
-      }
-      case _ => deserializationError(s"Expected DataFormat as a string")
     }
   }
 

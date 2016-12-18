@@ -98,7 +98,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
       case r: GenericRowWithSchema =>
         r.schema.fields.map { f =>
           f.name -> getValue(r.get(r.fieldIndex(f.name)))
-        }
+        }.toMap
       case other => other
     }
 

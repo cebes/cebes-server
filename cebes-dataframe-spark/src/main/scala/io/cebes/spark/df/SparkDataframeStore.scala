@@ -20,7 +20,7 @@ import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.df.CebesCoreJsonProtocol._
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.df.schema.Schema
 import io.cebes.df.{Dataframe, DataframeStore}
 import io.cebes.persistence.cache.CachePersistenceSupporter
