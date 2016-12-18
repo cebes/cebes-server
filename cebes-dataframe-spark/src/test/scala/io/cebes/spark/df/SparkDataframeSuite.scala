@@ -504,6 +504,10 @@ class SparkDataframeSuite extends CebesBaseSuite
       functions.collectList(df("job_number") / 2))
     assert(df1.numCols === 2)
     assert(df1.numRows === 1)
+    val sample = df1.take(10)
+    assert(sample.data.length == 2)
+    assert(sample.data.head.head.isInstanceOf[mutable.WrappedArray[_]])
+    assert(sample.data.last.head.isInstanceOf[mutable.WrappedArray[_]])
   }
 
   test("agg - collectSet") {
@@ -513,6 +517,10 @@ class SparkDataframeSuite extends CebesBaseSuite
       functions.collectSet(df("job_number") / 2))
     assert(df1.numCols === 2)
     assert(df1.numRows === 1)
+    val sample = df1.take(10)
+    assert(sample.data.length == 2)
+    assert(sample.data.head.head.isInstanceOf[mutable.WrappedArray[_]])
+    assert(sample.data.last.head.isInstanceOf[mutable.WrappedArray[_]])
   }
 
   test("agg - corr") {

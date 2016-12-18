@@ -93,15 +93,18 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   ////////////////////////////////////////////////////////////////////////////////////
 
   def take(n: Int = 1): DataSample = {
+
+    def getValue(v: Any): Any = v match {
+      case r: GenericRowWithSchema =>
+        r.schema.fields.map { f =>
+          f.name -> getValue(r.get(r.fieldIndex(f.name)))
+        }
+      case other => other
+    }
+
     val rows = sparkDf.take(n)
     val cols = schema.fieldNames.zipWithIndex.map {
-      case (_, idx) => rows.map(_.get(idx) match {
-        case r: GenericRowWithSchema =>
-          r.schema.fields.map { f =>
-            f.name -> r.get(r.fieldIndex(f.name))
-          }.toMap
-        case v => v
-      }).toSeq
+      case (_, idx) => rows.map(row => getValue(row.get(idx))).toSeq
     }
     new DataSample(schema.copy(), cols)
   }

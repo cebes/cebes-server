@@ -21,6 +21,8 @@ import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import org.scalatest.FunSuite
 import spray.json._
 
+import scala.collection.mutable
+
 /**
   * Test all kinds of serialization/deserialization
   */
@@ -63,5 +65,57 @@ class SerializationSuite extends FunSuite {
     assert(sample2.data.zip(data).forall {
       case (s1, s2) => s1.zip(s2).forall { case (v1, v2) => v1 == v2 }
     })
+  }
+
+  test("DataSample binary column") {
+    val sc = Schema(Seq(new SchemaField("binary_col", StorageTypes.BinaryType)).toArray)
+    val data = Seq(Seq(Array[Byte](1, 2, 3), Array[Byte](), null, Array[Byte](1, 5, 4, 100)))
+    val sample = new DataSample(sc, data)
+    val s = sample.toJson.compactPrint
+
+    val sample2 = s.parseJson.convertTo[DataSample]
+    assert(sample2.schema === sample.schema)
+    assert(data.zip(sample2.data).forall {
+      case (s1, s2) => s1.zip(s2).forall {
+        case (null, null) => true
+        case (v1: Array[Byte], v2: Array[Byte]) => v1.sameElements(v2)
+        case (v1: Array[Byte], v2: Array[_]) if v1.length == 0 => v2.length === 0
+      }
+    })
+  }
+
+  test("DataSample datetime") {
+    //TODO:
+  }
+
+  test("DataSample array") {
+    val sc = Schema(Seq(
+      new SchemaField("binary_col", StorageTypes.arrayType(StorageTypes.FloatType)),
+      new SchemaField("binary_col", StorageTypes.arrayType(StorageTypes.arrayType(StorageTypes.IntegerType)))
+    ).toArray)
+
+    val data = Seq(
+      Seq(mutable.WrappedArray.make[Float](Array[Float](1.0f, 2.0f, 4.0f))),
+      Seq(mutable.WrappedArray.make[mutable.WrappedArray[Int]](
+        Array[mutable.WrappedArray[Int]](
+          mutable.WrappedArray.make[Int](Array(3, 4, 5)),
+          null,
+          mutable.WrappedArray.make[Int](Array(9, 10, 11))
+        )
+      )))
+
+    val sample = new DataSample(sc, data)
+    val s = sample.toJson.compactPrint
+
+    val sample2 = s.parseJson.convertTo[DataSample]
+    assert(sample2.schema === sample.schema)
+  }
+
+  test("DataSample map") {
+
+  }
+
+  test("DataSample struct") {
+
   }
 }

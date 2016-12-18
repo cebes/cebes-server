@@ -18,10 +18,11 @@ import java.util.UUID
 
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.Schema
-import io.cebes.df.types.StorageTypes
-import io.cebes.df.types.storage.{ArrayType, MapType, StructType}
 import io.cebes.server.routes.HttpJsonProtocol
 import spray.json._
+
+import scala.collection.mutable
+import scala.reflect.ClassTag
 
 case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
 
@@ -35,44 +36,97 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
   implicit object DataSampleFormat extends JsonFormat[DataSample] {
 
     override def write(obj: DataSample): JsValue = {
-      def safeJson(v: Any, js: => JsValue): JsValue = if (v == null) JsNull else js
-
       val data = obj.schema.fields.zip(obj.data).map {
-        case (f, col) =>
-          val colVals = f.storageType match {
-            case StorageTypes.StringType =>
-              col.map(s => safeJson(s, JsString(s.toString)))
-            case StorageTypes.BinaryType =>
-              serializationError(s"Don't know how to serialize binary: $col")
-            case StorageTypes.DateType =>
-              serializationError(s"Don't know how to serialize date: $col")
-            case StorageTypes.TimestampType =>
-              serializationError(s"Don't know how to serialize timestamp: $col")
-            case StorageTypes.CalendarIntervalType =>
-              serializationError(s"Don't know how to serialize calendar interval: $col")
-            case StorageTypes.BooleanType =>
-              col.map(v => safeJson(v, JsBoolean(v.asInstanceOf[Boolean])))
-            case t if Seq(StorageTypes.ByteType, StorageTypes.ShortType,
-              StorageTypes.IntegerType, StorageTypes.LongType,
-              StorageTypes.FloatType, StorageTypes.DoubleType).contains(t) =>
-              col.map(v => safeJson(v, JsNumber(v.asInstanceOf[Number].doubleValue())))
-            case _: ArrayType =>
-              serializationError(s"Don't know how to serialize array: $col")
-            case _: MapType =>
-              serializationError(s"Don't know how to serialize map: $col")
-            case _: StructType =>
-              serializationError(s"Don't know how to serialize struct: $col")
-            case t =>
-              serializationError(s"Don't support serializing type $t: $col")
-          }
-          JsArray(colVals: _*)
+        case (_, col) => JsArray(col.map(s => writeJson(s)): _*)
       }
       JsObject(Map("schema" -> obj.schema.toJson, "data" -> JsArray(data: _*)))
     }
 
-    override def read(json: JsValue): DataSample = {
-      def safeRead(js: JsValue, v: => Any): Any = if (js == JsNull) null else v
+    private def toJsObject(typeName: String, data: JsValue): JsObject = {
+      JsObject(Map("type" -> JsString(typeName), "data" -> data))
+    }
 
+    private def asJsType[T <: JsValue](js: JsValue)(implicit tag: ClassTag[T]): T = js match {
+      case v: T => v
+      case other =>
+        deserializationError(s"Expected a ${tag.runtimeClass.asInstanceOf[Class[T]].getName}, " +
+          s"got ${other.getClass.getName}")
+    }
+
+    private def writeJson(value: Any): JsValue = {
+      value match {
+        case null => JsNull
+        case x: String => JsString(x)
+        case x: Boolean => JsBoolean(x)
+        case b: Byte => toJsObject("byte", JsNumber(b))
+        case s: Short => toJsObject("short", JsNumber(s))
+        case i: Int => toJsObject("int", JsNumber(i))
+        case l: Long => toJsObject("long", JsNumber(l))
+        case f: Float => toJsObject("float", JsNumber(f))
+        case v: Number => toJsObject("double", JsNumber(v.doubleValue()))
+        case arr: Array[_] =>
+          if (arr.length > 0 && !arr.head.isInstanceOf[Byte]) {
+            serializationError(s"Only an array of bytes is supported. " +
+              s"Got an array of ${arr.head.getClass.getName}")
+          }
+          toJsObject("byte_array", JsArray(arr.map { v => JsNumber(v.asInstanceOf[Byte]) }: _*))
+        case arr: mutable.WrappedArray[_] =>
+          toJsObject("wrapped_array", JsArray(arr.map(writeJson): _*))
+        case m: Map[_, _] =>
+          val arr = JsArray(m.map {
+            case (k, v) => JsObject(Map("key" -> writeJson(k), "val" -> writeJson(v)))
+          }.toVector)
+          toJsObject("map", arr)
+        case other =>
+          serializationError(s"Don't know how to serialize values of class ${other.getClass.getName}")
+      }
+    }
+
+    private def readJson(js: JsValue): Any = {
+      js match {
+        case JsNull => null
+        case JsString(s) => s
+        case JsBoolean(v) => v
+        case obj: JsObject =>
+          if (!obj.fields.contains("type") || !obj.fields.contains("data")) {
+            deserializationError(s"Unknown 'type' or 'data' of JSON value: ${obj.compactPrint}")
+          }
+          val jsData = obj.fields("data")
+
+          obj.fields("type") match {
+            case JsString("byte") => asJsType[JsNumber](jsData).value.byteValue()
+            case JsString("short") => asJsType[JsNumber](jsData).value.shortValue()
+            case JsString("int") => asJsType[JsNumber](jsData).value.intValue()
+            case JsString("long") => asJsType[JsNumber](jsData).value.longValue()
+            case JsString("float") => asJsType[JsNumber](jsData).value.floatValue()
+            case JsString("double") => asJsType[JsNumber](jsData).value.doubleValue()
+            case JsString("byte_array") =>
+              val arr = Array.newBuilder[Byte]
+              arr ++= asJsType[JsArray](jsData).elements.map { v => asJsType[JsNumber](v).value.byteValue() }
+              arr.result()
+            case JsString("wrapped_array") =>
+              mutable.WrappedArray.make(asJsType[JsArray](jsData).elements.map(readJson).toArray)
+            case JsString("map") =>
+              val elements = asJsType[JsArray](jsData).elements.map {
+                case o: JsObject =>
+                  if (!o.fields.contains("key") || !o.fields.contains("val")) {
+                    deserializationError(s"Unknown 'key' or 'val' of JSON value: ${o.compactPrint}")
+                  }
+                  readJson(o.fields("key")) -> readJson(o.fields("val"))
+                case other =>
+                  deserializationError(s"Expected a JsObject, got: ${other.getClass.getName}")
+              }
+              Map(elements: _*)
+            case other =>
+              deserializationError(s"Expected type as 'array', 'wrapped_array' or 'map', " +
+                s"got: ${other.getClass.getName}: ${other.compactPrint}")
+          }
+        case other =>
+          deserializationError(s"Don't support deserializing JSON value: ${other.compactPrint}")
+      }
+    }
+
+    override def read(json: JsValue): DataSample = {
       json match {
         case obj: JsObject =>
           require(obj.fields.contains("schema") && obj.fields.contains("data"),
@@ -88,40 +142,7 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
                 case (f, col) =>
                   col match {
                     case arrCol: JsArray =>
-                      f.storageType match {
-                        case StorageTypes.StringType =>
-                          arrCol.elements.map(s => safeRead(s, s.convertTo[String]))
-                        case StorageTypes.BinaryType =>
-                          deserializationError(s"Don't know how to deserialize binary: $arrCol")
-                        case StorageTypes.DateType =>
-                          deserializationError(s"Don't know how to deserialize date: $arrCol")
-                        case StorageTypes.TimestampType =>
-                          deserializationError(s"Don't know how to deserialize timestamp: $arrCol")
-                        case StorageTypes.CalendarIntervalType =>
-                          deserializationError(s"Don't know how to deserialize calendar interval: $arrCol")
-                        case StorageTypes.BooleanType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Boolean]))
-                        case StorageTypes.ByteType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Byte]))
-                        case StorageTypes.ShortType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Short]))
-                        case StorageTypes.IntegerType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Int]))
-                        case StorageTypes.LongType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Long]))
-                        case StorageTypes.FloatType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Float]))
-                        case StorageTypes.DoubleType =>
-                          arrCol.elements.map(v => safeRead(v, v.convertTo[Double]))
-                        case _: ArrayType =>
-                          deserializationError(s"Don't know how to deserialize array: $arrCol")
-                        case _: MapType =>
-                          deserializationError(s"Don't know how to deserialize map: $arrCol")
-                        case _: StructType =>
-                          deserializationError(s"Don't know how to deserialize struct: $arrCol")
-                        case t =>
-                          deserializationError(s"Don't support deserialize type $t: $arrCol")
-                      }
+                      arrCol.elements.map(readJson)
                     case a =>
                       deserializationError(s"Expect a JsArray object, got ${a.getClass.getName} instead")
                   }
