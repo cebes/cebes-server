@@ -22,8 +22,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.helpers.TestDataHelper
-import io.cebes.server.models._
-import io.cebes.server.routes.df.CebesDfProtocol._
+import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
+import io.cebes.server.routes.auth.LoginRequest
 import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 import spray.json.JsonFormat
@@ -53,7 +53,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   override def sendSql(sqlText: String): RemoteDataframe = {
-    RemoteDataframe(wait(postAsync[String, DataframeResponse]("df/sql", sqlText)).id)
+    waitDf(postAsync[String, DataframeResponse]("df/sql", sqlText))
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   private def login() = {
-    Post(s"/${Routes.API_VERSION}/auth/login", UserLogin("foo", "bar")) ~> routes ~> check {
+    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> routes ~> check {
       assert(status === StatusCodes.OK)
       val responseCookies = headers.filter(_.name().startsWith("Set-"))
       assert(responseCookies.nonEmpty)
@@ -128,7 +128,9 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
 
   protected def wait[T](awaitable: Awaitable[T]): T = Await.result(awaitable, Duration.Inf)
 
-  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe =
-    RemoteDataframe(wait(awaitable).id)
+  protected def waitDf(awaitable: Awaitable[DataframeResponse]): RemoteDataframe = {
+    val df = wait(awaitable)
+    RemoteDataframe(df.id, df.schema)
+  }
 
 }

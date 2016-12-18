@@ -14,7 +14,9 @@
 
 package io.cebes.df.types.storage
 
-class Metadata(private[df] val map: Map[String, Any]) {
+class Metadata(private[storage] val map: Map[String, Any]) {
+
+  def getMap: Map[String, Any] = this.map
 
   /** Tests whether this Metadata contains a binding for a key. */
   def contains(key: String): Boolean = map.contains(key)

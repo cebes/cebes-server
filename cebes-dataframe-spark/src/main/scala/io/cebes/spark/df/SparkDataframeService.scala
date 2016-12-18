@@ -17,6 +17,7 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import com.google.inject.Inject
+import io.cebes.df.sample.DataSample
 import io.cebes.df.{Dataframe, DataframeService, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 
@@ -31,12 +32,37 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   private val sparkSession = hasSparkSession.session
 
 
-  def sql(sqlText: String): Dataframe = addToStore {
+  override def sql(sqlText: String): Dataframe = addToStore {
     new SparkDataframe(sparkSession.sql(sqlText))
+  }
+
+  override def count(dfId: UUID): Long = dfStore(dfId).count()
+
+  override def take(dfId: UUID, n: Int): DataSample = {
+    dfStore(dfId).take(n)
   }
 
   override def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = addToStore {
     dfStore(dfId).sample(withReplacement, fraction, seed)
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Data exploration
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Returns a new Dataframe with columns dropped.
+    * This is a no-op if schema doesn't contain column name(s).
+    */
+  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe = addToStore {
+    dfStore(dfId).drop(colNames)
+  }
+
+  /**
+    * Returns a new Dataframe that contains only the unique rows from this Dataframe.
+    */
+  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe = addToStore {
+    dfStore(dfId).dropDuplicates(colNames)
   }
 
   /////////////////////////////////////////////////////////////////////////////

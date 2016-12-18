@@ -18,7 +18,6 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.server.RequestContext
 import akka.util.ByteString
 import com.google.inject.Inject
-import io.cebes.server.models.UploadResponse
 import io.cebes.server.routes.common.SyncExecutor
 import io.cebes.storage.DataWriter
 
@@ -40,6 +39,7 @@ class Upload @Inject()(dataWriter: DataWriter) extends SyncExecutor[FormData, Up
         dataWriter.append(byteArray)
         array ++ byteArray
       }
+
       bodyPart.entity.dataBytes.runFold(Array[Byte]())(writeFile)
     }.runFold(0)(_ + _.length)
     v.map { s =>

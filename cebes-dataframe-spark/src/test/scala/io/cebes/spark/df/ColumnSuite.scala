@@ -19,6 +19,7 @@ import io.cebes.df.functions
 import io.cebes.df.types.storage._
 import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper}
 
+
 class ColumnSuite extends CebesBaseSuite with TestDataHelper {
 
   override def beforeAll(): Unit = {

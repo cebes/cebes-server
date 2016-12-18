@@ -17,6 +17,7 @@ package io.cebes.server.routes.df
 import com.google.inject.Inject
 import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.server.result.ResultStorage
+import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -24,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Sample a Dataframe, returns another [[Dataframe]]
   */
 class Sample @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends DataframeOperation[SampleRequest] {
+  extends AsyncDataframeOperation[SampleRequest] {
 
   /**
     * Implement this to do the real work

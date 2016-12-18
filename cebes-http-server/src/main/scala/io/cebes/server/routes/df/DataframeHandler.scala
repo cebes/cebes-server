@@ -21,9 +21,12 @@ import akka.http.scaladsl.server.{RequestContext, Route}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.df.sample.DataSample
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.routes.df.CebesDfProtocol._
+import io.cebes.server.routes.DataframeResponse
+import io.cebes.server.routes.common.{AsyncDataframeOperation, AsyncExecutor}
+import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import spray.json._
 
 import scala.concurrent.ExecutionContext
@@ -40,27 +43,46 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
 
   implicit def actorMaterializer: Materializer
 
+  val dataframeApi: Route = pathPrefix("df") {
+    myRequiredSession { _ =>
+      concat(
+        operationDf[Sql, String],
+        operation[Count, CountRequest, Long],
+        operationDf[Sample, SampleRequest],
+        operation[Take, TakeRequest, DataSample],
+        operationDf[DropColumns, ColumnsRequest],
+        operationDf[DropDuplicates, ColumnsRequest]
+      )
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Helpers
+  /////////////////////////////////////////////////////////////////////////////
+
   /**
-    * An operation done by class [[W]] (subclass of [[DataframeOperation]],
+    * An operation done by class [[W]] (subclass of [[AsyncDataframeOperation]],
     * with entity of type [[E]]
     */
-  private def operation[W <: DataframeOperation[E], E](implicit umE: FromRequestUnmarshaller[E],
-                                                       jfE: JsonFormat[E], tag: ClassTag[W]): Route = {
+  private def operationDf[W <: AsyncDataframeOperation[E], E]
+  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E]): Route = {
+    operation[W, E, DataframeResponse]
+  }
+
+  /**
+    * An operation done by class [[W]] (subclass of [[AsyncExecutor]],
+    * with entity of type [[E]] and result of type [[R]]
+    */
+  private def operation[W <: AsyncExecutor[E, _, R], E, R]
+  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E],
+   jfR: JsonFormat[R]): Route = {
+
     val workerName = tag.runtimeClass.asInstanceOf[Class[W]].getSimpleName.toLowerCase
     (path(workerName) & post) {
       entity(as[E]) { requestEntity =>
         implicit ctx: RequestContext =>
           CebesHttpServerInjector.instance[W].run(requestEntity).flatMap(ctx.complete(_))
       }
-    }
-  }
-
-  val dataframeApi: Route = pathPrefix("df") {
-    myRequiredSession { _ =>
-      concat(
-        operation[Sample, SampleRequest],
-        operation[Sql, String]
-      )
     }
   }
 }

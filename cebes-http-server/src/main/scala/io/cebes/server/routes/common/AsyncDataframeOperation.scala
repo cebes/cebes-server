@@ -12,11 +12,10 @@
  * Created by phvu on 13/12/2016.
  */
 
-package io.cebes.server.routes.df
+package io.cebes.server.routes.common
 
 import io.cebes.df.Dataframe
-import io.cebes.server.models.DataframeResponse
-import io.cebes.server.routes.common.AsyncExecutor
+import io.cebes.server.routes.DataframeResponse
 
 /**
   * Abstract class for *asynchronous* operations that return a Dataframe.
@@ -24,7 +23,7 @@ import io.cebes.server.routes.common.AsyncExecutor
   *
   * @tparam E Type of the request entity
   */
-abstract class DataframeOperation[E] extends AsyncExecutor[E, Dataframe, DataframeResponse] {
+abstract class AsyncDataframeOperation[E] extends AsyncExecutor[E, Dataframe, DataframeResponse] {
 
   /**
     * Transform the actual result (of type T)
@@ -36,6 +35,6 @@ abstract class DataframeOperation[E] extends AsyncExecutor[E, Dataframe, Datafra
     * @return a JSON-serializable object, to be returned to the clients
     */
   override protected def transformResult(requestEntity: E, result: Dataframe): Option[DataframeResponse] = {
-    Some(DataframeResponse(result.id))
+    Some(DataframeResponse(result.id, result.schema.copy()))
   }
 }

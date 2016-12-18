@@ -15,19 +15,28 @@
 package io.cebes.server.routes.df
 
 import com.google.inject.Inject
-import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.df.DataframeService
+import io.cebes.df.sample.DataSample
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncDataframeOperation
+import io.cebes.server.routes.common.AsyncExecutor
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Runs the given SQL string, and returns a [[Dataframe]]
+  * Sample a Dataframe, returns a sample of the data
   */
-class Sql @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncDataframeOperation[String] {
+class Take @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncExecutor[TakeRequest, DataSample, DataSample] {
 
-  override protected def runImpl(requestEntity: String)(implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.sql(requestEntity)
+  /**
+    * Implement this to do the real work
+    */
+  override protected def runImpl(requestEntity: TakeRequest)
+                                (implicit ec: ExecutionContext): Future[DataSample] = Future {
+    dfService.take(requestEntity.df, requestEntity.n)
+  }
+
+  override protected def transformResult(requestEntity: TakeRequest, result: DataSample): Option[DataSample] = {
+    Some(result)
   }
 }

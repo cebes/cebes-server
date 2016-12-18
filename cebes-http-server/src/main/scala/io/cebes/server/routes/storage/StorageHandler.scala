@@ -22,8 +22,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.models.CebesJsonProtocol._
-import io.cebes.server.models.ReadRequest
+import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 

@@ -19,7 +19,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.models.CebesJsonProtocol._
+import io.cebes.server.routes.HttpJsonProtocol._
 
 import scala.concurrent.ExecutionContext
 

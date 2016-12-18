@@ -17,7 +17,7 @@ package io.cebes.server.result
 import java.util.UUID
 
 import io.cebes.server.helpers.CebesHttpServerTestInjector
-import io.cebes.server.models.{RequestStatuses, SerializableResult}
+import io.cebes.server.routes.{RequestStatuses, SerializableResult}
 import org.scalatest.FunSuite
 import spray.json._
 

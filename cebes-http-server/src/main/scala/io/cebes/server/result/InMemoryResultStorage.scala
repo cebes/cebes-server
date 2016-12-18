@@ -17,7 +17,7 @@ package io.cebes.server.result
 import java.util.UUID
 
 import com.google.inject.Singleton
-import io.cebes.server.models.SerializableResult
+import io.cebes.server.routes.SerializableResult
 
 import scala.collection.mutable
 

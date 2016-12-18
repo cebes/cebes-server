@@ -19,8 +19,8 @@ import java.io.{PrintWriter, StringWriter}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.RequestContext
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.server.models._
 import io.cebes.server.result.ResultStorage
+import io.cebes.server.routes.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
 import spray.json._
 
 import scala.concurrent.{ExecutionContext, Future}

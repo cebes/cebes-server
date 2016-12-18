@@ -16,13 +16,22 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
-import io.cebes.server.models.CebesJsonProtocol
+import io.cebes.server.routes.HttpJsonProtocol
 
-private[server] case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
+case class SampleRequest(df: UUID, withReplacement: Boolean, fraction: Double, seed: Long)
 
-private[server] trait CebesDfProtocol extends CebesJsonProtocol {
+case class TakeRequest(df: UUID, n: Int)
+
+case class ColumnsRequest(df: UUID, columns: Array[String])
+
+case class CountRequest(df: UUID)
+
+trait HttpDfJsonProtocol extends HttpJsonProtocol {
 
   implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
+  implicit val takeRequestFormat = jsonFormat2(TakeRequest)
+  implicit val columnsRequestFormat = jsonFormat2(ColumnsRequest)
+  implicit val countRequestFormat = jsonFormat1(CountRequest)
 }
 
-private[server] object CebesDfProtocol extends CebesDfProtocol
+object HttpDfJsonProtocol extends HttpDfJsonProtocol

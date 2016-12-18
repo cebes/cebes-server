@@ -9,18 +9,18 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 14/12/2016.
+ * Created by phvu on 18/12/2016.
  */
 
-package io.cebes.server.client
+package io.cebes.server.routes.auth
 
-import java.util.UUID
+import io.cebes.server.routes.HttpJsonProtocol
 
-import io.cebes.df.schema.Schema
+case class LoginRequest(userName: String, passwordHash: String)
 
-/**
-  * A dummy object for representing the Dataframe on the server.
-  * This is only used for the client
-  * @param id ID of the Dataframe
-  */
-case class RemoteDataframe(id: UUID, schema: Schema)
+trait HttpAuthJsonProtocol extends HttpJsonProtocol {
+
+  implicit val loginRequestFormat = jsonFormat2(LoginRequest)
+}
+
+object HttpAuthJsonProtocol extends HttpAuthJsonProtocol

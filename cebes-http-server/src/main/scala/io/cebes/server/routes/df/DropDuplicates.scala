@@ -9,7 +9,7 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 13/12/2016.
+ * Created by phvu on 18/12/2016.
  */
 
 package io.cebes.server.routes.df
@@ -21,13 +21,11 @@ import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * Runs the given SQL string, and returns a [[Dataframe]]
-  */
-class Sql @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncDataframeOperation[String] {
+class DropDuplicates @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncDataframeOperation[ColumnsRequest] {
 
-  override protected def runImpl(requestEntity: String)(implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.sql(requestEntity)
+  override protected def runImpl(requestEntity: ColumnsRequest)
+                                (implicit ec: ExecutionContext): Future[Dataframe] = Future {
+    dfService.dropDuplicates(requestEntity.df, requestEntity.columns)
   }
 }
