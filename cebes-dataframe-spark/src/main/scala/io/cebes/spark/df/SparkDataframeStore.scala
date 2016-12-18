@@ -64,7 +64,7 @@ import spray.json._
   private lazy val cache: LoadingCache[UUID, Dataframe] = {
     val supporter = new CachePersistenceSupporter[UUID, Dataframe](jdbcPersistence)
       .withRemovalFilter { case (_, _) =>
-        //TODO: implement this: only store dataframes that are pinned
+        //TODO: implement this: only store dataframes that are pinned (and tests)
         true
       }
     CacheBuilder.from(cacheSpec).removalListener(supporter).build[UUID, Dataframe](supporter)

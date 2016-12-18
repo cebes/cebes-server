@@ -17,6 +17,7 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.df.sample.DataSample
 import io.cebes.server.client.ServerException
 import io.cebes.server.routes.{AbstractRouteSuite, DataframeResponse}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
@@ -42,6 +43,24 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
         SampleRequest(UUID.randomUUID(), withReplacement = true, 0.5, 42)))
     }
     assert(ex.message.startsWith("Dataframe ID not found"))
+  }
 
+  test("take") {
+    val df = getCylinderBands
+
+    val sample = wait[DataSample](postAsync[TakeRequest, DataSample]("df/take", TakeRequest(df.id, 15)))
+    assert(sample.schema === df.schema)
+    assert(sample.data.length === sample.schema.size)
+    assert(sample.data.forall(_.length === 15))
+
+    val ex1 = intercept[ServerException] {
+      wait[DataSample](postAsync[TakeRequest, DataSample]("df/take", TakeRequest(df.id, -15)))
+    }
+    assert(ex1.getMessage.startsWith("The limit expression must be equal to or greater than 0"))
+
+    val ex2 = intercept[ServerException] {
+      wait[DataSample](postAsync[TakeRequest, DataSample]("df/take", TakeRequest(UUID.randomUUID(), 15)))
+    }
+    assert(ex2.message.startsWith("Dataframe ID not found"))
   }
 }
