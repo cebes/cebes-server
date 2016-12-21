@@ -16,10 +16,16 @@ package io.cebes.spark.df.support
 
 import io.cebes.df.Dataframe
 import io.cebes.df.support.StatFunctions
+import io.cebes.spark.df.DataframeFactory
 import io.cebes.spark.util.CebesSparkUtil
-import org.apache.spark.sql.DataFrameStatFunctions
+import org.apache.spark.sql.{DataFrame, DataFrameStatFunctions}
 
-class SparkStatFunctions private[df](sparkStat: DataFrameStatFunctions) extends StatFunctions with CebesSparkUtil {
+/**
+  * Use [[DataframeFactory]] to create new instances of this class
+  */
+class SparkStatFunctions private[df](dfFactory: DataframeFactory,
+                                     sparkStat: DataFrameStatFunctions)
+  extends StatFunctions with CebesSparkUtil {
 
   override def approxQuantile(col: String, probabilities: Array[Double], relativeError: Double): Array[Double] = {
     sparkStat.approxQuantile(col, probabilities, relativeError)
@@ -42,4 +48,14 @@ class SparkStatFunctions private[df](sparkStat: DataFrameStatFunctions) extends 
   override def sampleBy[T](col: String, fractions: Map[T, Double], seed: Long): Dataframe = withSparkDataFrame {
     sparkStat.sampleBy(col, fractions, seed)
   }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Private helpers
+  /////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * short-hand for returning a SparkDataframe, with proper exception handling
+    */
+  private def withSparkDataFrame(df: => DataFrame): Dataframe =
+    dfFactory.df(safeSparkCall(df))
 }

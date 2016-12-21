@@ -22,8 +22,8 @@ import scala.reflect.ClassTag
 object CebesSparkTestInjector {
 
   private lazy val injector: Injector = Guice.createInjector(Stage.DEVELOPMENT,
-    new PropertyModule(true),
-    new CebesSparkDependencyModule)
+    new CebesSparkDependencyModule,
+    new PropertyModule(true))
 
   def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

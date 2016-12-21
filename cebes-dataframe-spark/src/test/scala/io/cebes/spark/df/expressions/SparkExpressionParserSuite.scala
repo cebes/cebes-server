@@ -15,6 +15,7 @@
 package io.cebes.spark.df.expressions
 
 import io.cebes.df.expressions.Expression
+import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper}
 import org.apache.spark.sql.{Column => SparkColumn}
 
@@ -26,11 +27,11 @@ class SparkExpressionParserSuite extends CebesBaseSuite with TestDataHelper {
   }
 
   test("parser with simple spark primitive column") {
-    val parser = new SparkExpressionParser()
+    val parser = CebesSparkTestInjector.instance[SparkExpressionParser]
+    val df = getCylinderBands
 
-    val sparkCol = new SparkColumn("abc")
-    parser.parse(SparkPrimitiveExpression(sparkCol))
-    assert(parser.getResult.isInstanceOf[SparkColumn])
+    val result = parser.parse(SparkPrimitiveExpression(df.id, "timestamp", None))
+    assert(result.isInstanceOf[SparkColumn])
 
     val exp = intercept[RuntimeException] {
       parser.parse(new Expression {
@@ -41,11 +42,13 @@ class SparkExpressionParserSuite extends CebesBaseSuite with TestDataHelper {
   }
 
   test("parser with DF col()") {
-    val df = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
-    val sparkCol = SparkExpressionParser.toSparkColumn(df.col("timestamp"))
+    val parser = CebesSparkTestInjector.instance[SparkExpressionParser]
+    val df = getCylinderBands
+
+    val sparkCol = parser.toSpark(df.col("timestamp"))
     assert(sparkCol.isInstanceOf[SparkColumn])
 
-    val sparkCols = SparkExpressionParser.toSparkColumns(df.col("Timestamp"), df.col("cylinder_number"))
+    val sparkCols = parser.toSpark(Seq(df.col("Timestamp"), df.col("cylinder_number")))
     assert(sparkCols.length === 2)
   }
 }

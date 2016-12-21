@@ -20,9 +20,9 @@ import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.df.schema.Schema
 import io.cebes.df.{Dataframe, DataframeStore}
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.{Prop, Property}
@@ -36,7 +36,8 @@ import spray.json._
  @Prop(Property.MYSQL_PASSWORD) jdbcPassword: String,
  @Prop(Property.MYSQL_DRIVER) jdbcDriver: String,
  @Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
- hasSparkSession: HasSparkSession) extends DataframeStore with LazyLogging {
+ hasSparkSession: HasSparkSession,
+ dfFactory: DataframeFactory) extends DataframeStore with LazyLogging {
 
   private val session = hasSparkSession.session
 
@@ -57,7 +58,7 @@ import spray.json._
     .withSqlToValue { case (id, entry) =>
       val sparkDf = session.table(entry.getString(2))
       val schema = entry.getString(3).parseJson.convertTo[Schema]
-      new SparkDataframe(sparkDf, schema, id)
+      dfFactory.df(sparkDf, schema, id)
     }
     .build()
 
@@ -74,8 +75,9 @@ import spray.json._
     * Store the dataframe. If there is already a Dataframe with the same key,
     * it will be overwritten.
     */
-  override def add(dataframe: Dataframe): Unit = {
+  override def add(dataframe: Dataframe): Dataframe = {
     cache.put(dataframe.id, dataframe)
+    dataframe
   }
 
   /**

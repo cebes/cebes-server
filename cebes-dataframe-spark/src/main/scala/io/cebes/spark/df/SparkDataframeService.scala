@@ -27,13 +27,14 @@ import io.cebes.spark.config.HasSparkSession
   * This class can be instantiated multiple times from the DI framework
   */
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
-                                      dfStore: DataframeStore) extends DataframeService {
+                                      dfStore: DataframeStore,
+                                      dfFactory: DataframeFactory) extends DataframeService {
 
   private val sparkSession = hasSparkSession.session
 
 
-  override def sql(sqlText: String): Dataframe = addToStore {
-    new SparkDataframe(sparkSession.sql(sqlText))
+  override def sql(sqlText: String): Dataframe = dfStore.add {
+    dfFactory.df(sparkSession.sql(sqlText))
   }
 
   override def count(dfId: UUID): Long = dfStore(dfId).count()
@@ -42,7 +43,8 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     dfStore(dfId).take(n)
   }
 
-  override def sample(dfId: UUID, withReplacement: Boolean, fraction: Double, seed: Long): Dataframe = addToStore {
+  override def sample(dfId: UUID, withReplacement: Boolean,
+                      fraction: Double, seed: Long): Dataframe = dfStore.add {
     dfStore(dfId).sample(withReplacement, fraction, seed)
   }
 
@@ -54,27 +56,14 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     * Returns a new Dataframe with columns dropped.
     * This is a no-op if schema doesn't contain column name(s).
     */
-  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe = addToStore {
+  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe = dfStore.add {
     dfStore(dfId).drop(colNames)
   }
 
   /**
     * Returns a new Dataframe that contains only the unique rows from this Dataframe.
     */
-  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe = addToStore {
+  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe = dfStore.add {
     dfStore(dfId).dropDuplicates(colNames)
-  }
-
-  /////////////////////////////////////////////////////////////////////////////
-  // Helpers
-  /////////////////////////////////////////////////////////////////////////////
-
-  /**
-    * Add the Dataframe to the store, and return the dataframe
-    */
-  private def addToStore(op: => Dataframe): Dataframe = {
-    val df = op
-    dfStore.add(df)
-    df
   }
 }

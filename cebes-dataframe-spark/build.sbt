@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.22",
 
   "com.google.inject" % "guice" % Common.guiceVersion,
+  "com.google.inject.extensions" % "guice-assistedinject" % Common.guiceVersion,
 
-  //"org.postgresql" % "postgresql" % "9.4.1211"
   "mysql" % "mysql-connector-java" % Common.mySqlConnectorVersion
 )

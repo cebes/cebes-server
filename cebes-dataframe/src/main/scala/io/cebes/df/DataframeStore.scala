@@ -25,8 +25,9 @@ trait DataframeStore {
   /**
     * Store the dataframe. If there is already a Dataframe with the same key,
     * it will be overwritten.
+    * Return the newly added [[Dataframe]] (whatever passed in this function)
     */
-  def add(dataframe: Dataframe): Unit
+  def add(dataframe: Dataframe): Dataframe
 
   /**
     * Get the Dataframe with the given ID, if any
