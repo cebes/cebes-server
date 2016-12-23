@@ -16,14 +16,14 @@ package io.cebes.spark.df.support
 
 import io.cebes.df.Dataframe
 import io.cebes.df.support.StatFunctions
-import io.cebes.spark.df.DataframeFactory
+import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.{DataFrame, DataFrameStatFunctions}
 
 /**
-  * Use [[DataframeFactory]] to create new instances of this class
+  * Use [[SparkDataframeFactory]] to create new instances of this class
   */
-class SparkStatFunctions private[df](dfFactory: DataframeFactory,
+class SparkStatFunctions private[df](private val dfFactory: SparkDataframeFactory,
                                      sparkStat: DataFrameStatFunctions)
   extends StatFunctions with CebesSparkUtil {
 

@@ -37,7 +37,7 @@ import spray.json._
  @Prop(Property.MYSQL_DRIVER) jdbcDriver: String,
  @Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
  hasSparkSession: HasSparkSession,
- dfFactory: DataframeFactory) extends DataframeStore with LazyLogging {
+ dfFactory: SparkDataframeFactory) extends DataframeStore with LazyLogging {
 
   private val session = hasSparkSession.session
 

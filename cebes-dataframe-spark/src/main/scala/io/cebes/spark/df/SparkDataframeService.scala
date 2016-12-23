@@ -28,7 +28,7 @@ import io.cebes.spark.config.HasSparkSession
   */
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
                                       dfStore: DataframeStore,
-                                      dfFactory: DataframeFactory) extends DataframeService {
+                                      dfFactory: SparkDataframeFactory) extends DataframeService {
 
   private val sparkSession = hasSparkSession.session
 

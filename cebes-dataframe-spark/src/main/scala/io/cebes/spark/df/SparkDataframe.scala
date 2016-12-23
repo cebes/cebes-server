@@ -16,7 +16,6 @@ package io.cebes.spark.df
 
 import java.util.UUID
 
-import com.google.inject.assistedinject.{Assisted, AssistedInject}
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.Schema
 import io.cebes.df.support.{GroupedDataframe, NAFunctions, StatFunctions}
@@ -26,6 +25,7 @@ import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
 import io.cebes.spark.df.schema.SparkSchemaUtils
+import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
@@ -37,28 +37,20 @@ import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
   * because the logic of handling a bunch of [[Dataframe]]s should be at the higher level,
   * specifically the level of [[io.cebes.df.DataframeService]]
   *
+  * Don't initialize this class directly. Use [[SparkDataframeFactory]] instead.
+  *
   * @param sparkDf the spark's DataFrame object
   */
-class SparkDataframe @AssistedInject()(private val dfFactory: DataframeFactory,
-                                       private val parser: SparkExpressionParser,
-                                       @Assisted val sparkDf: DataFrame,
-                                       @Assisted val schema: Schema,
-                                       @Assisted val id: UUID) extends Dataframe with CebesSparkUtil {
+class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
+                                 private val parser: SparkExpressionParser,
+                                 val sparkDf: DataFrame,
+                                 val schema: Schema,
+                                 val id: UUID) extends Dataframe with CebesSparkUtil {
 
   require(sparkDf.columns.length == schema.length &&
     sparkDf.columns.zip(schema).forall(t => t._2.compareName(t._1)),
     s"Invalid schema: schema has ${schema.length} columns (${schema.fieldNames.mkString(", ")})," +
       s"while the data frame seems to has ${sparkDf.columns.length} columns (${sparkDf.columns.mkString(", ")})")
-
-  @AssistedInject
-  def this(dfFactory: DataframeFactory, parser: SparkExpressionParser,
-           @Assisted sparkDf: DataFrame) =
-    this(dfFactory, parser, sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
-
-  @AssistedInject
-  def this(dfFactory: DataframeFactory, parser: SparkExpressionParser,
-           @Assisted sparkDf: DataFrame, @Assisted schema: Schema) =
-    this(dfFactory, parser, sparkDf, schema, UUID.randomUUID())
 
   override def numRows: Long = sparkDf.count()
 
@@ -146,9 +138,9 @@ class SparkDataframe @AssistedInject()(private val dfFactory: DataframeFactory,
     withSparkDataFrame(sparkDf.dropDuplicates(colNames), schema.copy())
   }
 
-  override def na: NAFunctions = dfFactory.na(safeSparkCall(sparkDf.na))
+  override def na: NAFunctions = new SparkNAFunctions(dfFactory, safeSparkCall(sparkDf.na))
 
-  override def stat: StatFunctions = dfFactory.stat(safeSparkCall(sparkDf.stat))
+  override def stat: StatFunctions = new SparkStatFunctions(dfFactory, safeSparkCall(sparkDf.stat))
 
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-like APIs
@@ -228,15 +220,15 @@ class SparkDataframe @AssistedInject()(private val dfFactory: DataframeFactory,
   ////////////////////////////////////////////////////////////////////////////////////
 
   override def groupBy(cols: Column*): GroupedDataframe = {
-    dfFactory.groupedDf(safeSparkCall(sparkDf.groupBy(parser.toSpark(cols): _*)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkDf.groupBy(parser.toSpark(cols): _*)))
   }
 
   override def rollup(cols: Column*): GroupedDataframe = {
-    dfFactory.groupedDf(safeSparkCall(sparkDf.rollup(parser.toSpark(cols): _*)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkDf.rollup(parser.toSpark(cols): _*)))
   }
 
   override def cube(cols: Column*): GroupedDataframe = {
-    dfFactory.groupedDf(safeSparkCall(sparkDf.cube(parser.toSpark(cols): _*)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkDf.cube(parser.toSpark(cols): _*)))
   }
 
   ////////////////////////////////////////////////////////////////////////////////////

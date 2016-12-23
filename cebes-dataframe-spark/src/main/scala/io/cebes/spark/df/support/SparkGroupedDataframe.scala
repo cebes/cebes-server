@@ -14,18 +14,16 @@
 
 package io.cebes.spark.df.support
 
-import com.google.inject.Inject
-import com.google.inject.assistedinject.Assisted
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.{Column, Dataframe}
-import io.cebes.spark.df.DataframeFactory
+import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.df.expressions.SparkExpressionParser
 import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.{DataFrame, RelationalGroupedDataset}
 
-class SparkGroupedDataframe @Inject() private[df](private val dfFactory: DataframeFactory,
-                                                  private val parser: SparkExpressionParser,
-                                                  @Assisted sparkGroupedDataset: RelationalGroupedDataset)
+class SparkGroupedDataframe private[df](private val dfFactory: SparkDataframeFactory,
+                                        private val parser: SparkExpressionParser,
+                                        sparkGroupedDataset: RelationalGroupedDataset)
   extends GroupedDataframe with CebesSparkUtil {
 
   override def agg(exprs: Map[String, String]): Dataframe = withSparkDataFrame {
@@ -58,11 +56,11 @@ class SparkGroupedDataframe @Inject() private[df](private val dfFactory: Datafra
   }
 
   override def pivot(pivotColumn: String): GroupedDataframe = {
-    dfFactory.groupedDf(safeSparkCall(sparkGroupedDataset.pivot(pivotColumn)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkGroupedDataset.pivot(pivotColumn)))
   }
 
   override def pivot(pivotColumn: String, values: Seq[Any]): GroupedDataframe = {
-    dfFactory.groupedDf(safeSparkCall(sparkGroupedDataset.pivot(pivotColumn, values)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkGroupedDataset.pivot(pivotColumn, values)))
   }
 
   /////////////////////////////////////////////////////////////////////////////

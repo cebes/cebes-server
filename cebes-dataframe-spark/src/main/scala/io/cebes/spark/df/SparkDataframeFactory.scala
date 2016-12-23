@@ -16,43 +16,33 @@ package io.cebes.spark.df
 
 import java.util.UUID
 
+import com.google.inject.{Inject, Singleton}
 import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
-import io.cebes.df.support.{GroupedDataframe, NAFunctions, StatFunctions}
-import org.apache.spark.sql.{DataFrame, DataFrameNaFunctions, DataFrameStatFunctions, RelationalGroupedDataset}
+import io.cebes.spark.df.expressions.SparkExpressionParser
+import io.cebes.spark.df.schema.SparkSchemaUtils
+import org.apache.spark.sql.DataFrame
 
 /**
   * Factory for SparkDataframe, to be used in DI framework
   */
-trait DataframeFactory {
+@Singleton class SparkDataframeFactory @Inject()(private val parser: SparkExpressionParser) {
 
   /**
     * Returns a new instance of [[Dataframe]]
     */
-  def df(sparkDf: DataFrame, schema: Schema, id: UUID): Dataframe
+  def df(sparkDf: DataFrame, schema: Schema, id: UUID): Dataframe =
+    new SparkDataframe(this, parser, sparkDf, schema, id)
 
   /**
     * Returns a new instance of [[Dataframe]], with a random ID
     */
-  def df(sparkDf: DataFrame, schema: Schema): Dataframe
+  def df(sparkDf: DataFrame, schema: Schema): Dataframe =
+    df(sparkDf, schema, UUID.randomUUID())
 
   /**
     * Returns a new instance of [[Dataframe]], with a random ID and an automatically-inferred Schema
     */
-  def df(sparkDf: DataFrame): Dataframe
-
-  /**
-    * Returns a new instance of [[GroupedDataframe]]
-    */
-  def groupedDf(sparkGroupedDataset: RelationalGroupedDataset): GroupedDataframe
-
-  /**
-    * Returns a new instance of [[NAFunctions]]
-    */
-  def na(sparkStat: DataFrameNaFunctions): NAFunctions
-
-  /**
-    * Returns a new instance of [[StatFunctions]]
-    */
-  def stat(sparkStat: DataFrameStatFunctions): StatFunctions
+  def df(sparkDf: DataFrame): Dataframe =
+    df(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
 }
