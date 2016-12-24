@@ -17,6 +17,7 @@ package io.cebes.json
 import java.sql.Timestamp
 import java.util.Date
 
+import io.cebes.df.expressions.Expression
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.VariableTypes.VariableType
@@ -26,8 +27,10 @@ import io.cebes.storage.DataFormats
 import io.cebes.storage.DataFormats.DataFormat
 import spray.json._
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -219,97 +222,268 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
         case other => deserializationError(s"Expected a JsObject, but got ${other.getClass.getName}")
       }
     }
+  }
 
-    ///////////////////////////////////
-    // Helpers
-    ///////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  // Expression
+  /////////////////////////////////////////////////////////////////////////////
 
-    private def toJsObject(typeName: String, data: JsValue): JsObject = {
-      JsObject(Map("type" -> JsString(typeName), "data" -> data))
-    }
+  private lazy val runtimeMirror: universe.Mirror = universe.runtimeMirror(getClass.getClassLoader)
 
-    private def asJsType[T <: JsValue](js: JsValue)(implicit tag: ClassTag[T]): T = js match {
-      case v: T => v
-      case other =>
-        deserializationError(s"Expected a ${tag.runtimeClass.asInstanceOf[Class[T]].getName}, " +
-          s"got ${other.getClass.getName}")
-    }
+  abstract class ExpressionFormat extends JsonFormat[Expression] {
 
-    private def writeJson(value: Any): JsValue = {
-      value match {
-        case null => JsNull
-        case x: String => JsString(x)
-        case x: Boolean => JsBoolean(x)
-        case b: Byte => toJsObject("byte", JsNumber(b))
-        case s: Short => toJsObject("short", JsNumber(s))
-        case i: Int => toJsObject("int", JsNumber(i))
-        case l: Long => toJsObject("long", JsNumber(l))
-        case f: Float => toJsObject("float", JsNumber(f))
-        case v: Number => toJsObject("double", JsNumber(v.doubleValue()))
-        case t: Timestamp => toJsObject("timestamp", JsNumber(t.getTime))
-        case d: Date => toJsObject("date", JsNumber(d.getTime))
-        case arr: Array[_] =>
-          if (arr.length > 0 && !arr.head.isInstanceOf[Byte]) {
-            serializationError(s"Only an array of bytes is supported. " +
-              s"Got an array of ${arr.head.getClass.getName}")
-          }
-          toJsObject("byte_array", JsArray(arr.map { v => JsNumber(v.asInstanceOf[Byte]) }: _*))
-        case arr: mutable.WrappedArray[_] =>
-          toJsObject("wrapped_array", JsArray(arr.map(writeJson): _*))
-        case m: Map[_, _] =>
-          val arr = JsArray(m.map {
-            case (k, v) => JsObject(Map("key" -> writeJson(k), "val" -> writeJson(v)))
-          }.toVector)
-          toJsObject("map", arr)
-        case other =>
-          serializationError(s"Don't know how to serialize values of class ${other.getClass.getName}")
+    protected def writeExpression(expr: Expression): Option[JsValue]
+
+    private def writeExpressionGeneric(expr: Expression): JsValue = {
+      val classSymbol = runtimeMirror.classSymbol(expr.getClass)
+      val instanceMirror: universe.InstanceMirror = runtimeMirror.reflect(expr)
+
+      if (!classSymbol.isCaseClass || classSymbol.primaryConstructor.asMethod.paramLists.length != 1) {
+        serializationError("Generic serializer for Expression only works for " +
+          "case class with one parameter list. Please provide custom serialization " +
+          s"logic in writeExpression() for ${expr.getClass.getName}")
       }
+
+      val params = classSymbol.primaryConstructor.asMethod.paramLists.head
+
+      val jsParams = params.zipWithIndex.map { case (p, idx) =>
+        val v = instanceMirror.reflectField(classSymbol.toType.member(p.name).asTerm).get
+        val jsVal = v match {
+          case subExpr: Expression => write(subExpr)
+
+          case expressions: Seq[_] if expressions.head.isInstanceOf[Expression] =>
+            JsArray(expressions.map(e => write(e.asInstanceOf[Expression])): _*)
+
+          case arr: Seq[_] if arr.head.isInstanceOf[(_, _)]
+            && arr.head.asInstanceOf[(_, _)]._1.isInstanceOf[Expression]
+            && arr.head.asInstanceOf[(_, _)]._2.isInstanceOf[Expression] =>
+            // special case of CaseWhen
+            val entries = arr.map(_.asInstanceOf[(Expression, Expression)]).map { tp =>
+              JsArray(write(tp._1), write(tp._2))
+            }
+            JsObject(Map("exprType" -> JsString("Array[Tuple2(Expression)]"),
+              "entries" -> JsArray(entries: _*)))
+
+          case opt: Option[_] if opt.nonEmpty && opt.get.isInstanceOf[Expression] =>
+            JsObject(Map("exprType" -> JsString("Option[Expression]"),
+              "value" -> write(opt.get.asInstanceOf[Expression])))
+
+          case None =>
+            JsObject(Map("exprType" -> JsString("Option[Expression]"),
+              "value" -> JsNull))
+
+          case vv: Any => writeJson(vv)
+        }
+        s"param_$idx" -> jsVal
+      }.toMap
+
+      JsObject(Map("exprType" -> JsString(expr.getClass.getName)) ++ jsParams)
     }
 
-    private def readJson(js: JsValue): Any = {
-      js match {
-        case JsNull => null
-        case JsString(s) => s
-        case JsBoolean(v) => v
-        case obj: JsObject =>
-          if (!obj.fields.contains("type") || !obj.fields.contains("data")) {
-            deserializationError(s"Unknown 'type' or 'data' of JSON value: ${obj.compactPrint}")
-          }
-          val jsData = obj.fields("data")
+    override def write(obj: Expression): JsValue =
+      writeExpression(obj).getOrElse(writeExpressionGeneric(obj))
 
-          obj.fields("type") match {
-            case JsString("byte") => asJsType[JsNumber](jsData).value.byteValue()
-            case JsString("short") => asJsType[JsNumber](jsData).value.shortValue()
-            case JsString("int") => asJsType[JsNumber](jsData).value.intValue()
-            case JsString("long") => asJsType[JsNumber](jsData).value.longValue()
-            case JsString("float") => asJsType[JsNumber](jsData).value.floatValue()
-            case JsString("double") => asJsType[JsNumber](jsData).value.doubleValue()
-            case JsString("timestamp") => new Timestamp(asJsType[JsNumber](jsData).value.longValue())
-            case JsString("date") => new Date(asJsType[JsNumber](jsData).value.longValue())
-            case JsString("byte_array") =>
-              val arr = Array.newBuilder[Byte]
-              arr ++= asJsType[JsArray](jsData).elements.map { v => asJsType[JsNumber](v).value.byteValue() }
-              arr.result()
-            case JsString("wrapped_array") =>
-              mutable.WrappedArray.make(asJsType[JsArray](jsData).elements.map(readJson).toArray)
-            case JsString("map") =>
-              val elements = asJsType[JsArray](jsData).elements.map {
-                case o: JsObject =>
-                  if (!o.fields.contains("key") || !o.fields.contains("val")) {
-                    deserializationError(s"Unknown 'key' or 'val' of JSON value: ${o.compactPrint}")
-                  }
-                  readJson(o.fields("key")) -> readJson(o.fields("val"))
-                case other =>
-                  deserializationError(s"Expected a JsObject, got: ${other.getClass.getName}")
+    ////////////////
+    // read
+    ////////////////
+
+    protected def readExpression(json: JsValue): Option[Expression]
+
+    private def readExpressionGeneric(json: JsValue): Any = {
+      json match {
+        case jsArr: JsArray => jsArr.elements.map {
+          js => readExpression(js).getOrElse(readExpressionGeneric(js))
+        }
+        case jsObj: JsObject =>
+          jsObj.fields.get("exprType") match {
+            case Some(JsString("Array[Tuple2(Expression)]")) =>
+              asJsType[JsArray](jsObj.fields("entries")).elements.map(asJsType[JsArray]).map { entry =>
+                if (entry.elements.length != 2) {
+                  deserializationError(s"Expected list of 2 elements, got ${entry.compactPrint}")
+                }
+                (read(entry.elements.head), read(entry.elements.last))
               }
-              Map(elements: _*)
-            case other =>
-              deserializationError(s"Expected type as 'array', 'wrapped_array' or 'map', " +
-                s"got: ${other.getClass.getName}: ${other.compactPrint}")
+
+            case Some(JsString("Option[Expression]")) =>
+              jsObj.fields("value") match {
+                case JsNull => None
+                case v => Some(read(v))
+              }
+
+            case Some(JsString(className)) =>
+
+              @tailrec
+              def getField(idx: Int, result: Seq[Any]): Seq[Any] = {
+                jsObj.fields.get(s"param_$idx") match {
+                  case None => result
+                  case Some(js) =>
+                    getField(idx + 1, result :+ readExpression(js).getOrElse(readExpressionGeneric(js)))
+                }
+              }
+
+              val params = getField(0, Seq.empty[Any])
+
+              val classSymbol: universe.ClassSymbol = runtimeMirror.classSymbol(Class.forName(className))
+              val classMirror: universe.ClassMirror = runtimeMirror.reflectClass(classSymbol)
+
+              val constructorSymbol = classSymbol.primaryConstructor.asMethod
+              if (!classSymbol.isCaseClass || constructorSymbol.paramLists.length != 1) {
+                deserializationError("Generic serializer for Expression only works for " +
+                  "case class with one parameter list. Please provide custom deserialization " +
+                  s"logic in readExpression() for $className")
+              }
+              if (constructorSymbol.paramLists.head.length != params.length) {
+                deserializationError(s"The constructor of the loaded class (${classSymbol.name}) " +
+                  s"requires ${constructorSymbol.paramLists.head.length} parameters, while we got " +
+                  s"${params.length} from JSON")
+              }
+              val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
+              Try(constructorMirror.apply(params: _*)) match {
+                case Success(v) =>
+                  v match {
+                    case expr: Expression => expr
+                    case _ => deserializationError(s"Unknown return type from constructor: ${v.toString}")
+                  }
+
+                case Failure(f) => deserializationError("Failed to run constructor", f)
+              }
+
+            case _ =>
+              readJson(jsObj)
           }
         case other =>
-          deserializationError(s"Don't support deserializing JSON value: ${other.compactPrint}")
+          readJson(other)
       }
+    }
+
+    override def read(json: JsValue): Expression =
+      readExpression(json).getOrElse {
+        readExpressionGeneric(json) match {
+          case expr: Expression => expr
+          case other => deserializationError(s"Got unwanted type from Json: ${other.toString}")
+        }
+      }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // General helpers, for dealing with basic types
+  /////////////////////////////////////////////////////////////////////////////
+
+  private def toJsObject(typeName: String, data: JsValue): JsObject = {
+    JsObject(Map("type" -> JsString(typeName), "data" -> data))
+  }
+
+  private def writeJson(value: Any): JsValue = {
+    value match {
+      case null => JsNull
+      case x: String => JsString(x)
+      case x: Boolean => JsBoolean(x)
+      case b: Byte => toJsObject("byte", JsNumber(b))
+      case s: Short => toJsObject("short", JsNumber(s))
+      case i: Int => toJsObject("int", JsNumber(i))
+      case l: Long => toJsObject("long", JsNumber(l))
+      case f: Float => toJsObject("float", JsNumber(f))
+      case v: Number => toJsObject("double", JsNumber(v.doubleValue()))
+      case t: Timestamp => toJsObject("timestamp", JsNumber(t.getTime))
+      case d: Date => toJsObject("date", JsNumber(d.getTime))
+      case arr: Array[_] =>
+        if (arr.length > 0 && !arr.head.isInstanceOf[Byte]) {
+          serializationError(s"Only an array of bytes is supported. " +
+            s"Got an array of ${
+              arr.head.getClass.getName
+            }")
+        }
+        toJsObject("byte_array", JsArray(arr.map {
+          v => JsNumber(v.asInstanceOf[Byte])
+        }: _*))
+      case arr: mutable.WrappedArray[_] =>
+        toJsObject("wrapped_array", JsArray(arr.map(writeJson): _*))
+      case m: Map[_, _] =>
+        val arr = JsArray(m.map {
+          case (k, v) => JsObject(Map("key" -> writeJson(k), "val" -> writeJson(v)))
+        }.toVector)
+        toJsObject("map", arr)
+      case seq: Seq[_] =>
+        toJsObject("seq", JsArray(seq.map(writeJson): _*))
+      case s: StorageType =>
+        toJsObject("storageType", s.toJson)
+      case other =>
+        serializationError(s"Don't know how to serialize values of class ${
+          other.getClass.getName
+        }")
+    }
+  }
+
+  private def asJsType[T <: JsValue](js: JsValue)(implicit tag: ClassTag[T]): T = js match {
+    case v: T => v
+    case other =>
+      deserializationError(s"Expected a ${
+        tag.runtimeClass.asInstanceOf[Class[T]].getName
+      }, " +
+        s"got ${
+          other.getClass.getName
+        }")
+  }
+
+  private def readJson(js: JsValue): Any = {
+    js match {
+      case JsNull => null
+      case JsString(s) => s
+      case JsBoolean(v) => v
+      case obj: JsObject =>
+        if (!obj.fields.contains("type") || !obj.fields.contains("data")) {
+          deserializationError(s"Unknown 'type' or 'data' of JSON value: ${
+            obj.compactPrint
+          }")
+        }
+        val jsData = obj.fields("data")
+
+        obj.fields("type") match {
+          case JsString("byte") => asJsType[JsNumber](jsData).value.byteValue()
+          case JsString("short") => asJsType[JsNumber](jsData).value.shortValue()
+          case JsString("int") => asJsType[JsNumber](jsData).value.intValue()
+          case JsString("long") => asJsType[JsNumber](jsData).value.longValue()
+          case JsString("float") => asJsType[JsNumber](jsData).value.floatValue()
+          case JsString("double") => asJsType[JsNumber](jsData).value.doubleValue()
+          case JsString("timestamp") => new Timestamp(asJsType[JsNumber](jsData).value.longValue())
+          case JsString("date") => new Date(asJsType[JsNumber](jsData).value.longValue())
+          case JsString("byte_array") =>
+            val arr = Array.newBuilder[Byte]
+            arr ++= asJsType[JsArray](jsData).elements.map {
+              v => asJsType[JsNumber](v).value.byteValue()
+            }
+            arr.result()
+          case JsString("wrapped_array") =>
+            mutable.WrappedArray.make(asJsType[JsArray](jsData).elements.map(readJson).toArray)
+          case JsString("map") =>
+            val elements = asJsType[JsArray](jsData).elements.map {
+              case o: JsObject =>
+                if (!o.fields.contains("key") || !o.fields.contains("val")) {
+                  deserializationError(s"Unknown 'key' or 'val' of JSON value: ${
+                    o.compactPrint
+                  }")
+                }
+                readJson(o.fields("key")) -> readJson(o.fields("val"))
+              case other =>
+                deserializationError(s"Expected a JsObject, got: ${
+                  other.getClass.getName
+                }")
+            }
+            Map(elements: _*)
+          case JsString("seq") => asJsType[JsArray](jsData).elements.map(readJson)
+          case JsString("storageType") => jsData.convertTo[StorageType]
+          case other =>
+            deserializationError(s"Expected type as 'array', 'wrapped_array' or 'map', " +
+              s"got: ${
+                other.getClass.getName
+              }: ${
+                other.compactPrint
+              }")
+        }
+      case other =>
+        deserializationError(s"Don't support deserializing JSON value: ${
+          other.compactPrint
+        }")
     }
   }
 }

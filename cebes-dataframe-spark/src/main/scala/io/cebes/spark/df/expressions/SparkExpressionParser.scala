@@ -60,8 +60,9 @@ import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 
   protected def visitSortOrder(expr: SortOrder, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
     Some(expr.direction match {
-      case Ascending => parsedChildren.head.asc
-      case Descending => parsedChildren.head.desc
+      case SortOrder.Ascending => parsedChildren.head.asc
+      case SortOrder.Descending => parsedChildren.head.desc
+      case v => throw new IllegalArgumentException(s"Unknown sort order: $v")
     })
   }
 

@@ -14,14 +14,9 @@
 
 package io.cebes.df.expressions
 
-abstract sealed class SortDirection {
-}
+case class SortOrder(child: Expression, direction: String) extends UnaryExpression
 
-case object Ascending extends SortDirection {
-}
-
-case object Descending extends SortDirection {
-}
-
-case class SortOrder(child: Expression, direction: SortDirection) extends UnaryExpression {
+object SortOrder {
+  val Ascending = "Ascending"
+  val Descending = "Descending"
 }
