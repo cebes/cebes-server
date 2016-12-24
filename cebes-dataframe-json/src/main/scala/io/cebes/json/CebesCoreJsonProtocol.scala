@@ -230,7 +230,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
 
   private lazy val runtimeMirror: universe.Mirror = universe.runtimeMirror(getClass.getClassLoader)
 
-  abstract class ExpressionFormat extends JsonFormat[Expression] {
+  abstract class AbstractExpressionFormat extends JsonFormat[Expression] {
 
     protected def writeExpression(expr: Expression): Option[JsValue]
 

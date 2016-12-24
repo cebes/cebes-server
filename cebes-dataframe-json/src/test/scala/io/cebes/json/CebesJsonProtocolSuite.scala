@@ -218,7 +218,7 @@ class CebesJsonProtocolSuite extends FunSuite {
   }
 
   test("Expression") {
-    implicit object MyExprFormat extends ExpressionFormat {
+    implicit object MyExprFormat extends AbstractExpressionFormat {
 
       override protected def writeExpression(expr: Expression): Option[JsValue] = None
 
