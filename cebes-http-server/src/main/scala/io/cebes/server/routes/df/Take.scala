@@ -26,17 +26,17 @@ import scala.concurrent.{ExecutionContext, Future}
   * Sample a Dataframe, returns a sample of the data
   */
 class Take @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncExecutor[TakeRequest, DataSample, DataSample] {
+  extends AsyncExecutor[LimitRequest, DataSample, DataSample] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: TakeRequest)
+  override protected def runImpl(requestEntity: LimitRequest)
                                 (implicit ec: ExecutionContext): Future[DataSample] = Future {
     dfService.take(requestEntity.df, requestEntity.n)
   }
 
-  override protected def transformResult(requestEntity: TakeRequest, result: DataSample): Option[DataSample] = {
+  override protected def transformResult(requestEntity: LimitRequest, result: DataSample): Option[DataSample] = {
     Some(result)
   }
 }

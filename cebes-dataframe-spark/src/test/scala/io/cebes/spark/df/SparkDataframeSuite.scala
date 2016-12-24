@@ -143,9 +143,10 @@ class SparkDataframeSuite extends CebesBaseSuite
     assert(col4Cn.head < col4Cn(1))
     assert(col4Ts.head > col4Ts.last)
 
-    intercept[CebesBackendException] {
+    val ex = intercept[CebesBackendException] {
       df.sort(df.col("timestampZXXXXX"))
     }
+    assert(ex.getMessage.startsWith("Spark query analysis exception: Cannot resolve column name"))
   }
 
   test("drop columns") {

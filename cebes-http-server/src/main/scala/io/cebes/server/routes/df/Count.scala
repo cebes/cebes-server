@@ -25,17 +25,17 @@ import scala.concurrent.{ExecutionContext, Future}
   * Count the number of rows of the given Dataframe
   */
 class Count @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncExecutor[CountRequest, Long, Long] {
+  extends AsyncExecutor[DataframeRequest, Long, Long] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: CountRequest)
+  override protected def runImpl(requestEntity: DataframeRequest)
                                 (implicit ec: ExecutionContext): Future[Long] = Future {
     dfService.count(requestEntity.df)
   }
 
-  override protected def transformResult(requestEntity: CountRequest, result: Long): Option[Long] = {
+  override protected def transformResult(requestEntity: DataframeRequest, result: Long): Option[Long] = {
     Some(result)
   }
 }

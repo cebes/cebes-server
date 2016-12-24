@@ -16,11 +16,21 @@ package io.cebes.server.client
 
 import java.util.UUID
 
+import io.cebes.df.Column
 import io.cebes.df.schema.Schema
+import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 
 /**
   * A dummy object for representing the Dataframe on the server.
   * This is only used for the client
+  *
   * @param id ID of the Dataframe
   */
-case class RemoteDataframe(id: UUID, schema: Schema)
+case class RemoteDataframe(id: UUID, schema: Schema) {
+
+  /**
+    * This is a hack, we should create separated "remote" objects
+    * for Columns and so on
+    */
+  def col(colName: String) = new Column(SparkPrimitiveExpression(id, colName, None))
+}

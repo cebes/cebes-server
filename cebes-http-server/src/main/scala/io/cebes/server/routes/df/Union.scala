@@ -21,11 +21,11 @@ import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class DropDuplicates @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncDataframeOperation[ColumnNamesRequest] {
+class Union @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncDataframeOperation[DataframeSetRequest] {
 
-  override protected def runImpl(requestEntity: ColumnNamesRequest)
+  override protected def runImpl(requestEntity: DataframeSetRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.dropDuplicates(requestEntity.df, requestEntity.columns)
+    dfService.union(requestEntity.df, requestEntity.otherDf)
   }
 }

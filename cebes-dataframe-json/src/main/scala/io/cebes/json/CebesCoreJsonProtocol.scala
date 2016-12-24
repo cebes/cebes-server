@@ -373,7 +373,10 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
     JsObject(Map("type" -> JsString(typeName), "data" -> data))
   }
 
-  private def writeJson(value: Any): JsValue = {
+  /**
+    * Write basic scala types to JSON
+    */
+  protected def writeJson(value: Any): JsValue = {
     value match {
       case null => JsNull
       case x: String => JsString(x)
@@ -425,7 +428,10 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
         }")
   }
 
-  private def readJson(js: JsValue): Any = {
+  /**
+    * Read the value written by [[writeJson()]]
+    */
+  protected def readJson(js: JsValue): Any = {
     js match {
       case JsNull => null
       case JsString(s) => s

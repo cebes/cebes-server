@@ -47,11 +47,29 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     myRequiredSession { _ =>
       concat(
         operationDf[Sql, String],
-        operation[Count, CountRequest, Long],
+        operation[Count, DataframeRequest, Long],
         operationDf[Sample, SampleRequest],
-        operation[Take, TakeRequest, DataSample],
-        operationDf[DropColumns, ColumnsRequest],
-        operationDf[DropDuplicates, ColumnsRequest]
+        operation[Take, LimitRequest, DataSample],
+
+        operationDf[Sort, ColumnsRequest],
+        operationDf[DropColumns, ColumnNamesRequest],
+        operationDf[DropDuplicates, ColumnNamesRequest],
+        operationDf[DropNA, DropNARequest],
+        operationDf[FillNA, FillNARequest],
+        operationDf[FillNAWithMap, FillNAWithMapRequest],
+        operationDf[Replace, ReplaceRequest],
+
+        operationDf[WithColumn, WithColumnRequest],
+        operationDf[WithColumnRenamed, WithColumnRenamedRequest],
+        operationDf[Select, ColumnsRequest],
+        operationDf[Where, ColumnsRequest],
+        operationDf[Alias, AliasRequest],
+        operationDf[Join, JoinRequest],
+        operationDf[Limit, LimitRequest],
+        operationDf[Union, DataframeSetRequest],
+        operationDf[Intersect, DataframeSetRequest],
+        operationDf[Except, DataframeSetRequest],
+        operationDf[Broadcast, DataframeRequest]
       )
     }
   }
@@ -74,9 +92,7 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     * with entity of type [[E]] and result of type [[R]]
     */
   private def operation[W <: AsyncExecutor[E, _, R], E, R]
-  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E],
-   jfR: JsonFormat[R]): Route = {
-
+  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E], jfR: JsonFormat[R]): Route = {
     val workerName = tag.runtimeClass.asInstanceOf[Class[W]].getSimpleName.toLowerCase
     (path(workerName) & post) {
       entity(as[E]) { requestEntity =>

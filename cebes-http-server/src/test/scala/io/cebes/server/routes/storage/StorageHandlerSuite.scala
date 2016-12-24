@@ -14,19 +14,19 @@
 
 package io.cebes.server.routes.storage
 
-import io.cebes.server.helpers.TestPropertyHelper
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.server.helpers.TestPropertyHelper
+import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
-import io.cebes.server.routes.{AbstractRouteSuite, DataframeResponse}
 import io.cebes.storage.DataFormats
 
 class StorageHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
 
   test("read data from S3", S3TestsEnabled) {
-    val result = waitDf(postAsync[ReadRequest, DataframeResponse]("storage/read",
+    val result = waitDf("storage/read",
       ReadRequest(None, Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
         Some("us-west-1"), "cebes-data-test", "read/cylinder_bands.csv", DataFormats.CSV)),
-        None, None, None)))
+        None, None, None))
     assert(result.id.toString.length > 0)
   }
 }

@@ -25,11 +25,49 @@ import io.cebes.server.routes.df.HttpDfJsonProtocol._
 
 class HttpDfJsonProtocolSuite extends FunSuite {
 
-  test("JSON Serialization Column") {
+  test("Column") {
     val col = new Column(Pow(SparkPrimitiveExpression(UUID.randomUUID(), "col_blah", None), Literal(200)))
     val colStr = col.toJson.compactPrint
 
     val col2 = colStr.parseJson.convertTo[Column]
     assert(col2.expr === col.expr)
+  }
+
+  test("FillNAWithMapRequest") {
+    val r = FillNAWithMapRequest(UUID.randomUUID(),
+      Map("a" -> 10, "b" -> 100L, "c" -> 20.0f, "d" -> 100.0, "e" -> "aaaa", "f" -> true, "g" -> false))
+    val s = r.toJson.compactPrint
+
+    val r2 = s.parseJson.convertTo[FillNAWithMapRequest]
+    assert(r === r2)
+  }
+
+  test("ReplaceRequest") {
+    val r1 = ReplaceRequest(UUID.randomUUID(), Array("a", "b", "c"),
+      Map("x" -> "y", "aaa" -> ""))
+    val s1 = r1.toJson.compactPrint
+    val r2 = s1.parseJson.convertTo[ReplaceRequest]
+    assert(r2.df === r1.df)
+    assert(r2.cols === r1.cols)
+    assert(r2.replacement("x") === "y")
+    assert(r2.replacement("aaa") === "")
+
+    val r3 = ReplaceRequest(UUID.randomUUID(), Array("a", "b", "c"),
+      Map(10.0 -> 0.9, -10.0 -> 20.5))
+    val s3 = r3.toJson.compactPrint
+    val r4 = s3.parseJson.convertTo[ReplaceRequest]
+    assert(r4.df === r3.df)
+    assert(r4.cols === r3.cols)
+    assert(r4.replacement(10.0) === 0.9)
+    assert(r4.replacement(-10.0) === 20.5)
+
+    val r5 = ReplaceRequest(UUID.randomUUID(), Array("a", "b", "c"),
+      Map(true -> false, false -> true))
+    val s5 = r5.toJson.compactPrint
+    val r6 = s5.parseJson.convertTo[ReplaceRequest]
+    assert(r6.df === r5.df)
+    assert(r6.cols === r5.cols)
+    assert(r6.replacement(true) === false)
+    assert(r6.replacement(false) === true)
   }
 }
