@@ -20,7 +20,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
-import io.cebes.df.types.StorageTypes
+import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, functions}
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.routes.AbstractRouteSuite
@@ -66,6 +66,32 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
       request[DataframeRequest, Long]("df/count", DataframeRequest(UUID.randomUUID()))
     }
     assert(ex.message.startsWith("Dataframe ID not found"))
+  }
+
+  test("InferVariableTypes") {
+    val df = getCylinderBands
+    assert(df.schema("timestamp").variableType === VariableTypes.DISCRETE)
+
+    val df1 = requestDf("df/infervariabletypes", LimitRequest(df.id, 10000))
+    assert(df1.id !== df.id)
+    assert(count(df1) === count(df))
+    assert(df1.schema.fieldNames === df.schema.fieldNames)
+    assert(df1.schema("timestamp").variableType === VariableTypes.ORDINAL)
+  }
+
+  test("WithVariableTypes") {
+    val df = getCylinderBands
+    assert(df.schema("timestamp").variableType === VariableTypes.DISCRETE)
+    assert(df.schema("customer").variableType === VariableTypes.TEXT)
+
+    val df1 = requestDf("df/withvariabletypes", WithVariableTypesRequest(df.id,
+      Map("timestamp" -> VariableTypes.ORDINAL,
+      "customer" -> VariableTypes.NOMINAL)))
+    assert(df1.id !== df.id)
+    assert(count(df1) === count(df))
+    assert(df1.schema.fieldNames === df.schema.fieldNames)
+    assert(df1.schema("timestamp").variableType === VariableTypes.ORDINAL)
+    assert(df1.schema("customer").variableType === VariableTypes.NOMINAL)
   }
 
   test("take") {

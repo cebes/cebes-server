@@ -17,6 +17,7 @@ package io.cebes.df
 import java.util.UUID
 
 import io.cebes.df.sample.DataSample
+import io.cebes.df.types.VariableTypes.VariableType
 
 
 object DataframeService {
@@ -44,6 +45,16 @@ trait DataframeService {
     * @return a [[Dataframe]] object
     */
   def sql(sqlText: String): Dataframe
+
+  /**
+    * Automatically infer the variable types, based on some heuristic
+    */
+  def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe
+
+  /**
+    * Change variable types of some columns, returns a new [[Dataframe]]
+    */
+  def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe
 
   /**
     * Returns the number of rows in the given [[Dataframe]]

@@ -19,12 +19,15 @@ import java.util.UUID
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.Column
 import io.cebes.df.expressions.Expression
+import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.server.routes.HttpJsonProtocol
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import spray.json._
 
 
 case class DataframeRequest(df: UUID)
+
+case class WithVariableTypesRequest(df: UUID, variableTypes: Map[String, VariableType])
 
 case class LimitRequest(df: UUID, n: Int)
 
@@ -125,6 +128,7 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
   }
 
   implicit val dataframeRequestFormat = jsonFormat1(DataframeRequest)
+  implicit val withVariableTypesRequestFormat = jsonFormat2(WithVariableTypesRequest)
   implicit val limitRequestFormat = jsonFormat2(LimitRequest)
   implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
   implicit val columnNamesRequestFormat = jsonFormat2(ColumnNamesRequest)

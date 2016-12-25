@@ -47,6 +47,8 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     myRequiredSession { _ =>
       concat(
         operationDf[Sql, String],
+        operationDf[InferVariableTypes, LimitRequest],
+        operationDf[WithVariableTypes, WithVariableTypesRequest],
         operation[Count, DataframeRequest, Long],
         operationDf[Sample, SampleRequest],
         operation[Take, LimitRequest, DataSample],

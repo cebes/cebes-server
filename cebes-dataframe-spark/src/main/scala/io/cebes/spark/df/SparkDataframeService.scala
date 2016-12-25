@@ -20,6 +20,7 @@ import com.google.inject.Inject
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.sample.DataSample
 import io.cebes.df.support.GroupedDataframe
+import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.{Column, Dataframe, DataframeService, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 
@@ -37,6 +38,14 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   override def sql(sqlText: String): Dataframe = dfStore.add {
     dfFactory.df(sparkSession.sql(sqlText))
+  }
+
+  override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = dfStore.add {
+    dfStore(dfId).inferVariableTypes(sampleSize)
+  }
+
+  override def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe = dfStore.add {
+    dfStore(dfId).withVariableTypes(variableTypes)
   }
 
   override def count(dfId: UUID): Long = dfStore(dfId).count()
