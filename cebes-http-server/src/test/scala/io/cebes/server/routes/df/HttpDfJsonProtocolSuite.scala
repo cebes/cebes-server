@@ -16,7 +16,8 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
-import io.cebes.df.Column
+import io.cebes.df.{Column, functions}
+import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions.{Literal, Pow}
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import org.scalatest.FunSuite
@@ -88,5 +89,62 @@ class HttpDfJsonProtocolSuite extends FunSuite {
     val s5 = r5.toJson.compactPrint
     val r6 = s5.parseJson.convertTo[SampleByRequest]
     assert(r5 === r6)
+  }
+
+  test("AggregateRequest") {
+    val r1 = AggregateRequest(UUID.randomUUID(), Array(functions.col("customer")), AggregationTypes.RollUp,
+      None, None, Some(Array(functions.lit(100.0f))), None, Array())
+    val s1 = r1.toJson.compactPrint
+    val r2 = s1.parseJson.convertTo[AggregateRequest]
+    assert(r2.df === r1.df)
+    assert(r2.aggType === r1.aggType)
+    assert(r2.pivotColName === r1.pivotColName)
+    assert(r2.pivotValues === r1.pivotValues)
+    assert(r2.aggFunc === r1.aggFunc)
+    assert(r2.aggColNames === r1.aggColNames)
+    assert(r2.cols.length === 1)
+    assert(r2.genericAggExprs.nonEmpty)
+    assert(r2.genericAggExprs.get.length === 1)
+
+    val r3 = AggregateRequest(UUID.randomUUID(), Array(), AggregationTypes.RollUp,
+      Some("col1"), Some(Array(100, 200, 300)), None, Some("count"), Array())
+    val s3 = r3.toJson.compactPrint
+    val r4 = s3.parseJson.convertTo[AggregateRequest]
+    assert(r4.df === r3.df)
+    assert(r4.aggType === r3.aggType)
+    assert(r4.pivotColName === r3.pivotColName)
+    assert(r4.pivotValues.nonEmpty)
+    assert(r4.pivotValues.get === Array(100, 200, 300))
+    assert(r4.aggFunc === r3.aggFunc)
+    assert(r4.aggColNames === r3.aggColNames)
+    assert(r4.cols.length === 0)
+    assert(r4.genericAggExprs.isEmpty)
+
+    val r5 = AggregateRequest(UUID.randomUUID(), Array(), AggregationTypes.RollUp,
+      Some("col1"), Some(Array("a", "vvv", "ttt")), None, Some("min"), Array("col3", "col4"))
+    val s5 = r5.toJson.compactPrint
+    val r6 = s5.parseJson.convertTo[AggregateRequest]
+    assert(r6.df === r5.df)
+    assert(r6.aggType === r5.aggType)
+    assert(r6.pivotColName === r5.pivotColName)
+    assert(r6.pivotValues.nonEmpty)
+    assert(r6.pivotValues.get === Array("a", "vvv", "ttt"))
+    assert(r6.aggFunc === r5.aggFunc)
+    assert(r6.aggColNames === r5.aggColNames)
+    assert(r6.cols.length === 0)
+    assert(r6.genericAggExprs.isEmpty)
+
+    val r7 = AggregateRequest(UUID.randomUUID(), Array(), AggregationTypes.RollUp,
+      Some("col1"), None, None, Some("count"), Array())
+    val s7 = r7.toJson.compactPrint
+    val r8 = s7.parseJson.convertTo[AggregateRequest]
+    assert(r8.df === r7.df)
+    assert(r8.aggType === r7.aggType)
+    assert(r8.pivotColName === r7.pivotColName)
+    assert(r8.pivotValues === r7.pivotValues)
+    assert(r8.aggFunc === r7.aggFunc)
+    assert(r8.aggColNames === r7.aggColNames)
+    assert(r8.cols.length === 0)
+    assert(r8.genericAggExprs.isEmpty)
   }
 }

@@ -18,6 +18,23 @@ import java.util.UUID
 
 import io.cebes.df.sample.DataSample
 
+
+object DataframeService {
+
+  object AggregationTypes {
+
+    sealed abstract class AggregationType(val name: String)
+
+    object GroupBy extends AggregationType("GroupBy")
+
+    object RollUp extends AggregationType("RollUp")
+
+    object Cube extends AggregationType("Cube")
+
+  }
+
+}
+
 trait DataframeService {
 
   /**
@@ -191,7 +208,82 @@ trait DataframeService {
 
   /**
     * Marks a DataFrame as small enough for use in broadcast joins.
+    *
     * @group sql-api
     */
   def broadcast(dfId: UUID): Dataframe
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Aggregation functions
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Compute groupBy(), rollUp() or cube() on the given [[Dataframe]] (depending on `aggType`),
+    * then call `pivot()` (if `pivotColName` is provided),
+    * then call `agg()` on the resulting [[io.cebes.df.support.GroupedDataframe]] with
+    * the given expressions in `aggExprs`
+    *
+    * Designed to be called remotely (e.g. via REST APIs)
+    */
+  def aggregateAgg(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   aggExprs: Seq[Column]): Dataframe
+
+  /**
+    * Compute groupBy(), rollUp() or cube() on the given [[Dataframe]] (depending on `aggType`),
+    * then call `pivot()` (if `pivotColName` is provided),
+    * then call `count()` on the resulting [[io.cebes.df.support.GroupedDataframe]]
+    *
+    * Designed to be called remotely (e.g. via REST APIs)
+    */
+  def aggregateCount(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                     pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe
+
+  /**
+    * Compute groupBy(), rollUp() or cube() on the given [[Dataframe]] (depending on `aggType`),
+    * then call `pivot()` (if `pivotColName` is provided),
+    * then call `min()` on the resulting [[io.cebes.df.support.GroupedDataframe]] with
+    * the provided `minColNames`
+    *
+    * Designed to be called remotely (e.g. via REST APIs)
+    */
+  def aggregateMin(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   minColNames: Seq[String]): Dataframe
+
+  /**
+    * Compute groupBy(), rollUp() or cube() on the given [[Dataframe]] (depending on `aggType`),
+    * then call `pivot()` (if `pivotColName` is provided),
+    * then call `mean()` on the resulting [[io.cebes.df.support.GroupedDataframe]] with
+    * the provided `meanColNames`
+    *
+    * Designed to be called remotely (e.g. via REST APIs)
+    */
+  def aggregateMean(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                    pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                    meanColNames: Seq[String]): Dataframe
+
+  /**
+    * Compute groupBy(), rollUp() or cube() on the given [[Dataframe]] (depending on `aggType`),
+    * then call `pivot()` (if `pivotColName` is provided),
+    * then call `max()` on the resulting [[io.cebes.df.support.GroupedDataframe]] with
+    * the provided `maxColNames`
+    *
+    * Designed to be called remotely (e.g. via REST APIs)
+    */
+  def aggregateMax(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   maxColNames: Seq[String]): Dataframe
+
+  /**
+    * Compute groupBy(), rollUp() or cube() on the given [[Dataframe]] (depending on `aggType`),
+    * then call `pivot()` (if `pivotColName` is provided),
+    * then call `sum()` on the resulting [[io.cebes.df.support.GroupedDataframe]] with
+    * the provided `sumColNames`
+    *
+    * Designed to be called remotely (e.g. via REST APIs)
+    */
+  def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   sumColNames: Seq[String]): Dataframe
 }

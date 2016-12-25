@@ -17,7 +17,9 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import com.google.inject.Inject
+import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.sample.DataSample
+import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.{Column, Dataframe, DataframeService, DataframeStore}
 import io.cebes.spark.config.HasSparkSession
 
@@ -200,9 +202,70 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   /**
     * Marks a DataFrame as small enough for use in broadcast joins.
+    *
     * @group sql-api
     */
   override def broadcast(dfId: UUID): Dataframe = dfStore.add {
     dfStore(dfId).broadcast
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Aggregation functions
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  override def aggregateAgg(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                            pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                            aggExprs: Seq[Column]): Dataframe = dfStore.add {
+    agg(dfId, cols, aggType, pivotColName, pivotValues).agg(aggExprs.head, aggExprs.tail: _*)
+  }
+
+  override def aggregateCount(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                     pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe = dfStore.add {
+    agg(dfId, cols, aggType, pivotColName, pivotValues).count()
+  }
+
+  override def aggregateMin(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   minColNames: Seq[String]): Dataframe = dfStore.add {
+    agg(dfId, cols, aggType, pivotColName, pivotValues).min(minColNames: _*)
+  }
+
+  override def aggregateMean(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                    pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                    meanColNames: Seq[String]): Dataframe = dfStore.add {
+    agg(dfId, cols, aggType, pivotColName, pivotValues).mean(meanColNames: _*)
+  }
+
+  override def aggregateMax(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   maxColNames: Seq[String]): Dataframe = dfStore.add {
+    agg(dfId, cols, aggType, pivotColName, pivotValues).max(maxColNames: _*)
+  }
+
+  override def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                   sumColNames: Seq[String]): Dataframe = dfStore.add {
+    agg(dfId, cols, aggType, pivotColName, pivotValues).sum(sumColNames: _*)
+  }
+
+  ////////////////////////
+  // aggregation helper
+  ////////////////////////
+
+  private def agg(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
+                  pivotColName: Option[String], pivotValues: Option[Seq[Any]]): GroupedDataframe = {
+    val gdf1 = aggType match {
+      case AggregationTypes.GroupBy =>
+        dfStore(dfId).groupBy(cols: _*)
+      case AggregationTypes.RollUp =>
+        dfStore(dfId).rollup(cols: _*)
+      case AggregationTypes.Cube =>
+        dfStore(dfId).cube(cols: _*)
+    }
+    pivotColName.fold(gdf1) { colName =>
+      pivotValues.fold(gdf1.pivot(colName)) { values =>
+        gdf1.pivot(colName, values)
+      }
+    }
   }
 }

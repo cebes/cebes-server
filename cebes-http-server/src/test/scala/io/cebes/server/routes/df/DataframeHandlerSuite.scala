@@ -17,6 +17,7 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.StorageTypes
@@ -541,5 +542,81 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     }
     assert(ex.getMessage.startsWith("requirement failed: Excepts only work for " +
       "tables with the same number of columns, but got"))
+  }
+
+  test("Aggregate") {
+    val df = requestDf("df/limit", LimitRequest(getCylinderBands.id, 100))
+
+    // simple groupby on customer, with max(unit_number)
+    val df1 = requestDf("df/aggregate",
+      AggregateRequest(df.id,
+        Array(df.col("customer")), AggregationTypes.GroupBy,
+        None, None,
+        Some(Array(functions.max(df.col("unit_number")))),
+        None, Array()))
+    assert(count(df1) > 0)
+    assert(df1.schema.fieldNames === Seq("customer", "max(unit_number)"))
+
+    // groupby on a computed column, with aggFunc on all columns
+    val df2 = requestDf("df/aggregate",
+      AggregateRequest(df.id,
+        Array(functions.length(df.col("customer"))), AggregationTypes.GroupBy,
+        None, None,
+        None,
+        Some("max"), Array()))
+    assert(count(df2) > 0)
+    assert(df2.schema.length === 25)
+
+    // unrecognized function
+    val ex1 = intercept[ServerException] {
+      requestDf("df/aggregate",
+        AggregateRequest(df.id,
+          Array(functions.length(df.col("customer"))), AggregationTypes.GroupBy,
+          None, None,
+          None,
+          Some("unrecognized_function"), Array()))
+    }
+    assert(ex1.getMessage.startsWith("Unrecognized Aggregation function"))
+
+    // pivot without values, min on job_number
+    val df3 = requestDf("df/aggregate",
+      AggregateRequest(df.id,
+        Array(df.col("customer")), AggregationTypes.GroupBy,
+        Some("grain_screened"), None,
+        None,
+        Some("min"), Array("job_number")))
+    assert(df3.schema.length === 4)
+    assert(count(df3) > 0)
+
+    // pivot with values, min on job_number
+    val df4 = requestDf("df/aggregate",
+      AggregateRequest(df.id,
+        Array(df.col("customer")), AggregationTypes.GroupBy,
+        Some("grain_screened"), Some(Array("YES", "NO")),
+        None,
+        Some("min"), Array("job_number")))
+    assert(df4.schema.length === 3)
+    assert(count(df4) > 0)
+    assert(df4.schema.fieldNames === Seq("customer", "YES", "NO"))
+
+    // rollup
+    val df5 = requestDf("df/aggregate",
+      AggregateRequest(df.id,
+        Array(df.col("customer"), df.col("grain_screened")), AggregationTypes.RollUp,
+        None, None,
+        None,
+        Some("mean"), Array()))
+    assert(count(df5) > 0)
+    assert(df5.schema.length === 26)
+
+    // cube
+    val df6 = requestDf("df/aggregate",
+      AggregateRequest(df.id,
+        Array(df.col("customer"), df.col("grain_screened")), AggregationTypes.Cube,
+        None, None,
+        None,
+        Some("mean"), Array()))
+    assert(count(df6) > 0)
+    assert(df6.schema.length === 26)
   }
 }

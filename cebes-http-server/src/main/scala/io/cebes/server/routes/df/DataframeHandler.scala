@@ -76,7 +76,9 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
         operationDf[Union, DataframeSetRequest],
         operationDf[Intersect, DataframeSetRequest],
         operationDf[Except, DataframeSetRequest],
-        operationDf[Broadcast, DataframeRequest]
+        operationDf[Broadcast, DataframeRequest],
+
+        operationDf[Aggregate, AggregateRequest]
       )
     }
   }

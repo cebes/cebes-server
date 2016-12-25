@@ -16,6 +16,7 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
+import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.Column
 import io.cebes.df.expressions.Expression
 import io.cebes.server.routes.HttpJsonProtocol
@@ -56,6 +57,28 @@ case class ApproxQuantileRequest(df: UUID, colName: String, probabilities: Array
 case class FreqItemsRequest(df: UUID, colNames: Array[String], support: Double)
 
 case class SampleByRequest(df: UUID, colName: String, fractions: Map[Any, Double], seed: Long)
+
+/**
+  * Perform aggregation on the [[io.cebes.df.Dataframe]] of the given ID.
+  * The aggregation can be `groupBy`, `rollup` or `cube`, depending on `aggType`.
+  * The aggregation will be performed on the columns given in `cols`, or on none column if `cols` is empty.
+  *
+  * Optionally, also perform a pivot on column `pivotColName`, if it is provided.
+  * `pivotValues` contains the values of `pivotColName` to be pivoted on.
+  * If `pivotValues` is not provided, it will be computed from the data (which is less efficient).
+  *
+  * After the aggregation (and pivot, if needed), perform some actual computation:
+  *  - If `genericAggExprs` is provided: perform the computation specified in this argument
+  *  - Otherwise, compute the aggregation functions specified in `aggFunc`.
+  *  Supported values of `aggFunc` are: count, min, mean, max, sum.
+  *  `aggFunc` will only be applied on columns specified in `aggColNames`, otherwise it will be applied on
+  *  all numeric non-aggregate columns.
+  */
+case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationTypes.AggregationType,
+                            pivotColName: Option[String], pivotValues: Option[Array[Any]],
+                            genericAggExprs: Option[Array[Column]],
+                            aggFunc: Option[String],
+                            aggColNames: Array[String])
 
 
 trait HttpDfJsonProtocol extends HttpJsonProtocol {
@@ -173,6 +196,65 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
         deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
     }
   }
+
+  implicit object AggregationTypeFormat extends JsonFormat[AggregationTypes.AggregationType] {
+    override def write(obj: AggregationTypes.AggregationType): JsValue = obj.name.toJson
+
+    override def read(json: JsValue): AggregationTypes.AggregationType = json.convertTo[String] match {
+      case AggregationTypes.GroupBy.name => AggregationTypes.GroupBy
+      case AggregationTypes.RollUp.name => AggregationTypes.RollUp
+      case AggregationTypes.Cube.name => AggregationTypes.Cube
+      case v => deserializationError(s"Unrecognized aggregation type: $v")
+    }
+  }
+
+  implicit object AggregateRequestFormat extends RootJsonFormat[AggregateRequest] {
+
+    override def write(obj: AggregateRequest): JsValue = {
+      val pivotValueJs = obj.pivotValues match {
+        case None => JsNull
+        case Some(values) => JsArray(values.map(writeJson): _*)
+      }
+      JsObject(Map(
+        "df" -> obj.df.toJson,
+        "cols" -> obj.cols.toJson,
+        "aggType" -> obj.aggType.toJson,
+        "pivotColName" -> obj.pivotColName.toJson,
+        "pivotValues" -> pivotValueJs,
+        "genericAggExprs" -> obj.genericAggExprs.toJson,
+        "aggFunc" -> obj.aggFunc.toJson,
+        "aggColNames" -> obj.aggColNames.toJson
+      ))
+    }
+
+    override def read(json: JsValue): AggregateRequest = json match {
+      case jsObj: JsObject =>
+        val pivotValues = jsObj.fields("pivotValues") match {
+          case JsNull => None
+          case arr: JsArray => Some(arr.elements.map(readJson).toArray)
+          case other =>
+            deserializationError(s"Expected some pivotValues as JsArray or JsNull, got ${other.compactPrint}")
+        }
+
+        AggregateRequest(
+          df = jsObj.fields("df").convertTo[UUID],
+          cols = jsObj.fields("cols").convertTo[Array[Column]],
+          aggType = jsObj.fields("aggType").convertTo[AggregationTypes.AggregationType],
+          pivotColName = safeReadJs[String](jsObj.fields.get("pivotColName")),
+          pivotValues = pivotValues,
+          genericAggExprs = safeReadJs[Array[Column]](jsObj.fields.get("genericAggExprs")),
+          aggFunc = safeReadJs[String](jsObj.fields.get("aggFunc")),
+          aggColNames = jsObj.fields("aggColNames").convertTo[Array[String]]
+        )
+      case other => deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
+    }
+
+    private def safeReadJs[T](json: Option[JsValue])(implicit jrT: JsonReader[T]): Option[T] = json.flatMap {
+      case JsNull => None
+      case v => Some(v.convertTo[T])
+    }
+  }
+
 }
 
 object HttpDfJsonProtocol extends HttpDfJsonProtocol
