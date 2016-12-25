@@ -15,12 +15,9 @@
 package io.cebes.spark.util
 
 import io.cebes.common.CebesBackendException
-import io.cebes.df.{Column, Dataframe}
-import io.cebes.df.schema.Schema
+import io.cebes.df.Dataframe
 import io.cebes.spark.df.SparkDataframe
-import io.cebes.spark.df.expressions.SparkExpressionParser
-import org.apache.spark.sql._
-import org.apache.spark.sql.{Column => SparkColumn}
+import org.apache.spark.sql.AnalysisException
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,11 +32,6 @@ trait CebesSparkUtil {
     case _ => throw new IllegalArgumentException("Only SparkDataframe can be handled")
   }
 
-  @inline def toSparkColumn(column: Column): SparkColumn = SparkExpressionParser.toSparkColumn(column)
-
-  @inline def toSparkColumns(columns: Seq[Column]): Seq[SparkColumn] =
-    SparkExpressionParser.toSparkColumns(columns: _*)
-
   /**
     * Catch recognized exception thrown by Spark, wrapped in a [[CebesBackendException]].
     * If an exception is unrecognized, it will be re-thrown (until we know what to do with it)
@@ -53,19 +45,6 @@ trait CebesSparkUtil {
         case ex => throw ex
       }
     }
-  }
-
-  /**
-    * short-hand for returning a SparkDataframe, with proper exception handling
-    */
-  @inline def withSparkDataFrame(df: => DataFrame): SparkDataframe =
-  new SparkDataframe(safeSparkCall(df))
-
-  /**
-    * short-hand for returning a SparkDataframe, with proper exception handling
-    */
-  @inline def withSparkDataFrame(df: => DataFrame, schema: Schema): SparkDataframe = {
-    new SparkDataframe(safeSparkCall(df), schema)
   }
 }
 

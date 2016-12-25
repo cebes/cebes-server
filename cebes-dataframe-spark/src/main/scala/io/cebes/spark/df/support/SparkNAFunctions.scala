@@ -16,10 +16,13 @@ package io.cebes.spark.df.support
 
 import io.cebes.df.Dataframe
 import io.cebes.df.support.NAFunctions
+import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.util.CebesSparkUtil
-import org.apache.spark.sql.DataFrameNaFunctions
+import org.apache.spark.sql.{DataFrame, DataFrameNaFunctions}
 
-class SparkNAFunctions private[df](sparkNA: DataFrameNaFunctions) extends NAFunctions with CebesSparkUtil {
+class SparkNAFunctions private[df](private val dfFactory: SparkDataframeFactory,
+                                   sparkNA: DataFrameNaFunctions)
+  extends NAFunctions with CebesSparkUtil {
 
   override def drop(how: String): Dataframe = withSparkDataFrame(sparkNA.drop(how))
 
@@ -47,4 +50,15 @@ class SparkNAFunctions private[df](sparkNA: DataFrameNaFunctions) extends NAFunc
   override def replace[T](cols: Seq[String], replacement: Map[T, T]): Dataframe = withSparkDataFrame {
     sparkNA.replace(cols, replacement)
   }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Private helpers
+  /////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * short-hand for returning a SparkDataframe, with proper exception handling
+    */
+  private def withSparkDataFrame(df: => DataFrame): Dataframe =
+    dfFactory.df(safeSparkCall(df))
+
 }

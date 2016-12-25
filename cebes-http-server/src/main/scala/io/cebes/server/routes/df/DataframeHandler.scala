@@ -25,7 +25,7 @@ import io.cebes.df.sample.DataSample
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
 import io.cebes.server.routes.DataframeResponse
-import io.cebes.server.routes.common.{AsyncDataframeOperation, AsyncExecutor}
+import io.cebes.server.routes.common.{AsyncDataframeOperation, AsyncOperation}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import spray.json._
 
@@ -47,11 +47,40 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     myRequiredSession { _ =>
       concat(
         operationDf[Sql, String],
-        operation[Count, CountRequest, Long],
+        operationDf[InferVariableTypes, LimitRequest],
+        operationDf[WithVariableTypes, WithVariableTypesRequest],
+        operation[Count, DataframeRequest, Long],
         operationDf[Sample, SampleRequest],
-        operation[Take, TakeRequest, DataSample],
-        operationDf[DropColumns, ColumnsRequest],
-        operationDf[DropDuplicates, ColumnsRequest]
+        operation[Take, LimitRequest, DataSample],
+
+        operationDf[Sort, ColumnsRequest],
+        operationDf[DropColumns, ColumnNamesRequest],
+        operationDf[DropDuplicates, ColumnNamesRequest],
+        operationDf[DropNA, DropNARequest],
+        operationDf[FillNA, FillNARequest],
+        operationDf[FillNAWithMap, FillNAWithMapRequest],
+        operationDf[Replace, ReplaceRequest],
+
+        operation[ApproxQuantile, ApproxQuantileRequest, Array[Double]],
+        operation[Cov, ColumnNamesRequest, Double],
+        operation[Corr, ColumnNamesRequest, Double],
+        operationDf[Crosstab, ColumnNamesRequest],
+        operationDf[FreqItems, FreqItemsRequest],
+        operationDf[SampleBy, SampleByRequest],
+
+        operationDf[WithColumn, WithColumnRequest],
+        operationDf[WithColumnRenamed, WithColumnRenamedRequest],
+        operationDf[Select, ColumnsRequest],
+        operationDf[Where, ColumnsRequest],
+        operationDf[Alias, AliasRequest],
+        operationDf[Join, JoinRequest],
+        operationDf[Limit, LimitRequest],
+        operationDf[Union, DataframeSetRequest],
+        operationDf[Intersect, DataframeSetRequest],
+        operationDf[Except, DataframeSetRequest],
+        operationDf[Broadcast, DataframeRequest],
+
+        operationDf[Aggregate, AggregateRequest]
       )
     }
   }
@@ -70,13 +99,11 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
   }
 
   /**
-    * An operation done by class [[W]] (subclass of [[AsyncExecutor]],
+    * An operation done by class [[W]] (subclass of [[AsyncOperation]],
     * with entity of type [[E]] and result of type [[R]]
     */
-  private def operation[W <: AsyncExecutor[E, _, R], E, R]
-  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E],
-   jfR: JsonFormat[R]): Route = {
-
+  private def operation[W <: AsyncOperation[E, _, R], E, R]
+  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E], jfR: JsonFormat[R]): Route = {
     val workerName = tag.runtimeClass.asInstanceOf[Class[W]].getSimpleName.toLowerCase
     (path(workerName) & post) {
       entity(as[E]) { requestEntity =>

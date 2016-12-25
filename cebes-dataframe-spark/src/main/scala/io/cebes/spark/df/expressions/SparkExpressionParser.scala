@@ -14,28 +14,26 @@
 
 package io.cebes.spark.df.expressions
 
-import io.cebes.df.Column
+import com.google.inject.{Inject, Singleton}
+import io.cebes.df.{Column, DataframeStore}
 import io.cebes.df.expressions._
 import io.cebes.spark.df.schema.SparkSchemaUtils
+import io.cebes.spark.util.CebesSparkUtil
 import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 
 
-object SparkExpressionParser {
+/**
+  * Parser that parses Cebes columns into Spark columns
+  */
+@Singleton class SparkExpressionParser @Inject()(private val dfStore: DataframeStore)
+  extends AbstractExpressionParser[SparkColumn] with CebesSparkUtil {
 
   /**
     * Transform a cebes Column into a Spark column
     */
-  def toSparkColumn(column: Column): SparkColumn = {
-    val parser = new SparkExpressionParser()
-    parser.parse(column.expr)
-    parser.getResult
-  }
+  def toSpark(column: Column): SparkColumn = parse(column.expr)
 
-  def toSparkColumns(columns: Column*): Seq[SparkColumn] = columns.map(toSparkColumn)
-}
-
-
-class SparkExpressionParser extends StackExpressionParser[SparkColumn] {
+  def toSpark(columns: Seq[Column]): Seq[SparkColumn] = columns.map(toSpark)
 
   /////////////////////////////////////////////////////////////////////////////
   // visit functions
@@ -43,7 +41,12 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] {
 
   protected def visitSparkPrimitiveExpression(expr: SparkPrimitiveExpression,
                                               parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(expr.sparkCol)
+    expr.sparkCol match {
+      case Some(col) => Some(col)
+      case None =>
+        val df = getSparkDataframe(dfStore(expr.dfId))
+        Some(safeSparkCall(df.sparkDf.col(expr.colName)))
+    }
   }
 
   protected def visitLiteral(expr: Literal, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
@@ -57,8 +60,9 @@ class SparkExpressionParser extends StackExpressionParser[SparkColumn] {
 
   protected def visitSortOrder(expr: SortOrder, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
     Some(expr.direction match {
-      case Ascending => parsedChildren.head.asc
-      case Descending => parsedChildren.head.desc
+      case SortOrder.Ascending => parsedChildren.head.asc
+      case SortOrder.Descending => parsedChildren.head.desc
+      case v => throw new IllegalArgumentException(s"Unknown sort order: $v")
     })
   }
 

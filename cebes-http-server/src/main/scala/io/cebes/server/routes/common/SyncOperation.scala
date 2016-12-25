@@ -19,12 +19,12 @@ import akka.http.scaladsl.server.RequestContext
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Trait designed for executors that need to be run synchronously
+  * Trait designed for operations that need to be run synchronously
   *
   * @tparam E type of the request entity
   * @tparam R type of the result
   */
-trait SyncExecutor[E, R] {
+trait SyncOperation[E, R] {
 
   /**
     * Implement this to do the real work

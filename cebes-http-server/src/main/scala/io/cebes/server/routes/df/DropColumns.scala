@@ -22,10 +22,10 @@ import io.cebes.server.routes.common.AsyncDataframeOperation
 import scala.concurrent.{ExecutionContext, Future}
 
 class DropColumns @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncDataframeOperation[ColumnsRequest] {
+  extends AsyncDataframeOperation[ColumnNamesRequest] {
 
-  override protected def runImpl(requestEntity: ColumnsRequest)
+  override protected def runImpl(requestEntity: ColumnNamesRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.drop(requestEntity.df, requestEntity.columns)
+    dfService.drop(requestEntity.df, requestEntity.colNames)
   }
 }

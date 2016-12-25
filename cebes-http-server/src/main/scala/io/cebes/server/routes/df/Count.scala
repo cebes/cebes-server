@@ -17,7 +17,7 @@ package io.cebes.server.routes.df
 import com.google.inject.Inject
 import io.cebes.df.DataframeService
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncExecutor
+import io.cebes.server.routes.common.AsyncSerializableOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,17 +25,13 @@ import scala.concurrent.{ExecutionContext, Future}
   * Count the number of rows of the given Dataframe
   */
 class Count @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncExecutor[CountRequest, Long, Long] {
+  extends AsyncSerializableOperation[DataframeRequest, Long] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: CountRequest)
+  override protected def runImpl(requestEntity: DataframeRequest)
                                 (implicit ec: ExecutionContext): Future[Long] = Future {
     dfService.count(requestEntity.df)
-  }
-
-  override protected def transformResult(requestEntity: CountRequest, result: Long): Option[Long] = {
-    Some(result)
   }
 }

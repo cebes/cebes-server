@@ -14,7 +14,16 @@
 
 package io.cebes.spark.df.expressions
 
-import io.cebes.df.expressions.PrimitiveExpression
-import org.apache.spark.sql.Column
+import java.util.UUID
 
-case class SparkPrimitiveExpression(sparkCol: Column) extends PrimitiveExpression[Column](sparkCol)
+import io.cebes.df.expressions.LeafExpression
+import org.apache.spark.sql.{Column => SparkColumn}
+
+/**
+  * The most primitive expression on Spark: a Spark column object.
+  * We also include the ID of the dataframe and the column name, for the sake of serialization.
+  *
+  * @param dfId    ID of the Dataframe that this column belong to
+  * @param colName name of the (Spark's DataFrame) column
+  */
+case class SparkPrimitiveExpression(dfId: UUID, colName: String, sparkCol: Option[SparkColumn]) extends LeafExpression

@@ -23,7 +23,7 @@ import io.cebes.server.routes.DataframeResponse
   *
   * @tparam E Type of the request entity
   */
-abstract class AsyncDataframeOperation[E] extends AsyncExecutor[E, Dataframe, DataframeResponse] {
+abstract class AsyncDataframeOperation[E] extends AsyncOperation[E, Dataframe, DataframeResponse] {
 
   /**
     * Transform the actual result (of type T)

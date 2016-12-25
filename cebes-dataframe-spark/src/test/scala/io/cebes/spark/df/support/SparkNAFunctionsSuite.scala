@@ -107,6 +107,11 @@ class SparkNAFunctionsSuite extends CebesBaseSuite
       df.na.replace(Seq("unit_number", "job_number"), Map(47103 -> 42, "GUIDEPOSTS" -> "GUIDEPOSTS-replaced"))
     }
 
+    // replace a value with null
+    val df4 = df.na.replace(Seq("unit_number", "customer"), Map("bbbb" -> "aaaa", "GUIDEPOSTS" -> null))
+    assert(df4.where(df4("customer") === "GUIDEPOSTS").numRows === 0)
+    assert(df4.where(df4("customer").isNull).numRows === nRowCustomer)
+
     // no exception, even non-existed column
     val df3 = df.na.replace("non_existed_column", Map(100 -> 200))
     assert(df3.id !== df.id)

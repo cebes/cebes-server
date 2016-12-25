@@ -17,10 +17,12 @@ package io.cebes.json
 import java.sql.Timestamp
 import java.util.{Calendar, Date}
 
+import io.cebes.df.expressions.Expression
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.storage._
 import io.cebes.df.types.{StorageTypes, VariableTypes}
+import io.cebes.df.{expressions => exprs}
 import io.cebes.json.CebesCoreJsonProtocol._
 import org.scalatest.FunSuite
 import spray.json._
@@ -213,5 +215,81 @@ class CebesJsonProtocolSuite extends FunSuite {
       sample.get[Map[String, mutable.WrappedArray[Int]]]("map_col2").get).forall {
       case (v2, v1) => v2 === v1
     })
+  }
+
+  test("Expression") {
+    implicit object MyExprFormat extends AbstractExpressionFormat {
+
+      override protected def writeExpression(expr: Expression): Option[JsValue] = None
+
+      override protected def readExpression(json: JsValue): Option[Expression] = None
+    }
+
+    val abs: exprs.Expression = exprs.Abs(exprs.Literal("100"))
+    val js = abs.toJson.compactPrint
+
+    val abs2 = js.parseJson.convertTo[Expression]
+    assert(abs2.isInstanceOf[exprs.Abs])
+    assert(abs2.asInstanceOf[exprs.Abs].child.asInstanceOf[exprs.Literal].value === "100")
+
+    // with variable number of arguments
+    val c1: exprs.Expression = exprs.CountDistinct(exprs.Literal("a"), exprs.Literal("b"), exprs.Literal("c"))
+    val js2 = c1.toJson.compactPrint
+
+    val c2 = js2.parseJson.convertTo[Expression]
+    assert(c2.isInstanceOf[exprs.CountDistinct])
+    assert(c2 === c1)
+    val c3 = c2.asInstanceOf[exprs.CountDistinct]
+    assert(c3.children.length === 3)
+    assert(c3.children.head.asInstanceOf[exprs.Literal].value === "a")
+    assert(c3.children(1).asInstanceOf[exprs.Literal].value === "b")
+    assert(c3.children(2).asInstanceOf[exprs.Literal].value === "c")
+
+    // Seq[String]
+    val m1: exprs.Expression = exprs.MultiAlias(exprs.Literal(100), Seq("a", "b", "c"))
+    val js3 = m1.toJson.compactPrint
+
+    val m2 = js3.parseJson.convertTo[exprs.Expression]
+    assert(m2.isInstanceOf[exprs.MultiAlias])
+    assert(m2 === m1)
+
+    // Storage type
+    val c4: exprs.Expression = exprs.Cast(exprs.Literal("aaaa"), StorageTypes.DateType)
+    val js4 = c4.toJson.compactPrint
+
+    val c5 = js4.parseJson.convertTo[exprs.Expression]
+    assert(c5.isInstanceOf[exprs.Cast])
+    assert(c5 === c4)
+
+    // Seq[Expression]
+    val createArray: exprs.Expression = exprs.CreateArray(
+      Seq(exprs.Literal("a"), exprs.Literal("b"), exprs.Literal("c")))
+    val createArrayStr = createArray.toJson.compactPrint
+
+    val createArray2 = createArrayStr.parseJson.convertTo[exprs.Expression]
+    assert(createArray2.isInstanceOf[exprs.CreateArray])
+    assert(createArray2 === createArray)
+
+    // CaseWhen
+    val caseWhen: exprs.Expression = exprs.CaseWhen(
+      Seq((exprs.Literal("a"), exprs.Literal(100)),
+        (exprs.Literal("b"), exprs.Literal(200))),
+      Some(exprs.Literal(300)))
+    val caseWhenStr = caseWhen.toJson.compactPrint
+
+    val caseWhen2 = caseWhenStr.parseJson.convertTo[exprs.Expression]
+    assert(caseWhen2.isInstanceOf[exprs.CaseWhen])
+    assert(caseWhen2 === caseWhen)
+
+    // CaseWhen big
+    val caseWhenBig: exprs.Expression = exprs.CaseWhen(
+      Seq((exprs.Literal("a"), exprs.MultiAlias(exprs.Literal(100), Seq("a", "b", "c"))),
+        (exprs.Literal("b"), exprs.Cast(exprs.Literal("aaaa"), StorageTypes.DateType))),
+      None)
+    val caseWhenBigStr = caseWhenBig.toJson.compactPrint
+
+    val caseWhenBig2 = caseWhenBigStr.parseJson.convertTo[exprs.Expression]
+    assert(caseWhenBig2.isInstanceOf[exprs.CaseWhen])
+    assert(caseWhenBig2 === caseWhenBig)
   }
 }

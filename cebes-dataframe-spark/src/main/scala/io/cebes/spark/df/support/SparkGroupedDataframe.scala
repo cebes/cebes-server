@@ -16,10 +16,14 @@ package io.cebes.spark.df.support
 
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.{Column, Dataframe}
+import io.cebes.spark.df.SparkDataframeFactory
+import io.cebes.spark.df.expressions.SparkExpressionParser
 import io.cebes.spark.util.CebesSparkUtil
-import org.apache.spark.sql.RelationalGroupedDataset
+import org.apache.spark.sql.{DataFrame, RelationalGroupedDataset}
 
-class SparkGroupedDataframe private[df](sparkGroupedDataset: RelationalGroupedDataset)
+class SparkGroupedDataframe private[df](private val dfFactory: SparkDataframeFactory,
+                                        private val parser: SparkExpressionParser,
+                                        sparkGroupedDataset: RelationalGroupedDataset)
   extends GroupedDataframe with CebesSparkUtil {
 
   override def agg(exprs: Map[String, String]): Dataframe = withSparkDataFrame {
@@ -27,7 +31,7 @@ class SparkGroupedDataframe private[df](sparkGroupedDataset: RelationalGroupedDa
   }
 
   override def agg(expr: Column, exprs: Column*): Dataframe = {
-    val cols = toSparkColumns(expr +: exprs)
+    val cols = parser.toSpark(expr +: exprs)
     withSparkDataFrame(sparkGroupedDataset.agg(cols.head, cols.tail: _*))
   }
 
@@ -52,11 +56,20 @@ class SparkGroupedDataframe private[df](sparkGroupedDataset: RelationalGroupedDa
   }
 
   override def pivot(pivotColumn: String): GroupedDataframe = {
-    new SparkGroupedDataframe(safeSparkCall(sparkGroupedDataset.pivot(pivotColumn)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkGroupedDataset.pivot(pivotColumn)))
   }
 
   override def pivot(pivotColumn: String, values: Seq[Any]): GroupedDataframe = {
-    new SparkGroupedDataframe(safeSparkCall(sparkGroupedDataset.pivot(pivotColumn, values)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkGroupedDataset.pivot(pivotColumn, values)))
   }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Private helpers
+  /////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * short-hand for returning a SparkDataframe, with proper exception handling
+    */
+  private def withSparkDataFrame(df: => DataFrame): Dataframe = dfFactory.df(safeSparkCall(df))
 
 }

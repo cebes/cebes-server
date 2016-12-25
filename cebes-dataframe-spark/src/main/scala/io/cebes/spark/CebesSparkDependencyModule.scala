@@ -20,6 +20,7 @@ import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
 import io.cebes.spark.df.SparkDataframeStore
 
 
+
 class CebesSparkDependencyModule extends AbstractModule {
 
   protected def configure(): Unit = {

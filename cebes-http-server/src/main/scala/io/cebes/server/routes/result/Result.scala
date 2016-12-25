@@ -20,11 +20,11 @@ import akka.http.scaladsl.server.RequestContext
 import com.google.inject.Inject
 import io.cebes.server.result.ResultStorage
 import io.cebes.server.routes.SerializableResult
-import io.cebes.server.routes.common.SyncExecutor
+import io.cebes.server.routes.common.SyncOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Result @Inject()(resultStorage: ResultStorage) extends SyncExecutor[UUID, SerializableResult] {
+class Result @Inject()(resultStorage: ResultStorage) extends SyncOperation[UUID, SerializableResult] {
 
   /**
     * Implement this to do the real work

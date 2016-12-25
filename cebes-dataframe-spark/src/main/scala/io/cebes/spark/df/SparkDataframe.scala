@@ -23,7 +23,7 @@ import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.types.storage.StorageType
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, Dataframe}
-import io.cebes.spark.df.expressions.SparkPrimitiveExpression
+import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
 import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.CebesSparkUtil
@@ -33,23 +33,24 @@ import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 /**
   * Dataframe wrapper on top of Spark's DataFrame
   *
+  * Note that we don't (and WON'T) inject [[io.cebes.df.DataframeStore]] into this class,
+  * because the logic of handling a bunch of [[Dataframe]]s should be at the higher level,
+  * specifically the level of [[io.cebes.df.DataframeService]]
+  *
+  * Don't initialize this class directly. Use [[SparkDataframeFactory]] instead.
+  *
   * @param sparkDf the spark's DataFrame object
   */
-class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) extends Dataframe
-  with CebesSparkUtil {
+class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
+                                 private val parser: SparkExpressionParser,
+                                 val sparkDf: DataFrame,
+                                 val schema: Schema,
+                                 val id: UUID) extends Dataframe with CebesSparkUtil {
 
   require(sparkDf.columns.length == schema.length &&
     sparkDf.columns.zip(schema).forall(t => t._2.compareName(t._1)),
     s"Invalid schema: schema has ${schema.length} columns (${schema.fieldNames.mkString(", ")})," +
       s"while the data frame seems to has ${sparkDf.columns.length} columns (${sparkDf.columns.mkString(", ")})")
-
-  def this(sparkDf: DataFrame, schema: Schema) = {
-    this(sparkDf, schema, UUID.randomUUID())
-  }
-
-  def this(sparkDf: DataFrame) = {
-    this(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
-  }
 
   override def numRows: Long = sparkDf.count()
 
@@ -62,7 +63,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
     val fields = schema.zip(sample.data).map { case (c, data) =>
       c.copy(variableType = SparkDataframe.inferVariableType(c.storageType, data))
     }.toArray
-    new SparkDataframe(sparkDf, Schema(fields))
+    withSparkDataFrame(sparkDf, Schema(fields))
   }
 
   override def withVariableTypes(newTypes: Map[String, VariableType]): Dataframe = {
@@ -74,7 +75,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
         case None => f.copy()
       }
     }
-    new SparkDataframe(sparkDf, Schema(fields.toArray))
+    withSparkDataFrame(sparkDf, Schema(fields.toArray))
   }
 
   override def applySchema(newSchema: Schema): Dataframe = {
@@ -122,7 +123,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   ////////////////////////////////////////////////////////////////////////////////////
 
   override def sort(sortExprs: Column*): Dataframe =
-    withSparkDataFrame(sparkDf.sort(toSparkColumns(sortExprs): _*), schema.copy())
+    withSparkDataFrame(sparkDf.sort(parser.toSpark(sortExprs): _*), schema.copy())
 
   def drop(colNames: Seq[String]): Dataframe = {
     val droppedColNames = colNames.filter(schema.contains)
@@ -137,38 +138,41 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
     withSparkDataFrame(sparkDf.dropDuplicates(colNames), schema.copy())
   }
 
-  override def na: NAFunctions = new SparkNAFunctions(safeSparkCall(sparkDf.na))
+  override def na: NAFunctions = new SparkNAFunctions(dfFactory, safeSparkCall(sparkDf.na))
 
-  override def stat: StatFunctions = new SparkStatFunctions(safeSparkCall(sparkDf.stat))
+  override def stat: StatFunctions = new SparkStatFunctions(dfFactory, safeSparkCall(sparkDf.stat))
 
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-like APIs
   ////////////////////////////////////////////////////////////////////////////////////
 
   override def withColumn(colName: String, col: Column): Dataframe = {
-    val newSparkDf = safeSparkCall(sparkDf.withColumn(colName, toSparkColumn(col)))
-    new SparkDataframe(newSparkDf, schema.withField(colName,
+    val newSparkDf = safeSparkCall(sparkDf.withColumn(colName, parser.toSpark(col)))
+    withSparkDataFrame(newSparkDf, schema.withField(colName,
       SparkSchemaUtils.sparkTypesToCebes(newSparkDf.schema(colName).dataType)))
   }
 
   override def withColumnRenamed(existingName: String, newName: String): Dataframe = {
-    val newSparkDf = safeSparkCall(sparkDf.withColumnRenamed(existingName, newName))
-    new SparkDataframe(newSparkDf, schema.withFieldRenamed(existingName, newName))
+    withSparkDataFrame(sparkDf.withColumnRenamed(existingName, newName),
+      schema.withFieldRenamed(existingName, newName))
   }
 
   override def select(columns: Column*): Dataframe = {
     //TODO: preserve custom information in schema
-    withSparkDataFrame(sparkDf.select(toSparkColumns(columns): _*))
+    withSparkDataFrame(sparkDf.select(parser.toSpark(columns): _*))
   }
 
   override def select(col: String, cols: String*): Dataframe = select((col +: cols).map(this.col): _*)
 
   override def where(column: Column): Dataframe = {
     //TODO: preserve custom information in schema
-    withSparkDataFrame(sparkDf.where(toSparkColumn(column)))
+    withSparkDataFrame(sparkDf.where(parser.toSpark(column)))
   }
 
-  override def col(colName: String): Column = new Column(SparkPrimitiveExpression(safeSparkCall(sparkDf.col(colName))))
+  override def col(colName: String): Column = {
+    new Column(SparkPrimitiveExpression(this.id, colName,
+      Some(safeSparkCall(sparkDf.col(colName)))))
+  }
 
   override def alias(alias: String): Dataframe = {
     withSparkDataFrame(sparkDf.alias(alias), schema.copy())
@@ -177,7 +181,7 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = {
     //TODO: preserve custom information in schema
     val rightDf = getSparkDataframe(right).sparkDf
-    withSparkDataFrame(sparkDf.join(rightDf, toSparkColumn(joinExprs), joinType))
+    withSparkDataFrame(sparkDf.join(rightDf, parser.toSpark(joinExprs), joinType))
   }
 
   override def limit(n: Int): Dataframe = {
@@ -216,15 +220,33 @@ class SparkDataframe(val sparkDf: DataFrame, val schema: Schema, val id: UUID) e
   ////////////////////////////////////////////////////////////////////////////////////
 
   override def groupBy(cols: Column*): GroupedDataframe = {
-    new SparkGroupedDataframe(safeSparkCall(sparkDf.groupBy(toSparkColumns(cols): _*)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkDf.groupBy(parser.toSpark(cols): _*)))
   }
 
   override def rollup(cols: Column*): GroupedDataframe = {
-    new SparkGroupedDataframe(safeSparkCall(sparkDf.rollup(toSparkColumns(cols): _*)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkDf.rollup(parser.toSpark(cols): _*)))
   }
 
   override def cube(cols: Column*): GroupedDataframe = {
-    new SparkGroupedDataframe(safeSparkCall(sparkDf.cube(toSparkColumns(cols): _*)))
+    new SparkGroupedDataframe(dfFactory, parser, safeSparkCall(sparkDf.cube(parser.toSpark(cols): _*)))
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Private helpers
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * short-hand for returning a SparkDataframe, with proper exception handling
+    */
+  private def withSparkDataFrame(df: => DataFrame): Dataframe = {
+    dfFactory.df(safeSparkCall(df))
+  }
+
+  /**
+    * short-hand for returning a SparkDataframe, with proper exception handling
+    */
+  private def withSparkDataFrame(df: => DataFrame, schema: Schema): Dataframe = {
+    dfFactory.df(safeSparkCall(df), schema)
   }
 }
 
