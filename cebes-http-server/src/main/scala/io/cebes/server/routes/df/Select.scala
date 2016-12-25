@@ -26,6 +26,6 @@ class Select @Inject()(dfService: DataframeService, override val resultStorage: 
 
   override protected def runImpl(requestEntity: ColumnsRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.select(requestEntity.df, requestEntity.columns: _*)
+    dfService.select(requestEntity.df, requestEntity.cols: _*)
   }
 }

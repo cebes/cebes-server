@@ -26,6 +26,6 @@ class DropDuplicates @Inject()(dfService: DataframeService, override val resultS
 
   override protected def runImpl(requestEntity: ColumnNamesRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.dropDuplicates(requestEntity.df, requestEntity.columns)
+    dfService.dropDuplicates(requestEntity.df, requestEntity.colNames)
   }
 }

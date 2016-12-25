@@ -26,6 +26,6 @@ class DropNA @Inject()(dfService: DataframeService, override val resultStorage: 
 
   override protected def runImpl(requestEntity: DropNARequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.dropNA(requestEntity.df, requestEntity.minNonNulls, requestEntity.cols)
+    dfService.dropNA(requestEntity.df, requestEntity.minNonNulls, requestEntity.colNames)
   }
 }

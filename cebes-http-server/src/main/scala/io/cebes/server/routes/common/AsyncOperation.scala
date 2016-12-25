@@ -27,7 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /**
-  * The main workforce for long-running executors. This does the following:
+  * The main workforce for long-running operations. This does the following:
   *
   * - Start the real work in a Future block
   * - Hook onComplete to the Future, and store the results
@@ -40,7 +40,7 @@ import scala.util.{Failure, Success}
   * @tparam T Type of the actual result
   * @tparam R Type of the result will be returned to client
   */
-trait AsyncExecutor[E, T, R] extends LazyLogging {
+trait AsyncOperation[E, T, R] extends LazyLogging {
 
   /**
     * To be injected by the DI framework

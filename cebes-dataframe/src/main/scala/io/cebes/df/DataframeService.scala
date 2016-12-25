@@ -88,6 +88,38 @@ trait DataframeService {
     */
   def replace[T](dfId: UUID, cols: Seq[String], replacement: Map[T, T]): Dataframe
 
+  /**
+    * Calculates the approximate quantiles of a numerical column of a DataFrame.
+    */
+  def approxQuantile(dfId: UUID, col: String, probabilities: Array[Double], relativeError: Double): Array[Double]
+
+  /**
+    * Calculate the sample covariance of two numerical columns of a DataFrame.
+    */
+  def cov(dfId: UUID, col1: String, col2: String): Double
+
+  /**
+    * Calculates the correlation of two columns of a DataFrame. Currently only supports the Pearson
+    * Correlation Coefficient.
+    *
+    */
+  def corr(dfId: UUID, col1: String, col2: String): Double
+
+  /**
+    * Computes a pair-wise frequency table of the given columns. Also known as a contingency table.
+    */
+  def crosstab(dfId: UUID, col1: String, col2: String): Dataframe
+
+  /**
+    * Finding frequent items for columns, possibly with false positives.
+    */
+  def freqItems(dfId: UUID, cols: Seq[String], support: Double): Dataframe
+
+  /**
+    * Returns a stratified sample without replacement based on the fraction given on each stratum.
+    */
+  def sampleBy[T](dfId: UUID, col: String, fractions: Map[T, Double], seed: Long): Dataframe
+
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-related functions
   ////////////////////////////////////////////////////////////////////////////////////

@@ -23,7 +23,7 @@ import io.cebes.storage.DataFormats
 class StorageHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
 
   test("read data from S3", S3TestsEnabled) {
-    val result = waitDf("storage/read",
+    val result = requestDf("storage/read",
       ReadRequest(None, Some(S3ReadRequest(properties.awsAccessKey, properties.awsSecretKey,
         Some("us-west-1"), "cebes-data-test", "read/cylinder_bands.csv", DataFormats.CSV)),
         None, None, None))

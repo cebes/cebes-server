@@ -56,8 +56,7 @@ trait StatFunctions {
 
   /**
     * Calculates the correlation of two columns of a DataFrame. Currently only supports the Pearson
-    * Correlation Coefficient. For Spearman Correlation, consider using RDD methods found in
-    * MLlib's Statistics.
+    * Correlation Coefficient.
     *
     * @param col1 the name of the column
     * @param col2 the name of the column to calculate the correlation against
@@ -203,8 +202,6 @@ trait StatFunctions {
     *    |  3|    2|
     *    +---+-----+
     * }}}
-    *
-    * @since 1.5.0
     */
   def sampleBy[T](col: String, fractions: Map[T, Double], seed: Long): Dataframe
 }

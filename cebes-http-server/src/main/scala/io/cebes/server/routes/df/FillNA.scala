@@ -26,6 +26,6 @@ class FillNA @Inject()(dfService: DataframeService, override val resultStorage: 
 
   override protected def runImpl(requestEntity: FillNARequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.fillNA(requestEntity.df, requestEntity.value, requestEntity.cols)
+    dfService.fillNA(requestEntity.df, requestEntity.value, requestEntity.colNames)
   }
 }

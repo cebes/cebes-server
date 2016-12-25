@@ -15,23 +15,25 @@
 package io.cebes.server.routes.df
 
 import com.google.inject.Inject
-import io.cebes.df.DataframeService
+import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncSerializableOperation
+import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Count the number of rows of the given Dataframe
+  * Cross-tabulate two columns
   */
-class Count @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncSerializableOperation[DataframeRequest, Long] {
+class Crosstab @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncDataframeOperation[ColumnNamesRequest] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: DataframeRequest)
-                                (implicit ec: ExecutionContext): Future[Long] = Future {
-    dfService.count(requestEntity.df)
+  override protected def runImpl(requestEntity: ColumnNamesRequest)
+                                (implicit ec: ExecutionContext): Future[Dataframe] = Future {
+    require(requestEntity.colNames.length == 2,
+      s"Crosstab requires 2 column names, got ${requestEntity.colNames.length} columns")
+    dfService.crosstab(requestEntity.df, requestEntity.colNames.head, requestEntity.colNames.last)
   }
 }

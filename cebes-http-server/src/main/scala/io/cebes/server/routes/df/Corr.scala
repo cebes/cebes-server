@@ -22,16 +22,18 @@ import io.cebes.server.routes.common.AsyncSerializableOperation
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Count the number of rows of the given Dataframe
+  * Compute the correlation coefficient between two columns
   */
-class Count @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncSerializableOperation[DataframeRequest, Long] {
+class Corr @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncSerializableOperation[ColumnNamesRequest, Double] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: DataframeRequest)
-                                (implicit ec: ExecutionContext): Future[Long] = Future {
-    dfService.count(requestEntity.df)
+  override protected def runImpl(requestEntity: ColumnNamesRequest)
+                                (implicit ec: ExecutionContext): Future[Double] = Future {
+    require(requestEntity.colNames.length == 2,
+      s"Corr requires 2 column names, got ${requestEntity.colNames.length} columns")
+    dfService.corr(requestEntity.df, requestEntity.colNames.head, requestEntity.colNames.last)
   }
 }

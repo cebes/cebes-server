@@ -26,6 +26,6 @@ class DropColumns @Inject()(dfService: DataframeService, override val resultStor
 
   override protected def runImpl(requestEntity: ColumnNamesRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.drop(requestEntity.df, requestEntity.columns)
+    dfService.drop(requestEntity.df, requestEntity.colNames)
   }
 }

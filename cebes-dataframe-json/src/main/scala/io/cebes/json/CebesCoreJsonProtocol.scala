@@ -492,6 +492,39 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
         }")
     }
   }
+
+  protected def writeMap[K <: Any, V <: Any](m: Map[K, V]): JsValue = {
+    val jsValues = m.map {
+      case (key, value) =>
+        JsArray(writeJson(key), writeJson(value))
+    }.toSeq
+    JsArray(jsValues: _*)
+  }
+
+  protected def readMap[K, V](json: JsValue)(implicit tagK: ClassTag[K], tagV: ClassTag[V]): Map[K, V] = json match {
+    case arr: JsArray =>
+      arr.elements.map {
+        case element: JsArray =>
+          require(element.elements.length == 2, "Require a JsArray of length 2, for the key and value")
+          safeCast[K](readJson(element.elements.head)) -> safeCast[V](readJson(element.elements.last))
+        case other =>
+          deserializationError(s"Expected a JsArray, got ${other.compactPrint}")
+      }.toMap
+    case other =>
+      deserializationError(s"Expected a JsArray, got ${other.compactPrint}")
+  }
+
+  protected def safeCast[T](v: Any)(implicit tag: ClassTag[T]): T = {
+    v match {
+      case null =>
+        // some types won't take nulls (e.g. Double)
+        // but some types do (e.g. String). So we do whatever we can here.
+        tag.runtimeClass.asInstanceOf[Class[T]].cast(null)
+      case t =>
+        // god helps us
+        t.asInstanceOf[T]
+    }
+  }
 }
 
 object CebesCoreJsonProtocol extends CebesCoreJsonProtocol

@@ -18,12 +18,12 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.server.RequestContext
 import akka.util.ByteString
 import com.google.inject.Inject
-import io.cebes.server.routes.common.SyncExecutor
+import io.cebes.server.routes.common.SyncOperation
 import io.cebes.storage.DataWriter
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Upload @Inject()(dataWriter: DataWriter) extends SyncExecutor[FormData, UploadResponse] {
+class Upload @Inject()(dataWriter: DataWriter) extends SyncOperation[FormData, UploadResponse] {
 
   /**
     * Implement this to do the real work

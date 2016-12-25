@@ -9,32 +9,29 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 07/11/2016.
+ * Created by phvu on 18/12/2016.
  */
 
-package io.cebes.server.routes.result
+package io.cebes.server.routes.df
 
-import java.util.UUID
-
-import akka.http.scaladsl.server.RequestContext
 import com.google.inject.Inject
+import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.SerializableResult
-import io.cebes.server.routes.common.SyncOperation
+import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Result @Inject()(resultStorage: ResultStorage) extends SyncOperation[UUID, SerializableResult] {
+/**
+  * Run the frequent itemset algorithm
+  */
+class FreqItems @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncDataframeOperation[FreqItemsRequest] {
 
   /**
     * Implement this to do the real work
     */
-  override def run(requestEntity: UUID)
-                  (implicit ec: ExecutionContext,
-                   ctx: RequestContext): Future[SerializableResult] = Future {
-    resultStorage.get(requestEntity) match {
-      case Some(result) => result
-      case None => throw new NoSuchElementException(s"Request ID not found: ${requestEntity.toString}")
-    }
+  override protected def runImpl(requestEntity: FreqItemsRequest)
+                                (implicit ec: ExecutionContext): Future[Dataframe] = Future {
+    dfService.freqItems(requestEntity.df, requestEntity.colNames, requestEntity.support)
   }
 }

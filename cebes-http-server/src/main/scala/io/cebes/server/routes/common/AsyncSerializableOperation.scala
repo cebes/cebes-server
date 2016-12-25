@@ -14,16 +14,17 @@
 
 package io.cebes.server.routes.common
 
-import io.cebes.df.Dataframe
-import io.cebes.server.routes.DataframeResponse
-
 /**
-  * Abstract class for *asynchronous* operations that return a Dataframe.
+  * Abstract class for *asynchronous* operations that return a serializable type
+  * and that type will be sent to the client,
+  * meaning subclasses of AsyncOperation[E, T, R] that have the same type for T and R.
+  *
   * Subclasses of this class only need to override the runImpl() function
   *
   * @tparam E Type of the request entity
+  * @tparam R The return type of the operation, also the type of the response sent to client
   */
-abstract class AsyncDataframeOperation[E] extends AsyncOperation[E, Dataframe, DataframeResponse] {
+abstract class AsyncSerializableOperation[E, R] extends AsyncOperation[E, R, R] {
 
   /**
     * Transform the actual result (of type T)
@@ -34,7 +35,7 @@ abstract class AsyncDataframeOperation[E] extends AsyncOperation[E, Dataframe, D
     * @param result        The actual result, returned by `runImpl`
     * @return a JSON-serializable object, to be returned to the clients
     */
-  override protected def transformResult(requestEntity: E, result: Dataframe): Option[DataframeResponse] = {
-    Some(DataframeResponse(result.id, result.schema.copy()))
+  override protected def transformResult(requestEntity: E, result: R): Option[R] = {
+    Some(result)
   }
 }

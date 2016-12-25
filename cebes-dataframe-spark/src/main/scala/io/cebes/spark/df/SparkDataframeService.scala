@@ -84,6 +84,31 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     dfStore(dfId).na.replace[T](cols, replacement)
   }
 
+  override def approxQuantile(dfId: UUID, col: String, probabilities: Array[Double],
+                              relativeError: Double): Array[Double] = {
+    dfStore(dfId).stat.approxQuantile(col, probabilities, relativeError)
+  }
+
+  override def cov(dfId: UUID, col1: String, col2: String): Double = {
+    dfStore(dfId).stat.cov(col1, col2)
+  }
+
+  override def corr(dfId: UUID, col1: String, col2: String): Double = {
+    dfStore(dfId).stat.corr(col1, col2)
+  }
+
+  override def crosstab(dfId: UUID, col1: String, col2: String): Dataframe = dfStore.add {
+    dfStore(dfId).stat.crosstab(col1, col2)
+  }
+
+  override def freqItems(dfId: UUID, cols: Seq[String], support: Double): Dataframe = dfStore.add {
+    dfStore(dfId).stat.freqItems(cols, support)
+  }
+
+  override def sampleBy[T](dfId: UUID, col: String, fractions: Map[T, Double], seed: Long): Dataframe = dfStore.add {
+    dfStore(dfId).stat.sampleBy(col, fractions, seed)
+  }
+
   ////////////////////////////////////////////////////////////////////////////////////
   // SQL-related functions
   ////////////////////////////////////////////////////////////////////////////////////

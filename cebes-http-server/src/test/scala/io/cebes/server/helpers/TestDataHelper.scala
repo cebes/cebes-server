@@ -32,7 +32,7 @@ trait TestDataHelper {
 
   val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
 
-  def getCylinderBands: RemoteDataframe = sendSql(s"SELECT * FROM $cylinderBandsTableName")
+  lazy val getCylinderBands: RemoteDataframe = sendSql(s"SELECT * FROM $cylinderBandsTableName")
 
   def createOrReplaceCylinderBands(tableName: Option[String] = None): RemoteDataframe = {
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")

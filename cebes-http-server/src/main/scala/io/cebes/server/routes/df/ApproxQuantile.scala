@@ -9,32 +9,30 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 07/11/2016.
+ * Created by phvu on 18/12/2016.
  */
 
-package io.cebes.server.routes.result
+package io.cebes.server.routes.df
 
-import java.util.UUID
-
-import akka.http.scaladsl.server.RequestContext
 import com.google.inject.Inject
+import io.cebes.df.DataframeService
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.SerializableResult
-import io.cebes.server.routes.common.SyncOperation
+import io.cebes.server.routes.common.AsyncSerializableOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Result @Inject()(resultStorage: ResultStorage) extends SyncOperation[UUID, SerializableResult] {
+/**
+  * Compute the approximate quantiles of the given column
+  */
+class ApproxQuantile @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
+  extends AsyncSerializableOperation[ApproxQuantileRequest, Array[Double]] {
 
   /**
     * Implement this to do the real work
     */
-  override def run(requestEntity: UUID)
-                  (implicit ec: ExecutionContext,
-                   ctx: RequestContext): Future[SerializableResult] = Future {
-    resultStorage.get(requestEntity) match {
-      case Some(result) => result
-      case None => throw new NoSuchElementException(s"Request ID not found: ${requestEntity.toString}")
-    }
+  override protected def runImpl(requestEntity: ApproxQuantileRequest)
+                                (implicit ec: ExecutionContext): Future[Array[Double]] = Future {
+    dfService.approxQuantile(requestEntity.df, requestEntity.colName,
+      requestEntity.probabilities, requestEntity.relativeError)
   }
 }

@@ -26,6 +26,6 @@ class Sort @Inject()(dfService: DataframeService, override val resultStorage: Re
 
   override protected def runImpl(requestEntity: ColumnsRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.sort(requestEntity.df, requestEntity.columns: _*)
+    dfService.sort(requestEntity.df, requestEntity.cols: _*)
   }
 }

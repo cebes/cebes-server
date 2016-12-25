@@ -26,9 +26,9 @@ class Where @Inject()(dfService: DataframeService, override val resultStorage: R
 
   override protected def runImpl(requestEntity: ColumnsRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    require(requestEntity.columns.length == 1,
-      s"'Where' takes 1 column as its argument, got ${requestEntity.columns.length}")
+    require(requestEntity.cols.length == 1,
+      s"'Where' takes 1 column as its argument, got ${requestEntity.cols.length}")
 
-    dfService.where(requestEntity.df, requestEntity.columns.head)
+    dfService.where(requestEntity.df, requestEntity.cols.head)
   }
 }

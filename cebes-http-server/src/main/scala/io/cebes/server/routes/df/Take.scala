@@ -18,7 +18,7 @@ import com.google.inject.Inject
 import io.cebes.df.DataframeService
 import io.cebes.df.sample.DataSample
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncExecutor
+import io.cebes.server.routes.common.AsyncSerializableOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -26,7 +26,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Sample a Dataframe, returns a sample of the data
   */
 class Take @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncExecutor[LimitRequest, DataSample, DataSample] {
+  extends AsyncSerializableOperation[LimitRequest, DataSample] {
 
   /**
     * Implement this to do the real work
@@ -34,9 +34,5 @@ class Take @Inject()(dfService: DataframeService, override val resultStorage: Re
   override protected def runImpl(requestEntity: LimitRequest)
                                 (implicit ec: ExecutionContext): Future[DataSample] = Future {
     dfService.take(requestEntity.df, requestEntity.n)
-  }
-
-  override protected def transformResult(requestEntity: LimitRequest, result: DataSample): Option[DataSample] = {
-    Some(result)
   }
 }

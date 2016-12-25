@@ -47,13 +47,13 @@ class Replace @Inject()(dfService: DataframeService, override val resultStorage:
     firstKey match {
       case _: Number =>
         val map = requestEntity.replacement.map(toDouble)
-        dfService.replace(requestEntity.df, requestEntity.cols, map)
+        dfService.replace(requestEntity.df, requestEntity.colNames, map)
       case _: String =>
         val map = requestEntity.replacement.map(toString)
-        dfService.replace(requestEntity.df, requestEntity.cols, map)
+        dfService.replace(requestEntity.df, requestEntity.colNames, map)
       case _: Boolean =>
         val map = requestEntity.replacement.map(toBoolean)
-        dfService.replace(requestEntity.df, requestEntity.cols, map)
+        dfService.replace(requestEntity.df, requestEntity.colNames, map)
       case _ =>
         throw new IllegalArgumentException("Only support replacement map of type String, Double or Boolean")
     }

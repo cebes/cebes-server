@@ -44,20 +44,22 @@ class HttpDfJsonProtocolSuite extends FunSuite {
 
   test("ReplaceRequest") {
     val r1 = ReplaceRequest(UUID.randomUUID(), Array("a", "b", "c"),
-      Map("x" -> "y", "aaa" -> ""))
+      Map("x" -> "y", "aaa" -> "", "bb" -> null))
     val s1 = r1.toJson.compactPrint
     val r2 = s1.parseJson.convertTo[ReplaceRequest]
     assert(r2.df === r1.df)
-    assert(r2.cols === r1.cols)
+    assert(r2.colNames === r1.colNames)
     assert(r2.replacement("x") === "y")
     assert(r2.replacement("aaa") === "")
+    assert(r2.replacement("bb") === null)
+    assert(r2.replacement.size === 3)
 
     val r3 = ReplaceRequest(UUID.randomUUID(), Array("a", "b", "c"),
       Map(10.0 -> 0.9, -10.0 -> 20.5))
     val s3 = r3.toJson.compactPrint
     val r4 = s3.parseJson.convertTo[ReplaceRequest]
     assert(r4.df === r3.df)
-    assert(r4.cols === r3.cols)
+    assert(r4.colNames === r3.colNames)
     assert(r4.replacement(10.0) === 0.9)
     assert(r4.replacement(-10.0) === 20.5)
 
@@ -66,8 +68,25 @@ class HttpDfJsonProtocolSuite extends FunSuite {
     val s5 = r5.toJson.compactPrint
     val r6 = s5.parseJson.convertTo[ReplaceRequest]
     assert(r6.df === r5.df)
-    assert(r6.cols === r5.cols)
+    assert(r6.colNames === r5.colNames)
     assert(r6.replacement(true) === false)
     assert(r6.replacement(false) === true)
+  }
+
+  test("SampleByRequest") {
+    val r1 = SampleByRequest(UUID.randomUUID(), "abc", Map("aaaa" -> 0.1, "ccc" -> 0.2), 42)
+    val s1 = r1.toJson.compactPrint
+    val r2 = s1.parseJson.convertTo[SampleByRequest]
+    assert(r1 === r2)
+
+    val r3 = SampleByRequest(UUID.randomUUID(), "abcd", Map(true -> 0.1, false -> 0.3), 42)
+    val s3 = r3.toJson.compactPrint
+    val r4 = s3.parseJson.convertTo[SampleByRequest]
+    assert(r3 === r4)
+
+    val r5 = SampleByRequest(UUID.randomUUID(), "abcd", Map(1000 -> 0.1, 20000 -> 0.9), 42)
+    val s5 = r5.toJson.compactPrint
+    val r6 = s5.parseJson.convertTo[SampleByRequest]
+    assert(r5 === r6)
   }
 }

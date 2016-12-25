@@ -26,6 +26,6 @@ class WithColumn @Inject()(dfService: DataframeService, override val resultStora
 
   override protected def runImpl(requestEntity: WithColumnRequest)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.withColumn(requestEntity.df, requestEntity.colName, requestEntity.column)
+    dfService.withColumn(requestEntity.df, requestEntity.colName, requestEntity.col)
   }
 }
