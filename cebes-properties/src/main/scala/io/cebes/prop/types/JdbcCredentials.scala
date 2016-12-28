@@ -9,18 +9,18 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 20/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.prop.types
 
 import com.google.inject.Inject
-import io.cebes.prop.Property
-import io.cebes.prop.Prop
 
-class TestProperties @Inject()
-(@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
-@Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String) {
+/**
+  * Abstract class containing credentials for JDBC
+  */
+private[types] abstract class JdbcCredentials @Inject()(url: String, userName: String,
+                                                        password: String, driver: String) {
 
-  def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
+  def hasJdbcCredentials: Boolean = !url.isEmpty && !userName.isEmpty && !password.isEmpty
 }

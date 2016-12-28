@@ -29,8 +29,8 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key"
 
     val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
-      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
-        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withCredentials(properties.url, properties.userName,
+        properties.password, tableName, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
       .withValueToSeq(v => Seq(v.field1, v.field2))
       .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
@@ -68,8 +68,8 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_int_key"
 
     val persistence = JdbcPersistenceBuilder.newBuilder[Int, Bar]()
-      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
-        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withCredentials(properties.url, properties.userName,
+        properties.password, tableName, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
       .withValueToSeq(v => Seq(v.f2, v.f3))
       .withSqlToValue { case (_, s) => Bar(s.getFloat("f2"), s.getInt("f3")) }
@@ -108,8 +108,8 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_incompatible"
 
     val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
-      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
-        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withCredentials(properties.url, properties.userName,
+        properties.password, tableName, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
       .withValueToSeq(v => Seq(v.field1, v.field2))
       .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
@@ -142,8 +142,8 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
 
     // using the same table again for a different persistence
     val persistenceBar = JdbcPersistenceBuilder.newBuilder[Int, Bar]()
-      .withCredentials(properties.jdbcUrl, properties.jdbcUsername,
-        properties.jdbcPassword, tableName, properties.jdbcDriver)
+      .withCredentials(properties.url, properties.userName,
+        properties.password, tableName, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
       .withValueToSeq(v => Seq(v.f2, v.f3))
       .withSqlToValue { case (_, s) => Bar(s.getFloat("f2"), s.getInt("f3")) }

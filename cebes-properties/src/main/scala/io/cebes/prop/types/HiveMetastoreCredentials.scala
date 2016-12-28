@@ -9,20 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.persistence.helpers
+package io.cebes.prop.types
 
-import com.google.inject.Inject
+import com.google.inject.{Inject, Singleton}
 import io.cebes.prop.{Prop, Property}
 
-class TestProperties @Inject()
-(@Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
- @Prop(Property.TEST_JDBC_DRIVER) val jdbcDriver: String,
- @Prop(Property.TEST_JDBC_USERNAME) val jdbcUsername: String,
- @Prop(Property.TEST_JDBC_PASSWORD) val jdbcPassword: String) {
-
-  def hasJdbcCredentials: Boolean = !jdbcUrl.isEmpty && !jdbcUsername.isEmpty && !jdbcPassword.isEmpty
-}
-
+@Singleton case class HiveMetastoreCredentials @Inject()
+(@Prop(Property.HIVE_METASTORE_URL) url: String,
+ @Prop(Property.HIVE_METASTORE_USERNAME) userName: String,
+ @Prop(Property.HIVE_METASTORE_PASSWORD) password: String,
+ @Prop(Property.HIVE_METASTORE_DRIVER) driver: String)
+  extends JdbcCredentials(url, userName, password, driver)

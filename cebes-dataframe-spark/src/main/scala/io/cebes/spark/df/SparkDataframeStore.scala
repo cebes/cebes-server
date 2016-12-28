@@ -25,24 +25,23 @@ import io.cebes.df.{Dataframe, DataframeStore}
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
+import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
 import io.cebes.spark.config.HasSparkSession
 import org.apache.spark.sql.SaveMode
 import spray.json._
 
 @Singleton class SparkDataframeStore @Inject()
-(@Prop(Property.MYSQL_URL) jdbcUrl: String,
- @Prop(Property.MYSQL_USERNAME) jdbcUsername: String,
- @Prop(Property.MYSQL_PASSWORD) jdbcPassword: String,
- @Prop(Property.MYSQL_DRIVER) jdbcDriver: String,
- @Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
+(@Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
+ mySqlCreds: MySqlBackendCredentials,
  hasSparkSession: HasSparkSession,
  dfFactory: SparkDataframeFactory) extends DataframeStore with LazyLogging {
 
   private val session = hasSparkSession.session
 
   private lazy val jdbcPersistence = JdbcPersistenceBuilder.newBuilder[UUID, Dataframe]()
-    .withCredentials(jdbcUrl, jdbcUsername, jdbcPassword, TableNames.DF_STORE, jdbcDriver)
+    .withCredentials(mySqlCreds.url, mySqlCreds.userName,
+      mySqlCreds.password, TableNames.DF_STORE, mySqlCreds.driver)
     .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
       JdbcPersistenceColumn("table_name", "VARCHAR(200)"),
       JdbcPersistenceColumn("schema", "MEDIUMTEXT")))

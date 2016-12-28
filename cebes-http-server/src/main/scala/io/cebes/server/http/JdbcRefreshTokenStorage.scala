@@ -17,22 +17,20 @@ package io.cebes.server.http
 import com.google.inject.Inject
 import com.softwaremill.session.{RefreshTokenData, RefreshTokenLookupResult, RefreshTokenStorage}
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
-import io.cebes.prop.{Prop, Property}
+import io.cebes.prop.types.MySqlBackendCredentials
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
 class JdbcRefreshTokenStorage @Inject()
-(@Prop(Property.MYSQL_URL) jdbcUrl: String,
- @Prop(Property.MYSQL_USERNAME) jdbcUserName: String,
- @Prop(Property.MYSQL_PASSWORD) jdbcPassword: String,
- @Prop(Property.MYSQL_DRIVER) jdbcDriver: String) extends RefreshTokenStorage[SessionData] {
+(mySqlCreds: MySqlBackendCredentials) extends RefreshTokenStorage[SessionData] {
 
   case class Store(userName: String, tokenHash: String, expires: Long)
 
   val persistence: JdbcPersistence[String, Store] =
     JdbcPersistenceBuilder.newBuilder[String, Store]().
-      withCredentials(jdbcUrl, jdbcUserName, jdbcPassword, TableNames.REFRESH_TOKENS, jdbcDriver).
+      withCredentials(mySqlCreds.url, mySqlCreds.userName,
+        mySqlCreds.password, TableNames.REFRESH_TOKENS, mySqlCreds.driver).
       withValueSchema(Seq(
         JdbcPersistenceColumn("user_name", "VARCHAR (200)"),
         JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),

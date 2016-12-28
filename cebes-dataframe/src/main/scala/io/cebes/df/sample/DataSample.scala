@@ -14,8 +14,8 @@
 
 package io.cebes.df.sample
 
-import io.cebes.common.Tabulator
 import io.cebes.df.schema.{HasSchema, Schema}
+import io.cebes.util.Tabulator
 
 /**
   * A sample of data taken from a [[io.cebes.df.Dataframe]]

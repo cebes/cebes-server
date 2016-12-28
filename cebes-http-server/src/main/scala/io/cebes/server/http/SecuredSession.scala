@@ -32,6 +32,7 @@ trait SecuredSession {
   implicit val encoder = new BasicSessionEncoder[SessionData]
   implicit val sessionManager = new SessionManager[SessionData](sessionConfig)
 
+  // TODO: This isn't very clean. JdbcRefreshTokenStorage should be injected somehow (maybe in HttpServer?)
   implicit val refreshTokenStorage: RefreshTokenStorage[SessionData] =
     CebesHttpServerInjector.instance[JdbcRefreshTokenStorage]
 

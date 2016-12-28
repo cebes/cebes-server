@@ -33,8 +33,10 @@ trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler
         storageApi ~
         resultApi
     } ~
-      path("")(getFromResource("public/index.html")) ~
-      path("version") {
+      (path("") & get) {
+        getFromResource("public/index.html")
+      } ~
+      (path("version") & get) {
         complete(VersionResponse(Routes.API_VERSION))
       }
 }

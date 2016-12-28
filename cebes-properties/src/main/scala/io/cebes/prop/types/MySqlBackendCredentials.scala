@@ -9,17 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.persistence.helpers
+package io.cebes.prop.types
 
-import io.cebes.prop.types.TestProperties
-import org.scalatest.{Ignore, Tag}
+import com.google.inject.{Inject, Singleton}
+import io.cebes.prop.{Prop, Property}
 
-trait TestPropertyHelper {
-
-  val properties: TestProperties = CebesPersistenceTestInjector.instance[TestProperties]
-
-  object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
-}
+@Singleton case class MySqlBackendCredentials @Inject()
+(@Prop(Property.MYSQL_URL) url: String,
+ @Prop(Property.MYSQL_USERNAME) userName: String,
+ @Prop(Property.MYSQL_PASSWORD) password: String,
+ @Prop(Property.MYSQL_DRIVER) driver: String)
+  extends JdbcCredentials(url, userName, password, driver)
