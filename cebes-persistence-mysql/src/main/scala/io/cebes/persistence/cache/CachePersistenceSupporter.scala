@@ -40,7 +40,7 @@ class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V]
 
   override def onRemoval(notification: RemovalNotification[K, V]): Unit = {
     if (removalFilter.isEmpty || removalFilter.get(notification.getKey, notification.getValue)) {
-      persistence.add(notification.getKey, notification.getValue)
+      persistence.upsert(notification.getKey, notification.getValue)
     } else {
       logger.info(s"Item evicted from LoadingCache without being persisted: ${notification.toString}")
     }

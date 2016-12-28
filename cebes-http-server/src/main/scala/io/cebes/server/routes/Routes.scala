@@ -14,8 +14,10 @@
 
 package io.cebes.server.routes
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.auth.AuthHandler
 import io.cebes.server.routes.df.DataframeHandler
 import io.cebes.server.routes.result.ResultHandler
@@ -27,10 +29,14 @@ trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler
   val routes: Route =
     pathPrefix(Routes.API_VERSION) {
       authApi ~
-      dataframeApi ~
-      storageApi ~
-      resultApi
-    } ~ path("")(getFromResource("public/index.html"))
+        dataframeApi ~
+        storageApi ~
+        resultApi
+    } ~
+      path("")(getFromResource("public/index.html")) ~
+      path("version") {
+        complete(VersionResponse(Routes.API_VERSION))
+      }
 }
 
 object Routes {

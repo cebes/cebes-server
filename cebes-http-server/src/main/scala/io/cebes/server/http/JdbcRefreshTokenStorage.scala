@@ -49,7 +49,7 @@ class JdbcRefreshTokenStorage @Inject()
   }
 
   override def store(data: RefreshTokenData[SessionData]): Future[Unit] = {
-    Future.successful(persistence.add(data.selector, Store(data.forSession.userName, data.tokenHash, data.expires)))
+    Future.successful(persistence.upsert(data.selector, Store(data.forSession.userName, data.tokenHash, data.expires)))
   }
 
   override def remove(selector: String): Future[Unit] = {

@@ -143,6 +143,8 @@ object JdbcPersistenceBuilder extends LazyLogging {
       }
     } while (incompatibleTable)
 
+    logger.info(s"Using table named $newTableName")
+
     val stmt = connection.prepareStatement(s"CREATE TABLE IF NOT EXISTS $newTableName (" +
       valueSchema.map(col => s"`${col.name}` ${col.spec}").mkString(", ") +
       s", `$keyColumnName` VARCHAR(200) NOT NULL, PRIMARY KEY (`$keyColumnName`))")

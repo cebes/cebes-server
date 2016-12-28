@@ -29,7 +29,7 @@ class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyV
     * Store the value associated with the key.
     * When the key is existed, its value will be updated
     */
-  override def add(key: K, value: V): Unit = map.put(key, value)
+  override def upsert(key: K, value: V): Unit = map.put(key, value)
 
   override def get(key: K): Option[V] = map.get(key)
 

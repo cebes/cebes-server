@@ -44,14 +44,14 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistence.get(key).isEmpty)
 
-    persistence.add(key, Foo(100, 219.0f))
+    persistence.upsert(key, Foo(100, 219.0f))
     val v = persistence.get(key)
     assert(v.nonEmpty)
     assert(v.get.field1 === 100)
     assert(v.get.field2 === 219.0f)
 
     // replace
-    persistence.add(key, Foo(-100, -219.0f))
+    persistence.upsert(key, Foo(-100, -219.0f))
     val v2 = persistence.get(key)
     assert(v2.nonEmpty)
     assert(v2.get.field1 === -100)
@@ -83,14 +83,14 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistence.get(key).isEmpty)
 
-    persistence.add(key, Bar(20.0f, 219))
+    persistence.upsert(key, Bar(20.0f, 219))
     val v = persistence.get(key)
     assert(v.nonEmpty)
     assert(v.get.f2 === 20.0f)
     assert(v.get.f3 === 219)
 
     // replace
-    persistence.add(key, Bar(-100.0f, -219))
+    persistence.upsert(key, Bar(-100.0f, -219))
     val v2 = persistence.get(key)
     assert(v2.nonEmpty)
     assert(v2.get.f2 === -100.0f)
@@ -124,14 +124,14 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistence.get(key).isEmpty)
 
-    persistence.add(key, Foo(100, 219.0f))
+    persistence.upsert(key, Foo(100, 219.0f))
     val v = persistence.get(key)
     assert(v.nonEmpty)
     assert(v.get.field1 === 100)
     assert(v.get.field2 === 219.0f)
 
     // replace
-    persistence.add(key, Foo(-100, -219.0f))
+    persistence.upsert(key, Foo(-100, -219.0f))
     val v2 = persistence.get(key)
     assert(v2.nonEmpty)
     assert(v2.get.field1 === -100)
@@ -158,14 +158,14 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistenceBar.get(keyBar).isEmpty)
 
-    persistenceBar.add(keyBar, Bar(20.0f, 219))
+    persistenceBar.upsert(keyBar, Bar(20.0f, 219))
     val v3 = persistenceBar.get(keyBar)
     assert(v3.nonEmpty)
     assert(v3.get.f2 === 20.0f)
     assert(v3.get.f3 === 219)
 
     // replace
-    persistenceBar.add(keyBar, Bar(-100.0f, -219))
+    persistenceBar.upsert(keyBar, Bar(-100.0f, -219))
     val v4 = persistenceBar.get(keyBar)
     assert(v4.nonEmpty)
     assert(v4.get.f2 === -100.0f)

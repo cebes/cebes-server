@@ -9,23 +9,25 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 26/11/2016.
+ * Created by phvu on 28/12/2016.
  */
 
-package io.cebes.persistence
+package io.cebes.server.routes
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.server.routes.HttpJsonProtocol._
 
-/**
-  * A general trait for key-value persistent storage
-  */
-trait KeyValuePersistence[K, V] {
+class GeneralRouteSuite extends AbstractRouteSuite {
 
-  /**
-    * Store the value associated with the key.
-    * When the key is existed, its value will be updated
-    */
-  def upsert(key: K, value: V): Unit
+  test("version") {
+    Get("/version") ~> routes ~> check {
+      val v = responseAs[VersionResponse]
+      assert(v.api === Routes.API_VERSION)
+    }
+  }
 
-  def get(key: K): Option[V]
-
-  def remove(key: K): Unit
+  test("index") {
+    Get("/") ~> routes ~> check {
+      assert(handled)
+    }
+  }
 }

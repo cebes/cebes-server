@@ -88,7 +88,7 @@ import spray.json._
       Some(cache.get(id))
     } catch {
       case e@(_: UncheckedExecutionException | _: IllegalArgumentException) =>
-        logger.warn(s"Failed to get result for request ID $id: ${e.getMessage}")
+        logger.warn(s"Failed to get Dataframe for ID $id: ${e.getMessage}")
         None
     }
   }

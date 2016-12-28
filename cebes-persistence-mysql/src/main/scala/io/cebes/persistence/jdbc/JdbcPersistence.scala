@@ -45,7 +45,7 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
   // KeyValuePersistence APIs
   /////////////////////////////////////////////////////////////////////////////
 
-  override def add(key: K, value: V): Unit = withConnection { c =>
+  override def upsert(key: K, value: V): Unit = withConnection { c =>
     val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
     val updatePlaceHolder = valueSchema.map(col => s"`${col.name}` = ?").mkString(", ")
 
