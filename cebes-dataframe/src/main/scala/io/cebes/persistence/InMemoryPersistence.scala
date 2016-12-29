@@ -25,13 +25,21 @@ class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyV
 
   def this(initials: Map[K, V]) = this(mutable.HashMap(initials.toSeq: _*))
 
-  /**
-    * Store the value associated with the key.
-    * When the key is existed, its value will be updated
-    */
+  override def insert(key: K, value: V): Unit = {
+    //TODO: proper locks. Race condition might happen here
+    if (map.contains(key)) {
+      throw new IllegalArgumentException(s"Key ${key.toString} already exists")
+    }
+    map.put(key, value)
+  }
+
   override def upsert(key: K, value: V): Unit = map.put(key, value)
 
   override def get(key: K): Option[V] = map.get(key)
 
   override def remove(key: K): Unit = map.remove(key)
+
+  override def elements: Iterator[(K, V)] = map.iterator
+
+  override def findValue(value: V): Iterable[K] = map.filter(_._2 == value).keys
 }

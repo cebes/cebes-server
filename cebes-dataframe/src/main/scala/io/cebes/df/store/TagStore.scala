@@ -27,9 +27,9 @@ trait TagStore {
   def add(tag: Tag, id: UUID): Unit
 
   /**
-    * Remove the given tag, return the previous ID if the tag exists
+    * Remove the given tag
     */
-  def remove(tag: Tag): Option[UUID]
+  def remove(tag: Tag): Unit
 
   /**
     * Get all tags

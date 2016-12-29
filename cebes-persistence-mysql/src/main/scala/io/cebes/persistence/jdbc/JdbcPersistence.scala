@@ -38,12 +38,31 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
                                                  val keyColumnName: String = "key",
                                                  val valueSchema: Seq[JdbcPersistenceColumn],
                                                  val valueToSql: V => Seq[Any],
-                                                 val sqlToValue: (K, ResultSet) => V
+                                                 val sqlToValue: (K, ResultSet) => V,
+                                                 val strToKey: String => K
                                                 ) extends KeyValuePersistence[K, V] with LazyLogging {
 
   /////////////////////////////////////////////////////////////////////////////
   // KeyValuePersistence APIs
   /////////////////////////////////////////////////////////////////////////////
+
+  override def insert(key: K, value: V): Unit = withConnection { c =>
+    val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
+
+    val stmt = c.prepareStatement(s"INSERT INTO $tableName VALUES ($valuePlaceHolder, ?) ")
+
+    val values = valueToSql(value)
+    require(values.length == valueSchema.length,
+      s"Invalid sequence of values. " +
+        s"Expected a sequence of ${valueSchema.length} elements, got ${values.length} elements")
+
+    values.zipWithIndex.foreach {
+      case (v, idx) =>
+        stmt.setObject(idx + 1, v)
+    }
+    stmt.setString(values.length + 1, key.toString)
+    JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+  }
 
   override def upsert(key: K, value: V): Unit = withConnection { c =>
     val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
@@ -92,6 +111,32 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
       }
     }
   }
+
+  override def elements: Iterator[(K, V)] = withConnection { c =>
+    val stmt = c.prepareStatement(s"SELECT * FROM $tableName")
+    JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
+      JdbcUtil.cleanJdbcCall(s.executeQuery())(_.close()) { result =>
+        new Iterator[(K, V)] {
+          override def hasNext: Boolean =
+            if (result.isAfterLast) {
+              // really at the end
+              false
+            } else {
+              // 2 cases: in the middle, or dataset has no row
+              result.getRow > 0
+            }
+
+          override def next(): (K, V) = {
+            result.next()
+            val key = strToKey(result.getString(valueSchema.length + 1))
+            (key, sqlToValue(key, result))
+          }
+        }
+      }
+    }
+  }
+
+  override def findValue(value: V): Iterable[K] = ???
 
   /////////////////////////////////////////////////////////////////////////////
   // private helpers

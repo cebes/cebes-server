@@ -14,10 +14,46 @@
 
 package io.cebes.common
 
+import scala.util.matching.Regex
+
 /**
   * Tag of an object, represented as a name and an optional version
   * The serialized form would be name:version
+  *
   * @param name Name of the object, can have multiple slashes: part1/part2/part3
   * @param version version
   */
-case class Tag(name: String, version: String = "latest")
+case class Tag private(name: String, version: Option[String] = Some("latest")) {
+
+  override def toString: String = version match {
+    case Some(v) => s"$name:$v"
+    case None => name
+  }
+
+  def server: Option[String] = Tag.extract(toString, "server")
+
+  def host: Option[String] = Tag.extract(toString, "host")
+
+  def port: Option[String] = Tag.extract(toString, "port")
+
+  def path: Option[String] = Tag.extract(toString, "path")
+}
+
+object Tag {
+
+  val tagExpr = new Regex("""^((([a-z][a-z0-9-_\.]*)(:([0-9]+))?)(/[a-z0-9-_]+)*)(:([a-z0-9-_]+))?$""",
+    "name", "server", "host", "", "port", "path", "", "version")
+
+  private def extract(str: String, groupName: String): Option[String] = {
+    tagExpr.findFirstMatchIn(str).map(_.group(groupName))
+  }
+
+  def fromString(str: String): Tag = {
+    tagExpr.findFirstMatchIn(str) match {
+      case None => throw new IllegalArgumentException(s"Invalid tag expression: $str")
+      case Some(m) =>
+        val version = m.group("version")
+        new Tag(m.group("name"), if (version.isEmpty) None else Some(version))
+    }
+  }
+}
