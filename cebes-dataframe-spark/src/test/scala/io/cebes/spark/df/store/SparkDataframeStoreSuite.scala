@@ -12,11 +12,11 @@
  * Created by phvu on 17/12/2016.
  */
 
-package io.cebes.spark.df
+package io.cebes.spark.df.store
 
 import java.util.UUID
 
-import io.cebes.df.DataframeStore
+import io.cebes.df.store.DataframeStore
 import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
 

@@ -9,21 +9,30 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 06/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.spark
+package io.cebes.df.store
 
-import com.google.inject.AbstractModule
-import io.cebes.df.store.DataframeStore
-import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
-import io.cebes.spark.df.store.SparkDataframeStore
+import java.util.UUID
 
+import io.cebes.common.Tag
 
-class CebesSparkDependencyModule extends AbstractModule {
+trait TagStore {
 
-  protected def configure(): Unit = {
-    bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
-    bind(classOf[DataframeStore]).to(classOf[SparkDataframeStore])
-  }
+  /**
+    * add a new tag for the given ID
+    * Throws exception if the tag exists
+    */
+  def add(tag: Tag, id: UUID): Unit
+
+  /**
+    * Remove the given tag, return the previous ID if the tag exists
+    */
+  def remove(tag: Tag): Option[UUID]
+
+  /**
+    * Get all tags
+    */
+  def elements: Iterator[(Tag, UUID)]
 }

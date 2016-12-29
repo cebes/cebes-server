@@ -22,4 +22,4 @@ import io.cebes.prop.{Prop, Property}
  @Prop(Property.MYSQL_USERNAME) userName: String,
  @Prop(Property.MYSQL_PASSWORD) password: String,
  @Prop(Property.MYSQL_DRIVER) driver: String)
-  extends JdbcCredentials(url, userName, password, driver)
+  extends JdbcCredentials

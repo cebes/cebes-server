@@ -20,22 +20,6 @@ import io.cebes.df.sample.DataSample
 import io.cebes.df.types.VariableTypes.VariableType
 
 
-object DataframeService {
-
-  object AggregationTypes {
-
-    sealed abstract class AggregationType(val name: String)
-
-    object GroupBy extends AggregationType("GroupBy")
-
-    object RollUp extends AggregationType("RollUp")
-
-    object Cube extends AggregationType("Cube")
-
-  }
-
-}
-
 trait DataframeService {
 
   /**
@@ -297,4 +281,20 @@ trait DataframeService {
   def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                    pivotColName: Option[String], pivotValues: Option[Seq[Any]],
                    sumColNames: Seq[String]): Dataframe
+}
+
+object DataframeService {
+
+  object AggregationTypes {
+
+    sealed abstract class AggregationType(val name: String)
+
+    object GroupBy extends AggregationType("GroupBy")
+
+    object RollUp extends AggregationType("RollUp")
+
+    object Cube extends AggregationType("Cube")
+
+  }
+
 }

@@ -19,9 +19,10 @@ import java.util.UUID
 import com.google.inject.Inject
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.sample.DataSample
+import io.cebes.df.store.DataframeStore
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.types.VariableTypes.VariableType
-import io.cebes.df.{Column, Dataframe, DataframeService, DataframeStore}
+import io.cebes.df.{Column, Dataframe, DataframeService}
 import io.cebes.spark.config.HasSparkSession
 
 /**

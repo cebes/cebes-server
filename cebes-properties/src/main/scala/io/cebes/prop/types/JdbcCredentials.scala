@@ -14,13 +14,18 @@
 
 package io.cebes.prop.types
 
-import com.google.inject.Inject
-
 /**
   * Abstract class containing credentials for JDBC
   */
-private[types] abstract class JdbcCredentials @Inject()(url: String, userName: String,
-                                                        password: String, driver: String) {
+private[types] trait JdbcCredentials {
+
+  def url: String
+
+  def userName: String
+
+  def password: String
+
+  def driver: String
 
   def hasJdbcCredentials: Boolean = !url.isEmpty && !userName.isEmpty && !password.isEmpty
 }

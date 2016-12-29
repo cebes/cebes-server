@@ -22,4 +22,4 @@ import io.cebes.prop.{Prop, Property}
  @Prop(Property.HIVE_METASTORE_USERNAME) userName: String,
  @Prop(Property.HIVE_METASTORE_PASSWORD) password: String,
  @Prop(Property.HIVE_METASTORE_DRIVER) driver: String)
-  extends JdbcCredentials(url, userName, password, driver)
+  extends JdbcCredentials

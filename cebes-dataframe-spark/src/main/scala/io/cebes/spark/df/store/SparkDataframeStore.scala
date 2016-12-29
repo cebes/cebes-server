@@ -12,7 +12,7 @@
  * Created by phvu on 15/12/2016.
  */
 
-package io.cebes.spark.df
+package io.cebes.spark.df.store
 
 import java.util.UUID
 
@@ -20,14 +20,16 @@ import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
-import io.cebes.df.{Dataframe, DataframeStore}
+import io.cebes.df.store.DataframeStore
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
 import io.cebes.spark.config.HasSparkSession
+import io.cebes.spark.df.{SparkDataframe, SparkDataframeFactory}
 import org.apache.spark.sql.SaveMode
 import spray.json._
 

@@ -15,7 +15,8 @@
 package io.cebes.spark.storage
 
 import com.google.inject.Inject
-import io.cebes.df.{Dataframe, DataframeStore}
+import io.cebes.df.Dataframe
+import io.cebes.df.store.DataframeStore
 import io.cebes.spark.config.HasSparkSession
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.storage.hdfs.HdfsDataSource

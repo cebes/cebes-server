@@ -33,7 +33,7 @@ import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 /**
   * Dataframe wrapper on top of Spark's DataFrame
   *
-  * Note that we don't (and WON'T) inject [[io.cebes.df.DataframeStore]] into this class,
+  * Note that we don't (and WON'T) inject [[DataframeStore]] into this class,
   * because the logic of handling a bunch of [[Dataframe]]s should be at the higher level,
   * specifically the level of [[io.cebes.df.DataframeService]]
   *

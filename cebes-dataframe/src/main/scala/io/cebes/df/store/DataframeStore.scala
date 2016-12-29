@@ -12,9 +12,11 @@
  * Created by phvu on 15/12/2016.
  */
 
-package io.cebes.df
+package io.cebes.df.store
 
 import java.util.UUID
+
+import io.cebes.df.Dataframe
 
 /**
   * Storing dataframes, maybe backed by a LoadingCache

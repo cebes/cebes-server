@@ -9,21 +9,15 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 06/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.spark
+package io.cebes.common
 
-import com.google.inject.AbstractModule
-import io.cebes.df.store.DataframeStore
-import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
-import io.cebes.spark.df.store.SparkDataframeStore
-
-
-class CebesSparkDependencyModule extends AbstractModule {
-
-  protected def configure(): Unit = {
-    bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
-    bind(classOf[DataframeStore]).to(classOf[SparkDataframeStore])
-  }
-}
+/**
+  * Tag of an object, represented as a name and an optional version
+  * The serialized form would be name:version
+  * @param name Name of the object, can have multiple slashes: part1/part2/part3
+  * @param version version
+  */
+case class Tag(name: String, version: String = "latest")
