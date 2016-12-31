@@ -23,7 +23,7 @@ case class Foo(field1: Int, field2: Float)
 
 case class Bar(f2: Float, f3: Int)
 
-class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper with BeforeAndAfterAll {
+abstract class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper with BeforeAndAfterAll {
 
   private val tableNameUUIDKey = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key"
   private val tableNameUUIDKeyElements = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key_find_elements"

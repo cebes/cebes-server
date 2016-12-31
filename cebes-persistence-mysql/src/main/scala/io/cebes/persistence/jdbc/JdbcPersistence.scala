@@ -148,42 +148,7 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     */
   private def resultSetToIterable[T](connection: Connection, stmt: PreparedStatement,
                                      resultSetFn: ResultSet => T): ClosableIterator[T] = {
-    new ClosableIterator[T] {
-
-      private val _connection = connection
-      private val _stmt = stmt
-      private val resultSet = stmt.executeQuery()
-
-      override def hasNext: Boolean = {
-        val v = resultSet.next()
-        if (v) {
-          resultSet.previous()
-        }
-        v
-      }
-
-      override def next(): T = {
-        resultSet.next()
-        resultSetFn(resultSet)
-      }
-
-      private def safeClose(a: AutoCloseable): Unit = {
-        if (a != null) {
-          try {
-            a.close()
-          } catch {
-            case ex: SQLException =>
-              logger.error(s"Failed to close resource: ${ex.getMessage}")
-          }
-        }
-      }
-
-      override def close(): Unit = {
-        safeClose(resultSet)
-        safeClose(_stmt)
-        safeClose(_connection)
-      }
-    }
+    new ResultSetIterable[T](connection, stmt, resultSetFn)
   }
 
   private def withConnection[T](action: Connection => T) = {
