@@ -287,13 +287,13 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val quantiles = request[ApproxQuantileRequest, Array[Double]]("df/approxquantile",
       ApproxQuantileRequest(df.id, "press", Array(0, 0.1, 0.5, 0.9, 1), 0.01))
     assert(quantiles.length === 5)
+    assert(quantiles.forall(d => !d.isInfinity && !d.isNaN))
 
-    // columns with null
-    val ex = intercept[ServerException] {
-      request[ApproxQuantileRequest, Array[Double]]("df/approxquantile",
+    // columns with null is fine
+    val quantiles2 = request[ApproxQuantileRequest, Array[Double]]("df/approxquantile",
         ApproxQuantileRequest(df.id, "caliper", Array(0, 0.1, 0.5, 0.9, 1), 0.01))
-    }
-    println(ex.getMessage.startsWith("Job aborted due to stage failure"))
+    assert(quantiles2.length === 5)
+    assert(quantiles2.forall(d => !d.isInfinity && !d.isNaN))
 
     // string columns
     val ex2 = intercept[ServerException] {
