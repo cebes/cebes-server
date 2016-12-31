@@ -24,17 +24,18 @@ class ResultSetIterable[T](connection: Connection, stmt: PreparedStatement,
 
   private val resultSet = stmt.executeQuery()
 
+  private def _isEmpty = !resultSet.isBeforeFirst && resultSet.getRow == 0
+
   override def hasNext: Boolean = {
-    val v = resultSet.next()
-    if (v) {
-      resultSet.previous()
-    }
-    v
+    !_isEmpty && !resultSet.isLast
   }
 
   override def next(): T = {
-    resultSet.next()
-    resultSetFn(resultSet)
+    if(resultSet.next()) {
+      resultSetFn(resultSet)
+    } else {
+      throw new NoSuchElementException("Already at the end of the set")
+    }
   }
 
   private def safeClose(a: AutoCloseable): Unit = {
