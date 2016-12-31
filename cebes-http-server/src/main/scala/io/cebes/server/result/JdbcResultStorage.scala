@@ -44,6 +44,7 @@ import spray.json._
     .withSqlToValue {
       case (_, f) => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4))
     }
+    .withStrToKey(UUID.fromString)
     .build()
 
   private lazy val cache: LoadingCache[UUID, Store] = {

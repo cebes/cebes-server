@@ -24,7 +24,7 @@ import io.cebes.prop.{Prop, Property}
  @Prop(Property.TEST_JDBC_USERNAME) userName: String,
  @Prop(Property.TEST_JDBC_PASSWORD) password: String,
  @Prop(Property.TEST_JDBC_DRIVER) driver: String)
-  extends JdbcCredentials(url, userName, password, driver) {
+  extends JdbcCredentials {
 
   def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
 }

@@ -22,6 +22,10 @@ import io.cebes.df.store.TagStore
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.types.MySqlBackendCredentials
 
+/**
+  * An implementation of [[TagStore]] for Spark,
+  * with JDBC persistence backend.
+  */
 @Singleton class SparkTagStore @Inject()
 (mySqlCreds: MySqlBackendCredentials) extends TagStore {
 
@@ -33,10 +37,9 @@ import io.cebes.prop.types.MySqlBackendCredentials
     ))
     .withValueToSeq(v => Seq(v.toString))
     .withSqlToValue { case (_, v) => UUID.fromString(v.getString(1)) }
+    .withStrToKey(Tag.fromString)
     .build()
 
-  // TODO: this is shitty. Should find another way to inject the Persistence
-  // https://github.com/google/guice/wiki/FrequentlyAskedQuestions#how-to-inject-class-with-generic-type
   override def add(tag: Tag, id: UUID): Unit = jdbcStore.insert(tag, id)
 
   override def remove(tag: Tag): Unit = jdbcStore.remove(tag)

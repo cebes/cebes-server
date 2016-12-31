@@ -14,10 +14,10 @@
 
 package io.cebes.persistence.jdbc
 
-import java.sql.{Connection, ResultSet}
+import java.sql._
 
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.persistence.KeyValuePersistence
+import io.cebes.persistence.{ClosableIterator, KeyValuePersistence}
 
 /**
   * Implementation of [[KeyValuePersistence]] using JDBC
@@ -48,20 +48,20 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
 
   override def insert(key: K, value: V): Unit = withConnection { c =>
     val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
-
     val stmt = c.prepareStatement(s"INSERT INTO $tableName VALUES ($valuePlaceHolder, ?) ")
-
-    val values = valueToSql(value)
-    require(values.length == valueSchema.length,
-      s"Invalid sequence of values. " +
-        s"Expected a sequence of ${valueSchema.length} elements, got ${values.length} elements")
+    val values = safeValueSeq(value)
 
     values.zipWithIndex.foreach {
       case (v, idx) =>
         stmt.setObject(idx + 1, v)
     }
     stmt.setString(values.length + 1, key.toString)
-    JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+    try {
+      JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+    } catch {
+      case _: SQLIntegrityConstraintViolationException =>
+        throw new IllegalArgumentException(s"Duplicated key: ${key.toString}")
+    }
   }
 
   override def upsert(key: K, value: V): Unit = withConnection { c =>
@@ -70,11 +70,7 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
 
     val stmt = c.prepareStatement(s"INSERT INTO $tableName VALUES ($valuePlaceHolder, ?) " +
       s"ON DUPLICATE KEY UPDATE $updatePlaceHolder")
-
-    val values = valueToSql(value)
-    require(values.length == valueSchema.length,
-      s"Invalid sequence of values. " +
-        s"Expected a sequence of ${valueSchema.length} elements, got ${values.length} elements")
+    val values = safeValueSeq(value)
 
     values.zipWithIndex.foreach {
       case (v, idx) =>
@@ -82,7 +78,6 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
         stmt.setObject(idx + 2 + values.length, v)
     }
     stmt.setString(values.length + 1, key.toString)
-
     JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
   }
 
@@ -112,35 +107,84 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     }
   }
 
-  override def elements: Iterator[(K, V)] = withConnection { c =>
-    val stmt = c.prepareStatement(s"SELECT * FROM $tableName")
-    JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
-      JdbcUtil.cleanJdbcCall(s.executeQuery())(_.close()) { result =>
-        new Iterator[(K, V)] {
-          override def hasNext: Boolean =
-            if (result.isAfterLast) {
-              // really at the end
-              false
-            } else {
-              // 2 cases: in the middle, or dataset has no row
-              result.getRow > 0
-            }
-
-          override def next(): (K, V) = {
-            result.next()
-            val key = strToKey(result.getString(valueSchema.length + 1))
-            (key, sqlToValue(key, result))
-          }
-        }
-      }
-    }
+  override def elements: ClosableIterator[(K, V)] = {
+    val connection = JdbcUtil.getConnection(url, userName, password, driver)
+    val stmt = connection.prepareStatement(s"SELECT * FROM $tableName")
+    resultSetToIterable(connection, stmt, result => {
+      val key = strToKey(result.getString(valueSchema.length + 1))
+      (key, sqlToValue(key, result))
+    })
   }
 
-  override def findValue(value: V): Iterable[K] = ???
+  override def findValue(value: V): ClosableIterator[K] = {
+    val connection = JdbcUtil.getConnection(url, userName, password, driver)
+    val valuePlaceHolder = valueSchema.map(s => s"`${s.name}` = ?").mkString(" AND ")
+    val stmt = connection.prepareStatement(s"SELECT * FROM $tableName WHERE $valuePlaceHolder")
+    val values = safeValueSeq(value)
+    values.zipWithIndex.foreach {
+      case (v, idx) =>
+        stmt.setObject(idx + 1, v)
+    }
+    resultSetToIterable(connection, stmt, result => {
+      strToKey(result.getString(valueSchema.length + 1))
+    })
+  }
 
   /////////////////////////////////////////////////////////////////////////////
   // private helpers
   /////////////////////////////////////////////////////////////////////////////
+
+  private def safeValueSeq(value: V) = {
+    val values = valueToSql(value)
+    require(values.length == valueSchema.length,
+      s"Invalid sequence of values. " +
+        s"Expected a sequence of ${valueSchema.length} elements, got ${values.length} elements")
+    values
+  }
+
+  /**
+    * Execute the statement, transform the [[ResultSet]] into
+    * an iterator of (key, value) pairs
+    */
+  private def resultSetToIterable[T](connection: Connection, stmt: PreparedStatement,
+                                     resultSetFn: ResultSet => T): ClosableIterator[T] = {
+    new ClosableIterator[T] {
+
+      private val _connection = connection
+      private val _stmt = stmt
+      private val resultSet = stmt.executeQuery()
+
+      override def hasNext: Boolean = {
+        val v = resultSet.next()
+        if (v) {
+          resultSet.previous()
+        }
+        v
+      }
+
+      override def next(): T = {
+        resultSet.next()
+        resultSetFn(resultSet)
+      }
+
+      private def safeClose(a: AutoCloseable): Unit = {
+        if (a != null) {
+          try {
+            a.close()
+          } catch {
+            case ex: SQLException =>
+              logger.error(s"Failed to close resource: ${ex.getMessage}")
+          }
+        }
+      }
+
+      override def close(): Unit = {
+        safeClose(resultSet)
+        safeClose(_stmt)
+        safeClose(_connection)
+      }
+    }
+  }
 
   private def withConnection[T](action: Connection => T) = {
     val connection = JdbcUtil.getConnection(url, userName, password, driver)

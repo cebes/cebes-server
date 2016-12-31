@@ -33,6 +33,10 @@ import io.cebes.spark.df.{SparkDataframe, SparkDataframeFactory}
 import org.apache.spark.sql.SaveMode
 import spray.json._
 
+/**
+  * An implementation of [[DataframeStore]] for Spark,
+  * using guava's [[LoadingCache]] with JDBC persistence backend
+  */
 @Singleton class SparkDataframeStore @Inject()
 (@Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
@@ -61,6 +65,7 @@ import spray.json._
       val schema = entry.getString(3).parseJson.convertTo[Schema]
       dfFactory.df(sparkDf, schema, id)
     }
+    .withStrToKey(UUID.fromString)
     .build()
 
   private lazy val cache: LoadingCache[UUID, Dataframe] = {

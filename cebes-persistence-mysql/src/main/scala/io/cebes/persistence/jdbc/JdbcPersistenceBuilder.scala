@@ -35,61 +35,50 @@ import scala.util.{Failure, Success, Try}
   *     .build()
   * }}}
   */
-case class JdbcPersistenceBuilder[K, V] private(url: String,
-                                                userName: String,
-                                                password: String,
-                                                suggestedTableName: String,
+case class JdbcPersistenceBuilder[K, V] private(url: String = "",
+                                                userName: String = "",
+                                                password: String = "",
+                                                suggestedTableName: String = "",
                                                 driver: String = "com.mysql.cj.jdbc.Driver",
                                                 valueSchema: Seq[JdbcPersistenceColumn] = Nil,
+                                                valueToSeq: Option[V => Seq[Any]] = None,
                                                 sqlToValue: Option[(K, ResultSet) => V] = None,
-                                                valueToSeq: Option[V => Seq[Any]] = None
+                                                strToKey: Option[String => K] = None
                                                ) {
 
-  private def this() = this("", "", "", "")
+  def withUrl(jdbcUrl: String): JdbcPersistenceBuilder[K, V] = copy(url = jdbcUrl)
 
-  def withUrl(jdbcUrl: String): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](jdbcUrl, userName, password, suggestedTableName,
-      driver, valueSchema, sqlToValue, valueToSeq)
+  def withUserName(jdbcUserName: String): JdbcPersistenceBuilder[K, V] = copy(userName = jdbcUserName)
 
-  def withUserName(jdbcUserName: String): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, jdbcUserName, password, suggestedTableName,
-      driver, valueSchema, sqlToValue, valueToSeq)
+  def withPassword(jdbcPassword: String): JdbcPersistenceBuilder[K, V] = copy(password = jdbcPassword)
 
-  def withPassword(jdbcPassword: String): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, userName, jdbcPassword, suggestedTableName,
-      driver, valueSchema, sqlToValue, valueToSeq)
+  def withTableName(tableName: String): JdbcPersistenceBuilder[K, V] = copy(suggestedTableName = tableName)
 
-  def withTableName(tableName: String): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, userName, password, tableName,
-      driver, valueSchema, sqlToValue, valueToSeq)
-
-  def withDriver(jdbcDriver: String): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, userName, password, suggestedTableName,
-      jdbcDriver, valueSchema, sqlToValue, valueToSeq)
+  def withDriver(jdbcDriver: String): JdbcPersistenceBuilder[K, V] = copy(driver = jdbcDriver)
 
   def withCredentials(jdbcUrl: String, jdbcUserName: String, jdbcPassword: String, tableName: String,
                       jdbcDriver: String): JdbcPersistenceBuilder[K, V] =
-    withUrl(jdbcUrl).withUserName(jdbcUserName).withPassword(jdbcPassword).
-      withTableName(tableName).withDriver(jdbcDriver)
+    copy(url = jdbcUrl, userName = jdbcUserName, password = jdbcPassword,
+      suggestedTableName = tableName, driver = jdbcDriver)
 
   def withValueSchema(schema: Seq[JdbcPersistenceColumn]): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, userName, password, suggestedTableName,
-      driver, schema, sqlToValue, valueToSeq)
-
-  def withSqlToValue(f: (K, ResultSet) => V): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, userName, password, suggestedTableName,
-      driver, valueSchema, Some(f), valueToSeq)
+    copy(valueSchema = schema)
 
   def withValueToSeq(f: V => Seq[Any]): JdbcPersistenceBuilder[K, V] =
-    JdbcPersistenceBuilder[K, V](url, userName, password, suggestedTableName,
-      driver, valueSchema, sqlToValue, Some(f))
+    copy(valueToSeq = Some(f))
+
+  def withSqlToValue(f: (K, ResultSet) => V): JdbcPersistenceBuilder[K, V] =
+    copy(sqlToValue = Some(f))
+
+  def withStrToKey(f: String => K): JdbcPersistenceBuilder[K, V] = copy(strToKey = Some(f))
 
   def build(): JdbcPersistence[K, V] = {
-    require(valueToSeq.nonEmpty && sqlToValue.nonEmpty, "Empty valueToSeq or sqlToValue functions")
+    require(valueToSeq.nonEmpty && sqlToValue.nonEmpty && strToKey.nonEmpty,
+      "Empty valueToSeq, sqlToValue or strToKey functions")
 
     val tableName = withConnection(c => JdbcPersistenceBuilder.ensureTableExists(c, valueSchema, suggestedTableName))
     new JdbcPersistence[K, V](url, userName, password, tableName,
-      driver, JdbcPersistenceBuilder.keyColumnName, valueSchema, valueToSeq.get, sqlToValue.get)
+      driver, JdbcPersistenceBuilder.keyColumnName, valueSchema, valueToSeq.get, sqlToValue.get, strToKey.get)
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -119,6 +108,7 @@ object JdbcPersistenceBuilder extends LazyLogging {
     var newTableName = suggestedTableName
     var incompatibleTable = true
     var incompatibleTableIdx = 0
+    var tableExists = true
     do {
       // query the table and check the schema, if it is similar to the requested schema
       val stmtSchema = connection.prepareStatement(s"SELECT * FROM $newTableName LIMIT 1")
@@ -139,16 +129,26 @@ object JdbcPersistenceBuilder extends LazyLogging {
           }
         case Failure(_: SQLSyntaxErrorException) =>
           incompatibleTable = false
+          tableExists = false
         case Failure(f) => throw f
       }
     } while (incompatibleTable)
 
     logger.info(s"Using table named $newTableName")
 
-    val stmt = connection.prepareStatement(s"CREATE TABLE IF NOT EXISTS $newTableName (" +
-      valueSchema.map(col => s"`${col.name}` ${col.spec}").mkString(", ") +
-      s", `$keyColumnName` VARCHAR(200) NOT NULL, PRIMARY KEY (`$keyColumnName`))")
-    JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+    if (!tableExists) {
+      val stmt = connection.prepareStatement(s"CREATE TABLE IF NOT EXISTS $newTableName (" +
+        valueSchema.map(col => s"`${col.name}` ${col.spec}").mkString(", ") +
+        s", `$keyColumnName` VARCHAR(200) NOT NULL, PRIMARY KEY (`$keyColumnName`))")
+      JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+
+      // create index for all value columns
+      valueSchema.foreach { col =>
+        val stmtIndex = connection.prepareStatement(s"CREATE INDEX index_${newTableName}_${col.name} " +
+          s"ON $newTableName (${col.name})")
+        JdbcUtil.cleanJdbcCall(stmtIndex)(_.close())(_.executeUpdate())
+      }
+    }
     newTableName
   }
 }

@@ -36,13 +36,13 @@ trait KeyValuePersistence[K, V] {
   def remove(key: K): Unit
 
   /**
-    * Return an [[Iterator]] of the pairs (key, value)
+    * Return a [[ClosableIterator]] of the pairs (key, value)
     */
-  def elements: Iterator[(K, V)]
+  def elements: ClosableIterator[(K, V)]
 
   /**
     * Find the entry with the given value,
     * may returns several keys.
     */
-  def findValue(value: V): Iterable[K]
+  def findValue(value: V): ClosableIterator[K]
 }

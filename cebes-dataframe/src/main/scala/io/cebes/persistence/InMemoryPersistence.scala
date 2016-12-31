@@ -28,7 +28,7 @@ class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyV
   override def insert(key: K, value: V): Unit = {
     //TODO: proper locks. Race condition might happen here
     if (map.contains(key)) {
-      throw new IllegalArgumentException(s"Key ${key.toString} already exists")
+      throw new IllegalArgumentException(s"Duplicated key: ${key.toString}")
     }
     map.put(key, value)
   }
@@ -39,7 +39,8 @@ class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyV
 
   override def remove(key: K): Unit = map.remove(key)
 
-  override def elements: Iterator[(K, V)] = map.iterator
+  override def elements: ClosableIterator[(K, V)] = ClosableIterator.fromIterator(map.iterator)
 
-  override def findValue(value: V): Iterable[K] = map.filter(_._2 == value).keys
+  override def findValue(value: V): ClosableIterator[K] =
+    ClosableIterator.fromIterator(map.filter(_._2 == value).keys.toIterator)
 }

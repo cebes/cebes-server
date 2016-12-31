@@ -17,23 +17,45 @@ package io.cebes.persistence.jdbc
 import java.util.UUID
 
 import io.cebes.persistence.helpers.TestPropertyHelper
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 case class Foo(field1: Int, field2: Float)
 
 case class Bar(f2: Float, f3: Int)
 
-class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
+class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper with BeforeAndAfterAll {
+
+  private val tableNameUUIDKey = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key"
+  private val tableNameUUIDKeyElements = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key_find_elements"
+  private val tableNameIntKey = s"${this.getClass.getSimpleName.replace(".", "_")}_int_key"
+  private val tableNameIncompatible = s"${this.getClass.getSimpleName.replace(".", "_")}_incompatible"
+
+  override def beforeAll(): Unit = {
+    if (properties.hasJdbcCredentials) {
+      dropTable(tableNameUUIDKey)
+      dropTable(tableNameUUIDKeyElements)
+      dropTable(tableNameIntKey)
+      dropTable(tableNameIncompatible)
+    }
+  }
+
+  private def dropTable(name: String) = {
+    val connection = JdbcUtil.getConnection(properties.url, properties.userName,
+      properties.password, properties.driver)
+    JdbcUtil.cleanJdbcCall(connection)(_.close()) { c =>
+      val stmt = c.prepareStatement(s"DROP TABLE IF EXISTS $name")
+      JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+    }
+  }
 
   test("persistence with UUID key", JdbcTestsEnabled) {
-    val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_uuid_key"
-
     val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
       .withCredentials(properties.url, properties.userName,
-        properties.password, tableName, properties.driver)
+        properties.password, tableNameUUIDKey, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
       .withValueToSeq(v => Seq(v.field1, v.field2))
       .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
+      .withStrToKey(UUID.fromString)
       .build()
 
     val key = UUID.randomUUID()
@@ -44,11 +66,33 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     }
     assert(persistence.get(key).isEmpty)
 
-    persistence.upsert(key, Foo(100, 219.0f))
-    val v = persistence.get(key)
-    assert(v.nonEmpty)
-    assert(v.get.field1 === 100)
-    assert(v.get.field2 === 219.0f)
+    persistence.insert(key, Foo(300, 219.0f))
+    val v0 = persistence.get(key)
+    assert(v0.nonEmpty)
+    assert(v0.get.field1 === 300)
+    assert(v0.get.field2 === 219.0f)
+
+    // insert the same key
+    val ex = intercept[IllegalArgumentException] {
+      persistence.insert(key, Foo(100, 219.0f))
+    }
+    assert(ex.getMessage.startsWith("Duplicated key"))
+
+    // find values
+    val keys1 = persistence.findValue(Foo(300, 219.0f))
+    val seq1 = keys1.toSeq
+    assert(seq1.length === 1)
+    assert(seq1.head === key)
+    keys1.close()
+
+    val keys2 = persistence.findValue(Foo(100, 219.1f))
+    assert(keys2.isEmpty)
+    keys2.close()
+
+    // elements
+    val elements = persistence.elements
+    assert(elements.size === 1)
+    elements.close()
 
     // replace
     persistence.upsert(key, Foo(-100, -219.0f))
@@ -59,20 +103,48 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
 
     persistence.remove(key)
     assert(persistence.get(key).isEmpty)
+  }
 
-    // drop the table
-    persistence.dropTable()
+  test("persistence with UUID key - find and elements", JdbcTestsEnabled) {
+
+    val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
+      .withCredentials(properties.url, properties.userName,
+        properties.password, tableNameUUIDKeyElements, properties.driver)
+      .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
+      .withValueToSeq(v => Seq(v.field1, v.field2))
+      .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
+      .withStrToKey(UUID.fromString)
+      .build()
+
+    val keys = UUID.randomUUID() :: UUID.randomUUID() :: UUID.randomUUID() :: UUID.randomUUID() :: Nil
+    assert(keys.length === 4)
+    persistence.insert(keys.head, Foo(100, 219.0f))
+    persistence.insert(keys(1), Foo(200, 219.0f))
+    persistence.insert(keys(2), Foo(300, 219.0f))
+    persistence.insert(keys(3), Foo(200, 219.0f))
+
+    // find values
+    val keys1 = persistence.findValue(Foo(200, 219.0f))
+    val seq1 = keys1.toSeq
+    assert(seq1.length === 2)
+    assert(seq1.contains(keys(1)))
+    assert(seq1.contains(keys(3)))
+    keys1.close()
+
+    // elements
+    val elements = persistence.elements
+    assert(elements.size === 4)
+    elements.close()
   }
 
   test("persistence with Int key", JdbcTestsEnabled) {
-    val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_int_key"
-
     val persistence = JdbcPersistenceBuilder.newBuilder[Int, Bar]()
       .withCredentials(properties.url, properties.userName,
-        properties.password, tableName, properties.driver)
+        properties.password, tableNameIntKey, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
       .withValueToSeq(v => Seq(v.f2, v.f3))
       .withSqlToValue { case (_, s) => Bar(s.getFloat("f2"), s.getInt("f3")) }
+      .withStrToKey(_.toInt)
       .build()
 
     val key = 100
@@ -98,23 +170,19 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
 
     persistence.remove(key)
     assert(persistence.get(key).isEmpty)
-
-    // drop the table
-    persistence.dropTable()
   }
 
   test("persistence with incompatible table", JdbcTestsEnabled) {
 
-    val tableName = s"${this.getClass.getSimpleName.replace(".", "_")}_incompatible"
-
     val persistence = JdbcPersistenceBuilder.newBuilder[UUID, Foo]()
       .withCredentials(properties.url, properties.userName,
-        properties.password, tableName, properties.driver)
+        properties.password, tableNameIncompatible, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "INT"), JdbcPersistenceColumn("field2", "FLOAT")))
       .withValueToSeq(v => Seq(v.field1, v.field2))
       .withSqlToValue { case (_, s) => Foo(s.getInt("field1"), s.getFloat("field2")) }
+      .withStrToKey(UUID.fromString)
       .build()
-    assert(persistence.tableName === tableName)
+    assert(persistence.tableName === tableNameIncompatible)
 
     val key = UUID.randomUUID()
 
@@ -143,12 +211,13 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     // using the same table again for a different persistence
     val persistenceBar = JdbcPersistenceBuilder.newBuilder[Int, Bar]()
       .withCredentials(properties.url, properties.userName,
-        properties.password, tableName, properties.driver)
+        properties.password, tableNameIncompatible, properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("f2", "FLOAT"), JdbcPersistenceColumn("f3", "INT")))
       .withValueToSeq(v => Seq(v.f2, v.f3))
       .withSqlToValue { case (_, s) => Bar(s.getFloat("f2"), s.getInt("f3")) }
+      .withStrToKey(_.toInt)
       .build()
-    assert(persistenceBar.tableName !== tableName)
+    assert(persistenceBar.tableName !== tableNameIncompatible)
 
     val keyBar = 100
 
@@ -174,7 +243,6 @@ class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper {
     persistenceBar.remove(keyBar)
     assert(persistenceBar.get(keyBar).isEmpty)
 
-    persistenceBar.dropTable()
-    persistence.dropTable()
+    dropTable(persistenceBar.tableName)
   }
 }

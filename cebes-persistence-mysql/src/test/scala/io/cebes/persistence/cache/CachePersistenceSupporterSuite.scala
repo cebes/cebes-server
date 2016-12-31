@@ -99,6 +99,7 @@ class CachePersistenceSupporterSuite extends FunSuite with TestPropertyHelper {
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "VARCHAR(200)")))
       .withValueToSeq(v => Seq(v))
       .withSqlToValue { case (_, s) => s.getString("field1") }
+      .withStrToKey(UUID.fromString)
       .build()
     val supporter = new CachePersistenceSupporter(persistence)
 

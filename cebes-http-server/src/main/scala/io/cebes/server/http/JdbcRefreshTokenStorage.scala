@@ -28,17 +28,19 @@ class JdbcRefreshTokenStorage @Inject()
   case class Store(userName: String, tokenHash: String, expires: Long)
 
   val persistence: JdbcPersistence[String, Store] =
-    JdbcPersistenceBuilder.newBuilder[String, Store]().
-      withCredentials(mySqlCreds.url, mySqlCreds.userName,
-        mySqlCreds.password, TableNames.REFRESH_TOKENS, mySqlCreds.driver).
-      withValueSchema(Seq(
+    JdbcPersistenceBuilder.newBuilder[String, Store]()
+      .withCredentials(mySqlCreds.url, mySqlCreds.userName,
+        mySqlCreds.password, TableNames.REFRESH_TOKENS, mySqlCreds.driver)
+      .withValueSchema(Seq(
         JdbcPersistenceColumn("user_name", "VARCHAR (200)"),
         JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),
-        JdbcPersistenceColumn("expires", "Long"))).
-      withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires)).
-      withSqlToValue {
+        JdbcPersistenceColumn("expires", "Long")))
+      .withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires))
+      .withSqlToValue {
         case (_, r) => Store(r.getString(1), r.getString(2), r.getLong(3))
-      }.build()
+      }
+      .withStrToKey(s => s)
+      .build()
 
   override def lookup(selector: String): Future[Option[RefreshTokenLookupResult[SessionData]]] = Future.successful {
     persistence.get(selector).map { s =>
