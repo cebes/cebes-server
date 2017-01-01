@@ -156,13 +156,4 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
   private def withConnection[T](action: Connection => T) = {
     JdbcUtil.cleanJdbcCall(dataSource.getConnection)(_.close())(action)
   }
-
-  /**
-    * Drop the table that backs this persistence
-    * For testing purpose only
-    */
-  private[jdbc] def dropTable(): Unit = withConnection { c =>
-    val stmt = c.prepareStatement(s"DROP TABLE IF EXISTS $tableName")
-    JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
-  }
 }

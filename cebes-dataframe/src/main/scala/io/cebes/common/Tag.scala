@@ -30,11 +30,14 @@ case class Tag private(name: String, version: Option[String] = Some("latest")) {
     case None => name
   }
 
+  /**
+    * The full string of host[:port]
+    */
   def server: Option[String] = Tag.extract(toString, "server")
 
   def host: Option[String] = Tag.extract(toString, "host")
 
-  def port: Option[String] = Tag.extract(toString, "port")
+  def port: Option[Int] = Tag.extract(toString, "port").map(_.toInt)
 
   def path: Option[String] = Tag.extract(toString, "path")
 }
@@ -45,7 +48,7 @@ object Tag {
     "name", "server", "host", "", "port", "path", "", "version")
 
   private def extract(str: String, groupName: String): Option[String] = {
-    tagExpr.findFirstMatchIn(str).map(_.group(groupName))
+    tagExpr.findFirstMatchIn(str).flatMap(t => Option(t.group(groupName)))
   }
 
   def fromString(str: String): Tag = {
@@ -53,7 +56,7 @@ object Tag {
       case None => throw new IllegalArgumentException(s"Invalid tag expression: $str")
       case Some(m) =>
         val version = m.group("version")
-        new Tag(m.group("name"), if (version.isEmpty) None else Some(version))
+        new Tag(m.group("name"), Option(version))
     }
   }
 }

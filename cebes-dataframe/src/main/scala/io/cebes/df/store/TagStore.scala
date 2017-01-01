@@ -17,6 +17,7 @@ package io.cebes.df.store
 import java.util.UUID
 
 import io.cebes.common.Tag
+import io.cebes.persistence.ClosableIterator
 
 trait TagStore {
 
@@ -24,7 +25,7 @@ trait TagStore {
     * add a new tag for the given ID
     * Throws exception if the tag exists
     */
-  def add(tag: Tag, id: UUID): Unit
+  def insert(tag: Tag, id: UUID): Unit
 
   /**
     * Remove the given tag
@@ -34,5 +35,5 @@ trait TagStore {
   /**
     * Get all tags
     */
-  def elements: Iterator[(Tag, UUID)]
+  def elements: ClosableIterator[(Tag, UUID)]
 }

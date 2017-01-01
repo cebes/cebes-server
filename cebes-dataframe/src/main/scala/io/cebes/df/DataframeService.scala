@@ -16,6 +16,7 @@ package io.cebes.df
 
 import java.util.UUID
 
+import io.cebes.common.Tag
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.VariableTypes.VariableType
 
@@ -29,6 +30,24 @@ trait DataframeService {
     * @return a [[Dataframe]] object
     */
   def sql(sqlText: String): Dataframe
+
+  /**
+    * Tag a dataframe.
+    * Raise an exception if the tag already exists.
+    */
+  def tag(dfId: UUID, tag: Tag): Unit
+
+  /**
+    * Remove the given tag
+    */
+  def untag(tag: Tag): Unit
+
+  /**
+    * Get all the tags and corresponding [[Dataframe]] IDs
+    * Optionally submit a regex to filter the tags.
+    * Only return `maxCount` entries if there are more than that.
+    */
+  def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, UUID)]
 
   /**
     * Automatically infer the variable types, based on some heuristic

@@ -19,6 +19,7 @@ import java.util.UUID
 import com.google.inject.{Inject, Singleton}
 import io.cebes.common.Tag
 import io.cebes.df.store.TagStore
+import io.cebes.persistence.ClosableIterator
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.types.MySqlBackendCredentials
 
@@ -40,9 +41,9 @@ import io.cebes.prop.types.MySqlBackendCredentials
     .withStrToKey(Tag.fromString)
     .build()
 
-  override def add(tag: Tag, id: UUID): Unit = jdbcStore.insert(tag, id)
+  override def insert(tag: Tag, id: UUID): Unit = jdbcStore.insert(tag, id)
 
   override def remove(tag: Tag): Unit = jdbcStore.remove(tag)
 
-  override def elements: Iterator[(Tag, UUID)] = jdbcStore.elements
+  override def elements: ClosableIterator[(Tag, UUID)] = jdbcStore.elements
 }

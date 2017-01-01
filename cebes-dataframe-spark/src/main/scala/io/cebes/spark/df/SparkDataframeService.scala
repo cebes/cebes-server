@@ -17,13 +17,16 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import com.google.inject.Inject
+import io.cebes.common.Tag
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.sample.DataSample
-import io.cebes.df.store.DataframeStore
+import io.cebes.df.store.{DataframeStore, TagStore}
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.{Column, Dataframe, DataframeService}
 import io.cebes.spark.config.HasSparkSession
+
+import scala.collection.mutable
 
 /**
   * Implements [[DataframeService]] on Spark.
@@ -32,6 +35,7 @@ import io.cebes.spark.config.HasSparkSession
   */
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
                                       dfStore: DataframeStore,
+                                      tagStore: TagStore,
                                       dfFactory: SparkDataframeFactory) extends DataframeService {
 
   private val sparkSession = hasSparkSession.session
@@ -39,6 +43,38 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   override def sql(sqlText: String): Dataframe = dfStore.add {
     dfFactory.df(sparkSession.sql(sqlText))
+  }
+
+  override def tag(dfId: UUID, tag: Tag): Unit = {
+    tagStore.insert(tag, dfId)
+  }
+
+  override def untag(tag: Tag): Unit = {
+    tagStore.remove(tag)
+  }
+
+  override def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, UUID)] = {
+    val elements = tagStore.elements
+    val results = mutable.MutableList.empty[(Tag, UUID)]
+    try {
+      nameRegex match {
+        case None =>
+          while (elements.hasNext && results.size < maxCount) {
+            results += elements.next()
+          }
+        case Some(regexStr) =>
+          val regex = regexStr.r
+          while (elements.hasNext && results.size < maxCount) {
+            val tag, id = elements.next()
+            if (regex.findFirstIn(tag.toString()).isDefined) {
+              results += (tag, id)
+            }
+          }
+      }
+    } finally {
+      elements.close()
+    }
+    results
   }
 
   override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = dfStore.add {
@@ -230,31 +266,31 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   }
 
   override def aggregateCount(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                     pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe = dfStore.add {
+                              pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).count()
   }
 
   override def aggregateMin(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                   minColNames: Seq[String]): Dataframe = dfStore.add {
+                            pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                            minColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).min(minColNames: _*)
   }
 
   override def aggregateMean(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                    pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                    meanColNames: Seq[String]): Dataframe = dfStore.add {
+                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                             meanColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).mean(meanColNames: _*)
   }
 
   override def aggregateMax(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                   maxColNames: Seq[String]): Dataframe = dfStore.add {
+                            pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                            maxColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).max(maxColNames: _*)
   }
 
   override def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                   pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                   sumColNames: Seq[String]): Dataframe = dfStore.add {
+                            pivotColName: Option[String], pivotValues: Option[Seq[Any]],
+                            sumColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).sum(sumColNames: _*)
   }
 
