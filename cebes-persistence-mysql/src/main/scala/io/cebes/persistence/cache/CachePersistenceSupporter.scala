@@ -18,6 +18,9 @@ import com.google.common.cache._
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.KeyValuePersistence
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 /**
   * Support a [[LoadingCache]] by a [[KeyValuePersistence]].
   * When the [[LoadingCache]] asks for a value, this will query the [[KeyValuePersistence]]
@@ -40,7 +43,7 @@ class CachePersistenceSupporter[K, V](val persistence: KeyValuePersistence[K, V]
 
   override def onRemoval(notification: RemovalNotification[K, V]): Unit = {
     if (removalFilter.isEmpty || removalFilter.get(notification.getKey, notification.getValue)) {
-      persistence.upsert(notification.getKey, notification.getValue)
+      Future(persistence.upsert(notification.getKey, notification.getValue))
     } else {
       logger.info(s"Item evicted from LoadingCache without being persisted: ${notification.toString}")
     }
