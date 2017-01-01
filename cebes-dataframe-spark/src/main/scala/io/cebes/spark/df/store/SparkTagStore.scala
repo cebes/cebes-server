@@ -23,6 +23,8 @@ import io.cebes.persistence.ClosableIterator
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.prop.types.MySqlBackendCredentials
 
+import scala.collection.mutable
+
 /**
   * An implementation of [[TagStore]] for Spark,
   * with JDBC persistence backend.
@@ -45,5 +47,19 @@ import io.cebes.prop.types.MySqlBackendCredentials
 
   override def remove(tag: Tag): Unit = jdbcStore.remove(tag)
 
+  override def get(tag: Tag): Option[UUID] = jdbcStore.get(tag)
+
+  override def find(id: UUID): Seq[Tag] = {
+    val tags = jdbcStore.findValue(id)
+    val results = mutable.ListBuffer.empty[Tag]
+    try {
+      while (tags.hasNext) {
+        results += tags.next()
+      }
+    } finally {
+      tags.close()
+    }
+    results
+  }
   override def elements: ClosableIterator[(Tag, UUID)] = jdbcStore.elements
 }

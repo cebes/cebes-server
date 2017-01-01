@@ -13,8 +13,8 @@ class TagSuite extends FunSuite {
     assert(tag1.host === Some("simple-tag_ab.c"))
     assert(tag1.port.isEmpty)
     assert(tag1.server === Some("simple-tag_ab.c"))
-    assert(tag1.version.isEmpty)
-    assert(tag1.toString === "simple-tag_ab.c")
+    assert(tag1.version === "latest")
+    assert(tag1.toString === "simple-tag_ab.c:latest")
 
     val ex1 = intercept[IllegalArgumentException] {
       Tag.fromString("simple-tag_ab.cTA")
@@ -27,7 +27,7 @@ class TagSuite extends FunSuite {
     assert(tag2.host === Some("simple-tag"))
     assert(tag2.port.isEmpty)
     assert(tag2.server === Some("simple-tag"))
-    assert(tag2.version === Some("v1"))
+    assert(tag2.version === "v1")
     assert(tag2.toString === "simple-tag:v1")
 
     // with path and host
@@ -36,8 +36,8 @@ class TagSuite extends FunSuite {
     assert(tag3.host === Some("simple-tag"))
     assert(tag3.port === Some(9000))
     assert(tag3.server === Some("simple-tag:9000"))
-    assert(tag3.version.isEmpty)
-    assert(tag3.toString === "simple-tag:9000/abc-sz")
+    assert(tag3.version === "latest")
+    assert(tag3.toString === "simple-tag:9000/abc-sz:latest")
 
     // with path and host and version
     val tag4 = Tag.fromString("simple-tag:9000/abc-sz:latest")
@@ -45,7 +45,7 @@ class TagSuite extends FunSuite {
     assert(tag4.host === Some("simple-tag"))
     assert(tag4.port === Some(9000))
     assert(tag4.server === Some("simple-tag:9000"))
-    assert(tag4.version === Some("latest"))
+    assert(tag4.version === "latest")
     assert(tag4.toString === "simple-tag:9000/abc-sz:latest")
 
     // fuzzy case
@@ -54,8 +54,8 @@ class TagSuite extends FunSuite {
     assert(tag5.host === Some("simple-tag"))
     assert(tag5.port === Some(9000))
     assert(tag5.server === Some("simple-tag:9000"))
-    assert(tag5.version.isEmpty)
-    assert(tag5.toString === "simple-tag:9000")
+    assert(tag5.version === "latest")
+    assert(tag5.toString === "simple-tag:9000:latest")
 
     val ex2 = intercept[IllegalArgumentException] {
       Tag.fromString("simple-tag:500/:v2")

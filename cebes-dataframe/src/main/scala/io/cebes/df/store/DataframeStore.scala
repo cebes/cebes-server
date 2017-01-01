@@ -37,6 +37,14 @@ trait DataframeStore {
   def get(id: UUID): Option[Dataframe]
 
   /**
+    * Persist the given dataframe.
+    * The internals of this method depends on the backend,
+    * so any assumption about how the dataframe is persisted
+    * is only valid in the class that implements this trait.
+    */
+  def persist(dataframe: Dataframe): Unit
+
+  /**
     * Get the [[Dataframe]] with the given ID
     * Throws [[IllegalArgumentException]] if the ID doesn't exist in the store
     */

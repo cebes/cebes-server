@@ -22,7 +22,7 @@ import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
-import io.cebes.df.store.DataframeStore
+import io.cebes.df.store.{DataframeStore, TagStore}
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
@@ -41,7 +41,8 @@ import spray.json._
 (@Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
  hasSparkSession: HasSparkSession,
- dfFactory: SparkDataframeFactory) extends DataframeStore with LazyLogging {
+ dfFactory: SparkDataframeFactory,
+ tagStore: TagStore) extends DataframeStore with LazyLogging {
 
   private val session = hasSparkSession.session
 
@@ -52,15 +53,11 @@ import spray.json._
       JdbcPersistenceColumn("table_name", "VARCHAR(200)"),
       JdbcPersistenceColumn("schema", "MEDIUMTEXT")))
     .withValueToSeq { df =>
-      val sparkDf = df match {
-        case d: SparkDataframe => d
-        case _ => throw new IllegalArgumentException("Only SparkDataframe is accepted")
-      }
-      val tbName = s"spark_${sparkDf.id.toString}"
-      sparkDf.sparkDf.write.mode(SaveMode.Overwrite).saveAsTable(tbName)
-      Seq(System.currentTimeMillis(), tbName, sparkDf.schema.toJson.compactPrint)
+      SparkDataframeStore.persist(df)
+      Seq(System.currentTimeMillis(), SparkDataframeStore.hiveTableName(df),
+        df.schema.toJson.compactPrint)
     }
-    .withSqlToValue { case (id, entry) =>
+    .withSqlToValue { (id, entry) =>
       val sparkDf = session.table(entry.getString(2))
       val schema = entry.getString(3).parseJson.convertTo[Schema]
       dfFactory.df(sparkDf, schema, id)
@@ -70,10 +67,7 @@ import spray.json._
 
   private lazy val cache: LoadingCache[UUID, Dataframe] = {
     val supporter = new CachePersistenceSupporter[UUID, Dataframe](jdbcPersistence)
-      .withRemovalFilter { case (_, _) =>
-        //TODO: implement this: only store dataframes that are pinned (and tests)
-        true
-      }
+      .withRemovalFilter { (id, _) => tagStore.find(id).nonEmpty }
     CacheBuilder.from(cacheSpec).removalListener(supporter).build[UUID, Dataframe](supporter)
   }
 
@@ -97,5 +91,22 @@ import spray.json._
         logger.warn(s"Failed to get Dataframe for ID $id: ${e.getMessage}")
         None
     }
+  }
+
+  override def persist(dataframe: Dataframe): Unit = {
+    jdbcPersistence.upsert(dataframe.id, dataframe)
+  }
+}
+
+object SparkDataframeStore {
+
+  private def hiveTableName(dataframe: Dataframe) = s"spark_${dataframe.id.toString}"
+
+  private def persist(dataframe: Dataframe): Unit = {
+    val sparkDf = dataframe match {
+      case d: SparkDataframe => d
+      case _ => throw new IllegalArgumentException("Only SparkDataframe is accepted")
+    }
+    sparkDf.sparkDf.write.mode(SaveMode.Overwrite).saveAsTable(hiveTableName(sparkDf))
   }
 }

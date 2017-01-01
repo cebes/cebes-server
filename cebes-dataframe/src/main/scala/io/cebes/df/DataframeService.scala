@@ -50,6 +50,16 @@ trait DataframeService {
   def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, UUID)]
 
   /**
+    * Get a [[Dataframe]] from the given identifier.
+    *
+    * @param identifier Can be a UUID (for Dataframe ID) or a tag.
+    * @return a [[Dataframe]] object
+    * @throws NoSuchElementException   if the identifier cannot be found.
+    * @throws IllegalArgumentException if we fail to parse the identifer as a Tag or ID.
+    */
+  def get(identifier: String): Dataframe
+
+  /**
     * Automatically infer the variable types, based on some heuristic
     */
   def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe

@@ -27,6 +27,7 @@ import io.cebes.df.{Column, Dataframe, DataframeService}
 import io.cebes.spark.config.HasSparkSession
 
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 /**
   * Implements [[DataframeService]] on Spark.
@@ -46,10 +47,24 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   }
 
   override def tag(dfId: UUID, tag: Tag): Unit = {
-    tagStore.insert(tag, dfId)
+    val optionDf = dfStore.get(dfId)
+    if (optionDf.isEmpty) {
+      throw new NoSuchElementException(s"Dataframe ID not found: ${dfId.toString}")
+    }
+    Try(tagStore.insert(tag, dfId)) match {
+      case Success(_) =>
+        dfStore.persist(optionDf.get)
+      case Failure(_: IllegalArgumentException) =>
+        // throw a user-friendly exception
+        throw new IllegalArgumentException(s"Tag ${tag.toString} already exists")
+      case Failure(f) => throw f
+    }
   }
 
   override def untag(tag: Tag): Unit = {
+    if (tagStore.get(tag).isEmpty) {
+      throw new NoSuchElementException(s"Tag not found: ${tag.toString}")
+    }
     tagStore.remove(tag)
   }
 
@@ -63,7 +78,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
             results += elements.next()
           }
         case Some(regexStr) =>
-          val regex = regexStr.r
+          val regex = regexStr.replace("*", ".*").replace("?", ".?").r
           while (elements.hasNext && results.size < maxCount) {
             val tag, id = elements.next()
             if (regex.findFirstIn(tag.toString()).isDefined) {
@@ -75,6 +90,27 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
       elements.close()
     }
     results
+  }
+
+  override def get(identifier: String): Dataframe = {
+    // a bit verbose, so we have meaningful error messages
+    val dfId = Try(Tag.fromString(identifier)) match {
+      case Success(tag) => tagStore.get(tag) match {
+        case Some(id) => id
+        case None =>
+          throw new NoSuchElementException(s"Tag not found: $identifier")
+      }
+      case Failure(_) =>
+        Try(UUID.fromString(identifier)) match {
+          case Success(id) => id
+          case Failure(_) =>
+            throw new IllegalArgumentException(s"Failed to parse Dataframe Id or Tag: $identifier")
+        }
+    }
+    dfStore.get(dfId) match {
+      case Some(df) => df
+      case None => throw new NoSuchElementException(s"Dataframe ID not found: ${dfId.toString}")
+    }
   }
 
   override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = dfStore.add {

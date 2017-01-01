@@ -21,24 +21,28 @@ import scala.util.matching.Regex
   * The serialized form would be name:version
   *
   * @param name Name of the object, can have multiple slashes: part1/part2/part3
-  * @param version version
+  *             or with host name and host port: abc.com:500/abc-d/efgh_ijklm
+  * @param version version. If user doesn't specify, default will be "latest"
   */
-case class Tag private(name: String, version: Option[String] = Some("latest")) {
+case class Tag private(name: String, version: String = "latest") {
 
-  override def toString: String = version match {
-    case Some(v) => s"$name:$v"
-    case None => name
-  }
+  override def toString: String = s"$name:$version"
 
   /**
     * The full string of host[:port]
     */
   def server: Option[String] = Tag.extract(toString, "server")
 
+  /**
+    * Only the host part, if that exists
+    */
   def host: Option[String] = Tag.extract(toString, "host")
 
   def port: Option[Int] = Tag.extract(toString, "port").map(_.toInt)
 
+  /**
+    * Everything else follow the host, including the first "/"
+    */
   def path: Option[String] = Tag.extract(toString, "path")
 }
 
@@ -51,12 +55,16 @@ object Tag {
     tagExpr.findFirstMatchIn(str).flatMap(t => Option(t.group(groupName)))
   }
 
+  /**
+    * Parse a string into a [[Tag]].
+    * If version isn't defined, it will be default as "latest"
+    */
   def fromString(str: String): Tag = {
     tagExpr.findFirstMatchIn(str) match {
       case None => throw new IllegalArgumentException(s"Invalid tag expression: $str")
       case Some(m) =>
-        val version = m.group("version")
-        new Tag(m.group("name"), Option(version))
+        val version = Option(m.group("version")).getOrElse("latest")
+        new Tag(m.group("name"), version)
     }
   }
 }

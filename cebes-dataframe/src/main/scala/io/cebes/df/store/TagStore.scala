@@ -33,6 +33,16 @@ trait TagStore {
   def remove(tag: Tag): Unit
 
   /**
+    * Get the ID with the given tag
+    */
+  def get(tag: Tag): Option[UUID]
+
+  /**
+    * Find the given UUID in this store, return a sequence of tags
+    */
+  def find(id: UUID): Seq[Tag]
+
+  /**
     * Get all tags
     */
   def elements: ClosableIterator[(Tag, UUID)]
