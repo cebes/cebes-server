@@ -61,5 +61,10 @@ class TagSuite extends FunSuite {
       Tag.fromString("simple-tag:500/:v2")
     }
     assert(ex2.getMessage.startsWith("Invalid tag expression"))
+
+    val ex3 = intercept[IllegalArgumentException] {
+      Tag.fromString("")
+    }
+    assert(ex3.getMessage.startsWith("Invalid tag expression"))
   }
 }

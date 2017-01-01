@@ -56,6 +56,22 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
   // tests
   /////////////////////////////////////////////
 
+  test("tagAdd") {
+
+  }
+
+  test("tagDelete") {
+
+  }
+
+  test("tags") {
+
+  }
+
+  test("get") {
+
+  }
+
   test("count") {
     val df = getCylinderBands
 

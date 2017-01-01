@@ -14,6 +14,8 @@
 
 package io.cebes.server.routes.df
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
@@ -21,6 +23,7 @@ import akka.http.scaladsl.server.{RequestContext, Route}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.common.Tag
 import io.cebes.df.sample.DataSample
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
@@ -47,6 +50,12 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
     myRequiredSession { _ =>
       concat(
         operationDf[Sql, String],
+
+        operation[TagAdd, TagAddRequest, Unit],
+        operation[TagDelete, TagDeleteRequest, Unit],
+        operation[Tags, TagsGetRequest, Array[(Tag, UUID)]],
+        operationDf[Get, String],
+
         operationDf[InferVariableTypes, LimitRequest],
         operationDf[WithVariableTypes, WithVariableTypesRequest],
         operation[Count, DataframeRequest, Long],
