@@ -51,8 +51,8 @@ trait DataframeHandler extends SecuredSession with LazyLogging {
       concat(
         operationDf[Sql, String],
 
-        operation[TagAdd, TagAddRequest, Unit],
-        operation[TagDelete, TagDeleteRequest, Unit],
+        operationDf[TagAdd, TagAddRequest],
+        operationDf[TagDelete, TagDeleteRequest],
         operation[Tags, TagsGetRequest, Array[(Tag, UUID)]],
         operationDf[Get, String],
 

@@ -126,7 +126,7 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
   override def elements: ClosableIterator[(K, V)] = {
     val connection = dataSource.getConnection()
     val stmt = connection.prepareStatement(s"SELECT * FROM $tableName")
-    new ResultSetIterable(connection, stmt, result => {
+    new ResultSetIterator(connection, stmt, result => {
       val key = strToKey(result.getString(valueSchema.length + 1))
       (key, sqlToValue(key, result))
     })
@@ -141,7 +141,7 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
       case (v, idx) =>
         stmt.setObject(idx + 1, v)
     }
-    new ResultSetIterable(connection, stmt, result => {
+    new ResultSetIterator(connection, stmt, result => {
       strToKey(result.getString(valueSchema.length + 1))
     })
   }

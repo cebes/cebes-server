@@ -112,7 +112,6 @@ import spray.json._
     if (optionDf.nonEmpty && !shouldPersist(dfId)) {
       // delete from the jdbc persistence
       jdbcPersistence.remove(dfId)
-
       // drop hive table
       session.sql(s"DROP TABLE IF EXISTS ${SparkDataframeStore.hiveTableName(dfId)}")
     }

@@ -15,9 +15,9 @@
 package io.cebes.server.routes.df
 
 import com.google.inject.Inject
-import io.cebes.df.DataframeService
+import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncSerializableOperation
+import io.cebes.server.routes.common.AsyncDataframeOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,13 +25,13 @@ import scala.concurrent.{ExecutionContext, Future}
   * Tag the given Dataframe
   */
 class TagAdd @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncSerializableOperation[TagAddRequest, Unit] {
+  extends AsyncDataframeOperation[TagAddRequest] {
 
   /**
     * Implement this to do the real work
     */
   override protected def runImpl(requestEntity: TagAddRequest)
-                                (implicit ec: ExecutionContext): Future[Unit] = Future {
+                                (implicit ec: ExecutionContext): Future[Dataframe] = Future {
     dfService.tag(requestEntity.df, requestEntity.tag)
   }
 }

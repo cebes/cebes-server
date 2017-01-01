@@ -57,26 +57,33 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
   // tests
   /////////////////////////////////////////////
 
-  test("tagAdd") {
+  test("tagAdd, tagDelete and get") {
     val df = requestDf("df/limit", LimitRequest(getCylinderBands.id, 100))
     assert(count(df) === 100)
 
     try {
-      request[TagDeleteRequest, Unit]("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+      requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
     } catch {
       case _: ServerException =>
     }
 
-    request[TagAddRequest, Unit]("df/tagadd", TagAddRequest(Tag.fromString("tag1"), df.id))
+    // random UUID
+    val ex0 = intercept[ServerException] {
+      requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1"), UUID.randomUUID()))
+    }
+    assert(ex0.getMessage.startsWith("Dataframe ID not found:"))
+
+    // valid request
+    requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1"), df.id))
 
     // duplicated tag
     val ex1 = intercept[ServerException] {
-      request[TagAddRequest, Unit]("df/tagadd", TagAddRequest(Tag.fromString("tag1"), getCylinderBands.id))
+      requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1"), getCylinderBands.id))
     }
     assert(ex1.getMessage.startsWith("Tag tag1:latest already exists"))
 
     val ex2 = intercept[ServerException] {
-      request[TagAddRequest, Unit]("df/tagadd", TagAddRequest(Tag.fromString("tag1:latest"), getCylinderBands.id))
+      requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1:latest"), getCylinderBands.id))
     }
     assert(ex2.getMessage.startsWith("Tag tag1:latest already exists"))
 
@@ -86,22 +93,85 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     assert(count(df2) === 100)
 
     // delete tag
-    request[TagDeleteRequest, Unit]("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+    requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
 
+    // cannot get the tag again
     val ex3 = intercept[ServerException](requestDf("df/get", "tag1:latest"))
     assert(ex3.getMessage.startsWith("Tag not found: tag1:latest"))
+
+    // cannot delete non-existed tag
+    val ex4 = intercept[ServerException](requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest"))))
+    assert(ex4.getMessage.startsWith("Tag not found: tag1:latest"))
+
+    // but can get the Dataframe using its ID
+    val df3 = requestDf("df/get", df.id.toString)
+    assert(!df3.eq(df))
+    assert(df3.id === df.id)
+    assert(count(df3) === 100)
   }
 
-  test("tagDelete") {
+  test("df/get fail cases") {
+    // invalid UUID
+    val ex1 = intercept[ServerException](requestDf("df/get", UUID.randomUUID().toString))
+    assert(ex1.getMessage.startsWith("Dataframe ID not found"))
 
+    // valid but non-existent tag
+    val ex2 = intercept[ServerException](requestDf("df/get", "surreal-tag:surreal-version911"))
+    assert(ex2.getMessage.startsWith("Tag not found"))
+
+      // invalid tag
+    val ex3 = intercept[ServerException](requestDf("df/get", "This is invalid tag/abc:version 1"))
+    assert(ex3.getMessage.startsWith("Failed to parse Dataframe Id or Tag"))
   }
 
-  test("tags") {
+  test("tags complicated case") {
+    val df1 = requestDf("df/limit", LimitRequest(getCylinderBands.id, 100))
+    assert(count(df1) === 100)
+    val df2 = requestDf("df/limit", LimitRequest(getCylinderBands.id, 200))
+    assert(count(df2) === 200)
 
-  }
+    val tag1a = Tag.fromString("cebes.io/df1:v1")
+    val tag1b = Tag.fromString("cebes.io/df1:v2")
+    val tag2a = Tag.fromString("google.com/df2")
 
-  test("get") {
+    (tag1a :: tag1b :: tag2a :: Nil).foreach { t =>
+      try {
+        requestDf("df/tagdelete", TagDeleteRequest(t))
+      } catch {
+        case _: ServerException =>
+      }
+    }
 
+    val df1a = requestDf("df/tagadd", TagAddRequest(tag1a, df1.id))
+    assert(df1a.id === df1.id)
+    val df1b = requestDf("df/tagadd", TagAddRequest(tag1b, df1.id))
+    assert(df1b.id === df1.id)
+    val df2a = requestDf("df/tagadd", TagAddRequest(tag2a, df2.id))
+    assert(df2a.id === df2.id)
+
+    // no filter
+    val tags = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(None))
+    assert(tags.length >= 3)
+    assert(tags.exists(_ === (tag1a, df1.id)))
+    assert(tags.exists(_ === (tag1b, df1.id)))
+    assert(tags.exists(_ === (tag2a, df2.id)))
+
+    // with filter
+    val tags2 = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(Some("cebes*/df?:v2")))
+    assert(tags2.nonEmpty)
+    assert(tags2.exists(_ === (tag1b, df1.id)))
+
+    val tags3 = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(Some("google.com/df?:*")))
+    assert(tags3.nonEmpty)
+    assert(tags3.exists(_ === (tag2a, df2.id)))
+
+    // delete tags
+    requestDf("df/tagdelete", TagDeleteRequest(tag1a))
+    requestDf("df/tagdelete", TagDeleteRequest(tag1b))
+    requestDf("df/tagdelete", TagDeleteRequest(tag2a))
+
+    val tags4 = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(Some("google.com/df2:*")))
+    assert(tags4.isEmpty)
   }
 
   test("count") {

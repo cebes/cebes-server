@@ -19,7 +19,7 @@ import java.sql._
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.ClosableIterator
 
-class ResultSetIterable[T](connection: Connection, stmt: PreparedStatement,
+class ResultSetIterator[T](connection: Connection, stmt: PreparedStatement,
                            resultSetFn: ResultSet => T) extends ClosableIterator[T] with LazyLogging {
 
   private val resultSet = stmt.executeQuery()

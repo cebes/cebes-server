@@ -32,15 +32,18 @@ trait DataframeService {
   def sql(sqlText: String): Dataframe
 
   /**
-    * Tag a dataframe.
+    * Tag a dataframe. Return that Dataframe.
     * Raise an exception if the tag already exists.
     */
-  def tag(dfId: UUID, tag: Tag): Unit
+  def tag(dfId: UUID, tag: Tag): Dataframe
 
   /**
-    * Remove the given tag
+    * Remove the given tag.
+    * Returns the [[Dataframe]] bearing this tag, if it exists.
+    * Note that after untagging, the [[Dataframe]] is still perfectly accessible.
+    * It might only be unaccessible if it is kicked out of the cache, and it has no other tags.
     */
-  def untag(tag: Tag): Unit
+  def untag(tag: Tag): Dataframe
 
   /**
     * Get all the tags and corresponding [[Dataframe]] IDs
