@@ -107,15 +107,20 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     }
   }
 
-  override def remove(key: K): Unit = withConnection { c =>
-    val stmt = c.prepareStatement(s"DELETE FROM $tableName WHERE `$keyColumnName` = ?")
-    stmt.setString(1, key.toString)
-    JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
-      val result = s.executeUpdate()
-      if (result != 1) {
-        logger.warn(s"Deleted $result rows from JDBC persistence, in table $tableName")
+  override def remove(key: K): Option[V] = withConnection { c =>
+    // race condition might happen
+    val value = get(key)
+    if (value.isDefined) {
+      val stmt = c.prepareStatement(s"DELETE FROM $tableName WHERE `$keyColumnName` = ?")
+      stmt.setString(1, key.toString)
+      JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
+        val result = s.executeUpdate()
+        if (result != 1) {
+          logger.warn(s"Deleted $result rows from JDBC persistence, in table $tableName")
+        }
       }
     }
+    value
   }
 
   override def elements: ClosableIterator[(K, V)] = {

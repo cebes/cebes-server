@@ -62,10 +62,12 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   }
 
   override def untag(tag: Tag): Unit = {
-    if (tagStore.get(tag).isEmpty) {
-      throw new NoSuchElementException(s"Tag not found: ${tag.toString}")
+    tagStore.remove(tag) match {
+      case Some(id) =>
+        dfStore.unpersist(id)
+      case None =>
+        throw new NoSuchElementException(s"Tag not found: ${tag.toString}")
     }
-    tagStore.remove(tag)
   }
 
   override def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, UUID)] = {

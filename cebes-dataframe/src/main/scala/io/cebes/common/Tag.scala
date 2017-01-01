@@ -63,8 +63,7 @@ object Tag {
     tagExpr.findFirstMatchIn(str) match {
       case None => throw new IllegalArgumentException(s"Invalid tag expression: $str")
       case Some(m) =>
-        val version = Option(m.group("version")).getOrElse("latest")
-        new Tag(m.group("name"), version)
+        Tag(m.group("name"), Option(m.group("version")).getOrElse("latest"))
     }
   }
 }

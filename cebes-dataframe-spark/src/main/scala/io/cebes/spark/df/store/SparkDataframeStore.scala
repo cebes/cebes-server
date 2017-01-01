@@ -54,7 +54,7 @@ import spray.json._
       JdbcPersistenceColumn("schema", "MEDIUMTEXT")))
     .withValueToSeq { df =>
       SparkDataframeStore.persist(df)
-      Seq(System.currentTimeMillis(), SparkDataframeStore.hiveTableName(df),
+      Seq(System.currentTimeMillis(), SparkDataframeStore.hiveTableName(df.id),
         df.schema.toJson.compactPrint)
     }
     .withSqlToValue { (id, entry) =>
@@ -67,9 +67,19 @@ import spray.json._
 
   private lazy val cache: LoadingCache[UUID, Dataframe] = {
     val supporter = new CachePersistenceSupporter[UUID, Dataframe](jdbcPersistence)
-      .withRemovalFilter { (id, _) => tagStore.find(id).nonEmpty }
+      .withRemovalFilter { (id, _) => shouldPersist(id) }
     CacheBuilder.from(cacheSpec).removalListener(supporter).build[UUID, Dataframe](supporter)
   }
+
+  /**
+    * Check whether the Dataframe with the given ID should be persisted or not.
+    * This is the only place where [[DataframeStore]] depends on [[TagStore]].
+    */
+  private def shouldPersist(dfId: UUID) = tagStore.find(dfId).nonEmpty
+
+  /////////////////////////////////////////////////////////////////////////////
+  // override
+  /////////////////////////////////////////////////////////////////////////////
 
   /**
     * Store the dataframe. If there is already a Dataframe with the same key,
@@ -96,17 +106,29 @@ import spray.json._
   override def persist(dataframe: Dataframe): Unit = {
     jdbcPersistence.upsert(dataframe.id, dataframe)
   }
+
+  override def unpersist(dfId: UUID): Option[Dataframe] = {
+    val optionDf = get(dfId)
+    if (optionDf.nonEmpty && !shouldPersist(dfId)) {
+      // delete from the jdbc persistence
+      jdbcPersistence.remove(dfId)
+
+      // drop hive table
+      session.sql(s"DROP TABLE IF EXISTS ${SparkDataframeStore.hiveTableName(dfId)}")
+    }
+    optionDf
+  }
 }
 
 object SparkDataframeStore {
 
-  private def hiveTableName(dataframe: Dataframe) = s"spark_${dataframe.id.toString}"
+  private def hiveTableName(dfId: UUID) = s"spark_${dfId.toString.replace("-", "_")}"
 
   private def persist(dataframe: Dataframe): Unit = {
     val sparkDf = dataframe match {
       case d: SparkDataframe => d
       case _ => throw new IllegalArgumentException("Only SparkDataframe is accepted")
     }
-    sparkDf.sparkDf.write.mode(SaveMode.Overwrite).saveAsTable(hiveTableName(sparkDf))
+    sparkDf.sparkDf.write.mode(SaveMode.Overwrite).saveAsTable(hiveTableName(sparkDf.id))
   }
 }

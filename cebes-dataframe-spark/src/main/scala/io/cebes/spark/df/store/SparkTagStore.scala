@@ -45,7 +45,7 @@ import scala.collection.mutable
 
   override def insert(tag: Tag, id: UUID): Unit = jdbcStore.insert(tag, id)
 
-  override def remove(tag: Tag): Unit = jdbcStore.remove(tag)
+  override def remove(tag: Tag): Option[UUID] = jdbcStore.remove(tag)
 
   override def get(tag: Tag): Option[UUID] = jdbcStore.get(tag)
 
@@ -61,5 +61,6 @@ import scala.collection.mutable
     }
     results
   }
+
   override def elements: ClosableIterator[(Tag, UUID)] = jdbcStore.elements
 }

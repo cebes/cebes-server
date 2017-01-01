@@ -45,6 +45,15 @@ trait DataframeStore {
   def persist(dataframe: Dataframe): Unit
 
   /**
+    * Unpersist the [[Dataframe]] of the given ID, if and only if:
+    * 1) there is such a [[Dataframe]] in the store, and
+    * 2) the [[Dataframe]] should not be persisted (i.e. it is not tagged, etc..)
+    *
+    * Return the (possibly unpersisted) [[Dataframe]] if it exists
+    */
+  def unpersist(dfId: UUID): Option[Dataframe]
+
+  /**
     * Get the [[Dataframe]] with the given ID
     * Throws [[IllegalArgumentException]] if the ID doesn't exist in the store
     */

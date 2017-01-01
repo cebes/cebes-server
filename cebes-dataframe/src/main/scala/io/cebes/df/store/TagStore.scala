@@ -30,7 +30,7 @@ trait TagStore {
   /**
     * Remove the given tag
     */
-  def remove(tag: Tag): Unit
+  def remove(tag: Tag): Option[UUID]
 
   /**
     * Get the ID with the given tag

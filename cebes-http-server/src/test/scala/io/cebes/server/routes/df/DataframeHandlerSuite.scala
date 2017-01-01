@@ -17,6 +17,7 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.common.Tag
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
@@ -57,7 +58,38 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
   /////////////////////////////////////////////
 
   test("tagAdd") {
+    val df = requestDf("df/limit", LimitRequest(getCylinderBands.id, 100))
+    assert(count(df) === 100)
 
+    try {
+      request[TagDeleteRequest, Unit]("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+    } catch {
+      case _: ServerException =>
+    }
+
+    request[TagAddRequest, Unit]("df/tagadd", TagAddRequest(Tag.fromString("tag1"), df.id))
+
+    // duplicated tag
+    val ex1 = intercept[ServerException] {
+      request[TagAddRequest, Unit]("df/tagadd", TagAddRequest(Tag.fromString("tag1"), getCylinderBands.id))
+    }
+    assert(ex1.getMessage.startsWith("Tag tag1:latest already exists"))
+
+    val ex2 = intercept[ServerException] {
+      request[TagAddRequest, Unit]("df/tagadd", TagAddRequest(Tag.fromString("tag1:latest"), getCylinderBands.id))
+    }
+    assert(ex2.getMessage.startsWith("Tag tag1:latest already exists"))
+
+    // get tag
+    val df2 = requestDf("df/get", "tag1:latest")
+    assert(df2.id === df.id)
+    assert(count(df2) === 100)
+
+    // delete tag
+    request[TagDeleteRequest, Unit]("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+
+    val ex3 = intercept[ServerException](requestDf("df/get", "tag1:latest"))
+    assert(ex3.getMessage.startsWith("Tag not found: tag1:latest"))
   }
 
   test("tagDelete") {

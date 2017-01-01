@@ -37,7 +37,7 @@ class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyV
 
   override def get(key: K): Option[V] = map.get(key)
 
-  override def remove(key: K): Unit = map.remove(key)
+  override def remove(key: K): Option[V] = map.remove(key)
 
   override def elements: ClosableIterator[(K, V)] = ClosableIterator.fromIterator(map.iterator)
 

@@ -33,7 +33,7 @@ trait KeyValuePersistence[K, V] {
 
   def get(key: K): Option[V]
 
-  def remove(key: K): Unit
+  def remove(key: K): Option[V]
 
   /**
     * Return a [[ClosableIterator]] of the pairs (key, value)

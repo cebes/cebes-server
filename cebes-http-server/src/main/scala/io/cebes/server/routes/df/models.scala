@@ -25,6 +25,8 @@ import io.cebes.server.routes.HttpJsonProtocol
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import spray.json._
 
+import scala.util.{Failure, Success, Try}
+
 case class DataframeRequest(df: UUID)
 
 case class WithVariableTypesRequest(df: UUID, variableTypes: Map[String, VariableType])
@@ -262,6 +264,20 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
     private def safeReadJs[T](json: Option[JsValue])(implicit jrT: JsonReader[T]): Option[T] = json.flatMap {
       case JsNull => None
       case v => Some(v.convertTo[T])
+    }
+  }
+
+  implicit object TagFormat extends RootJsonFormat[Tag] {
+    override def write(obj: Tag): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): Tag = json match {
+      case jsStr: JsString =>
+        Try(Tag.fromString(jsStr.value)) match {
+          case Success(t) => t
+          case Failure(f) => deserializationError(s"Failed to parse tag: ${f.getMessage}", f)
+        }
+      case other =>
+        deserializationError(s"Expected a JsString, got ${other.compactPrint}")
     }
   }
 
