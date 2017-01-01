@@ -18,6 +18,7 @@ import java.sql._
 
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.{ClosableIterator, KeyValuePersistence}
+import org.apache.commons.dbcp2.BasicDataSource
 
 /**
   * Implementation of [[KeyValuePersistence]] using JDBC
@@ -41,6 +42,16 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
                                                  val sqlToValue: (K, ResultSet) => V,
                                                  val strToKey: String => K
                                                 ) extends KeyValuePersistence[K, V] with LazyLogging {
+
+  private lazy val dataSource = {
+    val ds = new BasicDataSource()
+    ds.setDriverClassName(driver)
+    ds.setUrl(url)
+    ds.setUsername(userName)
+    ds.setPassword(password)
+    ds.setInitialSize(1)
+    ds
+  }
 
   /////////////////////////////////////////////////////////////////////////////
   // KeyValuePersistence APIs
@@ -108,16 +119,16 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
   }
 
   override def elements: ClosableIterator[(K, V)] = {
-    val connection = JdbcUtil.getConnection(url, userName, password, driver)
+    val connection = dataSource.getConnection()
     val stmt = connection.prepareStatement(s"SELECT * FROM $tableName")
-    resultSetToIterable(connection, stmt, result => {
+    new ResultSetIterable(connection, stmt, result => {
       val key = strToKey(result.getString(valueSchema.length + 1))
       (key, sqlToValue(key, result))
     })
   }
 
   override def findValue(value: V): ClosableIterator[K] = {
-    val connection = JdbcUtil.getConnection(url, userName, password, driver)
+    val connection = dataSource.getConnection()
     val valuePlaceHolder = valueSchema.map(s => s"`${s.name}` = ?").mkString(" AND ")
     val stmt = connection.prepareStatement(s"SELECT * FROM $tableName WHERE $valuePlaceHolder")
     val values = safeValueSeq(value)
@@ -125,7 +136,7 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
       case (v, idx) =>
         stmt.setObject(idx + 1, v)
     }
-    resultSetToIterable(connection, stmt, result => {
+    new ResultSetIterable(connection, stmt, result => {
       strToKey(result.getString(valueSchema.length + 1))
     })
   }
@@ -142,18 +153,8 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     values
   }
 
-  /**
-    * Execute the statement, transform the [[ResultSet]] into
-    * an iterator of (key, value) pairs
-    */
-  private def resultSetToIterable[T](connection: Connection, stmt: PreparedStatement,
-                                     resultSetFn: ResultSet => T): ClosableIterator[T] = {
-    new ResultSetIterable[T](connection, stmt, resultSetFn)
-  }
-
   private def withConnection[T](action: Connection => T) = {
-    val connection = JdbcUtil.getConnection(url, userName, password, driver)
-    JdbcUtil.cleanJdbcCall(connection)(_.close())(action)
+    JdbcUtil.cleanJdbcCall(dataSource.getConnection)(_.close())(action)
   }
 
   /**

@@ -32,19 +32,18 @@ abstract class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper wit
 
   override def beforeAll(): Unit = {
     if (properties.hasJdbcCredentials) {
-      dropTable(tableNameUUIDKey)
-      dropTable(tableNameUUIDKeyElements)
-      dropTable(tableNameIntKey)
-      dropTable(tableNameIncompatible)
+      dropTables(tableNameUUIDKey, tableNameUUIDKeyElements, tableNameIntKey, tableNameIncompatible)
     }
   }
 
-  private def dropTable(name: String) = {
+  private def dropTables(name: String, names: String*) = {
     val connection = JdbcUtil.getConnection(properties.url, properties.userName,
       properties.password, properties.driver)
     JdbcUtil.cleanJdbcCall(connection)(_.close()) { c =>
-      val stmt = c.prepareStatement(s"DROP TABLE IF EXISTS $name")
-      JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+      (name +: names).foreach { n =>
+        val stmt = c.prepareStatement(s"DROP TABLE IF EXISTS $n")
+        JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+      }
     }
   }
 
@@ -243,6 +242,6 @@ abstract class JdbcPersistenceSuite extends FunSuite with TestPropertyHelper wit
     persistenceBar.remove(keyBar)
     assert(persistenceBar.get(keyBar).isEmpty)
 
-    dropTable(persistenceBar.tableName)
+    dropTables(persistenceBar.tableName)
   }
 }
