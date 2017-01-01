@@ -14,7 +14,7 @@ cebes {
     password = ""
   }
   hive.metastore {
-    url = "jdbc:mysql://localhost:3306/hive_metastore?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&useSSL=false"
+    url = "jdbc:mysql://localhost:3306/cebes_hive_metastore?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&useSSL=false"
     driver = "com.mysql.cj.jdbc.Driver"
     username = ""
     password = ""

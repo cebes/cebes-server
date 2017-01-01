@@ -9,18 +9,17 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 20/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.server.helpers
+package io.cebes.prop.types
 
-import com.google.inject.Inject
-import io.cebes.prop.Property
-import io.cebes.prop.Prop
+import com.google.inject.{Inject, Singleton}
+import io.cebes.prop.{Prop, Property}
 
-class TestProperties @Inject()
-(@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
-@Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String) {
-
-  def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
-}
+@Singleton case class HiveMetastoreCredentials @Inject()
+(@Prop(Property.HIVE_METASTORE_URL) url: String,
+ @Prop(Property.HIVE_METASTORE_USERNAME) userName: String,
+ @Prop(Property.HIVE_METASTORE_PASSWORD) password: String,
+ @Prop(Property.HIVE_METASTORE_DRIVER) driver: String)
+  extends JdbcCredentials

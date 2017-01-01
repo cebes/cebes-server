@@ -15,10 +15,9 @@
 package io.cebes.spark
 
 import com.google.inject.AbstractModule
-import io.cebes.df.DataframeStore
+import io.cebes.df.store.{DataframeStore, TagStore}
 import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
-import io.cebes.spark.df.SparkDataframeStore
-
+import io.cebes.spark.df.store.{SparkDataframeStore, SparkTagStore}
 
 
 class CebesSparkDependencyModule extends AbstractModule {
@@ -26,5 +25,6 @@ class CebesSparkDependencyModule extends AbstractModule {
   protected def configure(): Unit = {
     bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
     bind(classOf[DataframeStore]).to(classOf[SparkDataframeStore])
+    bind(classOf[TagStore]).to(classOf[SparkTagStore])
   }
 }

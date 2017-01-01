@@ -94,11 +94,12 @@ class CachePersistenceSupporterSuite extends FunSuite with TestPropertyHelper {
 
   test("MySql persistence", JdbcTestsEnabled) {
     val persistence = JdbcPersistenceBuilder.newBuilder[UUID, String]()
-      .withCredentials(properties.jdbcUrl, properties.jdbcUsername, properties.jdbcPassword,
-        "test_persistence_string", properties.jdbcDriver)
+      .withCredentials(properties.url, properties.userName, properties.password,
+        "test_persistence_string", properties.driver)
       .withValueSchema(Seq(JdbcPersistenceColumn("field1", "VARCHAR(200)")))
       .withValueToSeq(v => Seq(v))
       .withSqlToValue { case (_, s) => s.getString("field1") }
+      .withStrToKey(UUID.fromString)
       .build()
     val supporter = new CachePersistenceSupporter(persistence)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 CEBES_PATH="$(cd "$(dirname "$0")/../"; pwd)"
-SPARK_FILE_NAME="spark-2.0.2-bin-hadoop2.7"
+SPARK_FILE_NAME="spark-2.1.0-bin-hadoop2.7"
 
 wget http://d3kbcqa49mib13.cloudfront.net/${SPARK_FILE_NAME}.tgz \
     -O ${CEBES_PATH}/spark/${SPARK_FILE_NAME}.tgz

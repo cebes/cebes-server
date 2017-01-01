@@ -87,8 +87,8 @@ class SparkStorageServiceSuite extends CebesBaseSuite with TestPropertyHelper wi
   }
 
   test("Read/write data from/to JDBC", JdbcTestsEnabled) {
-    val jdbcSrc = JdbcDataSource(properties.jdbcUrl, "cylinder_bands_test_table",
-      properties.jdbcUsername, properties.jdbcPassword, Option(properties.jdbcDriver))
+    val jdbcSrc = JdbcDataSource(properties.url, "cylinder_bands_test_table",
+      properties.userName, properties.password, Option(properties.driver))
 
     val tryVal = Try(sparkStorageService.read(jdbcSrc)).recoverWith {
       case ex: Exception =>

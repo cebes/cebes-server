@@ -14,10 +14,11 @@
 
 package io.cebes.persistence.jdbc
 
-import java.sql.{Connection, ResultSet}
+import java.sql._
 
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.persistence.KeyValuePersistence
+import io.cebes.persistence.{ClosableIterator, KeyValuePersistence}
+import org.apache.commons.dbcp2.BasicDataSource
 
 /**
   * Implementation of [[KeyValuePersistence]] using JDBC
@@ -38,24 +39,49 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
                                                  val keyColumnName: String = "key",
                                                  val valueSchema: Seq[JdbcPersistenceColumn],
                                                  val valueToSql: V => Seq[Any],
-                                                 val sqlToValue: (K, ResultSet) => V
+                                                 val sqlToValue: (K, ResultSet) => V,
+                                                 val strToKey: String => K
                                                 ) extends KeyValuePersistence[K, V] with LazyLogging {
+
+  private lazy val dataSource = {
+    val ds = new BasicDataSource()
+    ds.setDriverClassName(driver)
+    ds.setUrl(url)
+    ds.setUsername(userName)
+    ds.setPassword(password)
+    ds.setInitialSize(1)
+    ds
+  }
 
   /////////////////////////////////////////////////////////////////////////////
   // KeyValuePersistence APIs
   /////////////////////////////////////////////////////////////////////////////
 
-  override def add(key: K, value: V): Unit = withConnection { c =>
+  override def insert(key: K, value: V): Unit = withConnection { c =>
+    val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
+    val stmt = c.prepareStatement(s"INSERT INTO $tableName VALUES ($valuePlaceHolder, ?) ")
+    val values = safeValueSeq(value)
+
+    values.zipWithIndex.foreach {
+      case (v, idx) =>
+        stmt.setObject(idx + 1, v)
+    }
+    stmt.setString(values.length + 1, key.toString)
+    try {
+      JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+    } catch {
+      case _: SQLIntegrityConstraintViolationException =>
+        throw new IllegalArgumentException(s"Duplicated key: ${key.toString}")
+    }
+  }
+
+  override def upsert(key: K, value: V): Unit = withConnection { c =>
     val valuePlaceHolder = valueSchema.map(_ => "?").mkString(", ")
     val updatePlaceHolder = valueSchema.map(col => s"`${col.name}` = ?").mkString(", ")
 
     val stmt = c.prepareStatement(s"INSERT INTO $tableName VALUES ($valuePlaceHolder, ?) " +
       s"ON DUPLICATE KEY UPDATE $updatePlaceHolder")
-
-    val values = valueToSql(value)
-    require(values.length == valueSchema.length,
-      s"Invalid sequence of values. " +
-        s"Expected a sequence of ${valueSchema.length} elements, got ${values.length} elements")
+    val values = safeValueSeq(value)
 
     values.zipWithIndex.foreach {
       case (v, idx) =>
@@ -63,7 +89,6 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
         stmt.setObject(idx + 2 + values.length, v)
     }
     stmt.setString(values.length + 1, key.toString)
-
     JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
   }
 
@@ -82,32 +107,58 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     }
   }
 
-  override def remove(key: K): Unit = withConnection { c =>
-    val stmt = c.prepareStatement(s"DELETE FROM $tableName WHERE `$keyColumnName` = ?")
-    stmt.setString(1, key.toString)
-    JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
-      val result = s.executeUpdate()
-      if (result != 1) {
-        logger.warn(s"Deleted $result rows from JDBC persistence, in table $tableName")
+  override def remove(key: K): Option[V] = withConnection { c =>
+    // race condition might happen
+    val value = get(key)
+    if (value.isDefined) {
+      val stmt = c.prepareStatement(s"DELETE FROM $tableName WHERE `$keyColumnName` = ?")
+      stmt.setString(1, key.toString)
+      JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
+        val result = s.executeUpdate()
+        if (result != 1) {
+          logger.warn(s"Deleted $result rows from JDBC persistence, in table $tableName")
+        }
       }
     }
+    value
+  }
+
+  override def elements: ClosableIterator[(K, V)] = {
+    val connection = dataSource.getConnection()
+    val stmt = connection.prepareStatement(s"SELECT * FROM $tableName")
+    new ResultSetIterator(connection, stmt, result => {
+      val key = strToKey(result.getString(valueSchema.length + 1))
+      (key, sqlToValue(key, result))
+    })
+  }
+
+  override def findValue(value: V): ClosableIterator[K] = {
+    val connection = dataSource.getConnection()
+    val valuePlaceHolder = valueSchema.map(s => s"`${s.name}` = ?").mkString(" AND ")
+    val stmt = connection.prepareStatement(s"SELECT * FROM $tableName WHERE $valuePlaceHolder")
+    val values = safeValueSeq(value)
+    values.zipWithIndex.foreach {
+      case (v, idx) =>
+        stmt.setObject(idx + 1, v)
+    }
+    new ResultSetIterator(connection, stmt, result => {
+      strToKey(result.getString(valueSchema.length + 1))
+    })
   }
 
   /////////////////////////////////////////////////////////////////////////////
   // private helpers
   /////////////////////////////////////////////////////////////////////////////
 
-  private def withConnection[T](action: Connection => T) = {
-    val connection = JdbcUtil.getConnection(url, userName, password, driver)
-    JdbcUtil.cleanJdbcCall(connection)(_.close())(action)
+  private def safeValueSeq(value: V) = {
+    val values = valueToSql(value)
+    require(values.length == valueSchema.length,
+      s"Invalid sequence of values. " +
+        s"Expected a sequence of ${valueSchema.length} elements, got ${values.length} elements")
+    values
   }
 
-  /**
-    * Drop the table that backs this persistence
-    * For testing purpose only
-    */
-  private[jdbc] def dropTable(): Unit = withConnection { c =>
-    val stmt = c.prepareStatement(s"DROP TABLE IF EXISTS $tableName")
-    JdbcUtil.cleanJdbcCall(stmt)(_.close())(_.executeUpdate())
+  private def withConnection[T](action: Connection => T) = {
+    JdbcUtil.cleanJdbcCall(dataSource.getConnection)(_.close())(action)
   }
 }

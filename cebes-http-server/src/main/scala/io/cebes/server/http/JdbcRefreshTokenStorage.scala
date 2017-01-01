@@ -17,30 +17,30 @@ package io.cebes.server.http
 import com.google.inject.Inject
 import com.softwaremill.session.{RefreshTokenData, RefreshTokenLookupResult, RefreshTokenStorage}
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
-import io.cebes.prop.{Prop, Property}
+import io.cebes.prop.types.MySqlBackendCredentials
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
 class JdbcRefreshTokenStorage @Inject()
-(@Prop(Property.MYSQL_URL) jdbcUrl: String,
- @Prop(Property.MYSQL_USERNAME) jdbcUserName: String,
- @Prop(Property.MYSQL_PASSWORD) jdbcPassword: String,
- @Prop(Property.MYSQL_DRIVER) jdbcDriver: String) extends RefreshTokenStorage[SessionData] {
+(mySqlCreds: MySqlBackendCredentials) extends RefreshTokenStorage[SessionData] {
 
   case class Store(userName: String, tokenHash: String, expires: Long)
 
   val persistence: JdbcPersistence[String, Store] =
-    JdbcPersistenceBuilder.newBuilder[String, Store]().
-      withCredentials(jdbcUrl, jdbcUserName, jdbcPassword, TableNames.REFRESH_TOKENS, jdbcDriver).
-      withValueSchema(Seq(
+    JdbcPersistenceBuilder.newBuilder[String, Store]()
+      .withCredentials(mySqlCreds.url, mySqlCreds.userName,
+        mySqlCreds.password, TableNames.REFRESH_TOKENS, mySqlCreds.driver)
+      .withValueSchema(Seq(
         JdbcPersistenceColumn("user_name", "VARCHAR (200)"),
         JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),
-        JdbcPersistenceColumn("expires", "Long"))).
-      withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires)).
-      withSqlToValue {
+        JdbcPersistenceColumn("expires", "Long")))
+      .withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires))
+      .withSqlToValue {
         case (_, r) => Store(r.getString(1), r.getString(2), r.getLong(3))
-      }.build()
+      }
+      .withStrToKey(s => s)
+      .build()
 
   override def lookup(selector: String): Future[Option[RefreshTokenLookupResult[SessionData]]] = Future.successful {
     persistence.get(selector).map { s =>
@@ -49,7 +49,7 @@ class JdbcRefreshTokenStorage @Inject()
   }
 
   override def store(data: RefreshTokenData[SessionData]): Future[Unit] = {
-    Future.successful(persistence.add(data.selector, Store(data.forSession.userName, data.tokenHash, data.expires)))
+    Future.successful(persistence.upsert(data.selector, Store(data.forSession.userName, data.tokenHash, data.expires)))
   }
 
   override def remove(selector: String): Future[Unit] = {

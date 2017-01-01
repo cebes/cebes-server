@@ -16,7 +16,8 @@ package io.cebes.spark.config
 
 import java.util.Properties
 
-import com.google.inject.{Inject, Provider, Singleton}
+import com.google.inject.{Inject, Injector, Provider, Singleton}
+import io.cebes.prop.types.HiveMetastoreCredentials
 import io.cebes.prop.{Prop, Property}
 import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.sql.SparkSession
@@ -28,25 +29,19 @@ trait HasSparkSession {
 
 class HasSparkSessionProvider @Inject()
 (@Prop(Property.SPARK_MODE) val sparkMode: String,
- @Prop(Property.HIVE_METASTORE_URL) val hiveMetastoreUrl: String,
- @Prop(Property.HIVE_METASTORE_DRIVER) val hiveMetastoreDriver: String,
- @Prop(Property.HIVE_METASTORE_USERNAME) val hiveMetastoreUserName: String,
- @Prop(Property.HIVE_METASTORE_PASSWORD) val hiveMetastorePwd: String) extends Provider[HasSparkSession] {
+ val injector: Injector) extends Provider[HasSparkSession] {
 
   override def get(): HasSparkSession = {
     sparkMode.toLowerCase match {
-      case "local" => new HasSparkSessionLocal(hiveMetastoreUrl, hiveMetastoreDriver,
-        hiveMetastoreUserName, hiveMetastorePwd)
-      case "yarn" => new HasSparkSessionYarn()
+      case "local" => injector.getInstance(classOf[HasSparkSessionLocal])
+      case "yarn" => injector.getInstance(classOf[HasSparkSessionYarn])
       case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")
     }
   }
 }
 
-@Singleton class HasSparkSessionLocal(hiveMetastoreUrl: String,
-                                      hiveMetastoreDriver: String,
-                                      hiveMetastoreUser: String,
-                                      hiveMetastorePwd: String) extends HasSparkSession {
+@Singleton class HasSparkSessionLocal @Inject()
+(hiveCreds: HiveMetastoreCredentials) extends HasSparkSession {
 
   lazy val session: SparkSession = localSessionBuilder.getOrCreate()
 
@@ -64,11 +59,11 @@ class HasSparkSessionProvider @Inject()
       PropertyConfigurator.configure(props)
     }
 
-    if (!hiveMetastoreUser.isEmpty && !hiveMetastoreUrl.isEmpty && !hiveMetastorePwd.isEmpty) {
-      builder.config("javax.jdo.option.ConnectionURL", hiveMetastoreUrl)
-        .config("javax.jdo.option.ConnectionDriverName", hiveMetastoreDriver)
-        .config("javax.jdo.option.ConnectionUserName", hiveMetastoreUser)
-        .config("javax.jdo.option.ConnectionPassword", hiveMetastorePwd)
+    if (hiveCreds.hasJdbcCredentials) {
+      builder.config("javax.jdo.option.ConnectionURL", hiveCreds.url)
+        .config("javax.jdo.option.ConnectionDriverName", hiveCreds.driver)
+        .config("javax.jdo.option.ConnectionUserName", hiveCreds.userName)
+        .config("javax.jdo.option.ConnectionPassword", hiveCreds.password)
         .enableHiveSupport()
     } else {
       builder.enableHiveSupport()

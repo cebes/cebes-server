@@ -9,25 +9,22 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.spark.helpers
+package io.cebes.prop.types
 
-import com.google.inject.Inject
+import com.google.inject.{Inject, Singleton}
 import io.cebes.prop.{Prop, Property}
 
-class TestProperties @Inject()
-(@Prop(Property.TEST_AWS_ACCESSKEY) val awsAccessKey: String,
- @Prop(Property.TEST_AWS_SECRETKEY) val awsSecretKey: String,
-
- @Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
- @Prop(Property.TEST_JDBC_DRIVER) val jdbcDriver: String,
- @Prop(Property.TEST_JDBC_USERNAME) val jdbcUsername: String,
- @Prop(Property.TEST_JDBC_PASSWORD) val jdbcPassword: String) {
+@Singleton case class TestProperties @Inject()
+(@Prop(Property.TEST_AWS_ACCESSKEY) awsAccessKey: String,
+ @Prop(Property.TEST_AWS_SECRETKEY) awsSecretKey: String,
+ @Prop(Property.TEST_JDBC_URL) url: String,
+ @Prop(Property.TEST_JDBC_USERNAME) userName: String,
+ @Prop(Property.TEST_JDBC_PASSWORD) password: String,
+ @Prop(Property.TEST_JDBC_DRIVER) driver: String)
+  extends JdbcCredentials {
 
   def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
-
-  def hasJdbcCredentials: Boolean = !jdbcUrl.isEmpty && !jdbcUsername.isEmpty && !jdbcPassword.isEmpty
 }
-

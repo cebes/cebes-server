@@ -12,9 +12,11 @@
  * Created by phvu on 15/12/2016.
  */
 
-package io.cebes.df
+package io.cebes.df.store
 
 import java.util.UUID
+
+import io.cebes.df.Dataframe
 
 /**
   * Storing dataframes, maybe backed by a LoadingCache
@@ -33,6 +35,23 @@ trait DataframeStore {
     * Get the Dataframe with the given ID, if any
     */
   def get(id: UUID): Option[Dataframe]
+
+  /**
+    * Persist the given dataframe.
+    * The internals of this method depends on the backend,
+    * so any assumption about how the dataframe is persisted
+    * is only valid in the class that implements this trait.
+    */
+  def persist(dataframe: Dataframe): Unit
+
+  /**
+    * Unpersist the [[Dataframe]] of the given ID, if and only if:
+    * 1) there is such a [[Dataframe]] in the store, and
+    * 2) the [[Dataframe]] should not be persisted (i.e. it is not tagged, etc..)
+    *
+    * Return the (possibly unpersisted) [[Dataframe]] if it exists
+    */
+  def unpersist(dfId: UUID): Option[Dataframe]
 
   /**
     * Get the [[Dataframe]] with the given ID

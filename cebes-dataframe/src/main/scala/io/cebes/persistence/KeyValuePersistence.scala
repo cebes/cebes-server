@@ -20,12 +20,29 @@ package io.cebes.persistence
 trait KeyValuePersistence[K, V] {
 
   /**
+    * Insert the element if the key doesn't exist.
+    * If the key already exists, raise an exception.
+    */
+  def insert(key: K, value: V): Unit
+
+  /**
     * Store the value associated with the key.
     * When the key is existed, its value will be updated
     */
-  def add(key: K, value: V): Unit
+  def upsert(key: K, value: V): Unit
 
   def get(key: K): Option[V]
 
-  def remove(key: K): Unit
+  def remove(key: K): Option[V]
+
+  /**
+    * Return a [[ClosableIterator]] of the pairs (key, value)
+    */
+  def elements: ClosableIterator[(K, V)]
+
+  /**
+    * Find the entry with the given value,
+    * may returns several keys.
+    */
+  def findValue(value: V): ClosableIterator[K]
 }

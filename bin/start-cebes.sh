@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 CEBES_PATH="$(cd "$(dirname "$0")/../"; pwd)"
-SPARK_HOME="${SPARK_HOME:-$CEBES_PATH/spark/spark-2.0.2-bin-hadoop2.7}"
+SPARK_HOME="${SPARK_HOME:-$CEBES_PATH/spark/spark-2.1.0-bin-hadoop2.7}"
 
 if [ ! -f "${CEBES_PATH}/bin/env.sh" ]
 then

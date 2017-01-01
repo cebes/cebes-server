@@ -55,6 +55,7 @@ case class OkResponse(message: String)
 
 case class DataframeResponse(id: UUID, schema: Schema)
 
+case class VersionResponse(api: String)
 
 /** **************************************************************************/
 // Contains all common JsonProtocol
@@ -92,7 +93,7 @@ trait HttpJsonProtocol extends CebesCoreJsonProtocol {
   implicit val failResponseFormat = jsonFormat2(FailResponse)
   implicit val okResponseFormat = jsonFormat1(OkResponse)
   implicit val dataframeResponseFormat = jsonFormat2(DataframeResponse)
-
+  implicit val versionResponseFormat = jsonFormat1(VersionResponse)
 }
 
 object HttpJsonProtocol extends HttpJsonProtocol

@@ -9,17 +9,18 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 18/11/2016.
+ * Created by phvu on 28/12/2016.
  */
 
-package io.cebes.common
+package io.cebes.util
 
 /**
   * Tabulate a Seq[Seq[Any\]\], row-based
   * http://stackoverflow.com/questions/7539831/scala-draw-table-to-console
   */
 object Tabulator {
-  def format(table: Seq[Seq[Any]]) = table match {
+
+  def format(table: Seq[Seq[Any]]): String = table match {
     case Seq() => ""
     case _ =>
       val sizes = for (row <- table) yield for (cell <- row) yield if (cell == null) 0 else cell.toString.length
@@ -28,7 +29,7 @@ object Tabulator {
       formatRows(rowSeparator(colSizes), rows)
   }
 
-  def formatRows(rowSeparator: String, rows: Seq[String]): String = (
+  private def formatRows(rowSeparator: String, rows: Seq[String]): String = (
     rowSeparator ::
       rows.head ::
       rowSeparator ::
@@ -36,10 +37,10 @@ object Tabulator {
       rowSeparator ::
       List()).mkString("\n")
 
-  def formatRow(row: Seq[Any], colSizes: Seq[Int]) = {
+  private def formatRow(row: Seq[Any], colSizes: Seq[Int]) = {
     val cells = for ((item, size) <- row.zip(colSizes)) yield if (size == 0) "" else ("%" + size + "s").format(item)
     cells.mkString("|", "|", "|")
   }
 
-  def rowSeparator(colSizes: Seq[Int]) = colSizes map { "-" * _ } mkString("+", "+", "+")
+  private def rowSeparator(colSizes: Seq[Int]) = colSizes map { "-" * _ } mkString("+", "+", "+")
 }

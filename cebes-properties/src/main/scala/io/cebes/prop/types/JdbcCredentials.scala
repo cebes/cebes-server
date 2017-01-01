@@ -9,20 +9,23 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.persistence.helpers
+package io.cebes.prop.types
 
-import com.google.inject.Inject
-import io.cebes.prop.{Prop, Property}
+/**
+  * Abstract class containing credentials for JDBC
+  */
+private[types] trait JdbcCredentials {
 
-class TestProperties @Inject()
-(@Prop(Property.TEST_JDBC_URL) val jdbcUrl: String,
- @Prop(Property.TEST_JDBC_DRIVER) val jdbcDriver: String,
- @Prop(Property.TEST_JDBC_USERNAME) val jdbcUsername: String,
- @Prop(Property.TEST_JDBC_PASSWORD) val jdbcPassword: String) {
+  def url: String
 
-  def hasJdbcCredentials: Boolean = !jdbcUrl.isEmpty && !jdbcUsername.isEmpty && !jdbcPassword.isEmpty
+  def userName: String
+
+  def password: String
+
+  def driver: String
+
+  def hasJdbcCredentials: Boolean = !url.isEmpty && !userName.isEmpty && !password.isEmpty
 }
-

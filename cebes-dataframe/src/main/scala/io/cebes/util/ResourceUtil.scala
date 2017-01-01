@@ -17,7 +17,9 @@ package io.cebes.util
 import java.io.{File, IOException}
 import java.nio.file.{Files, Paths}
 
-trait ResourceUtil {
+import com.typesafe.scalalogging.LazyLogging
+
+trait ResourceUtil extends LazyLogging {
 
   /**
     * Get resource as a file
@@ -26,24 +28,21 @@ trait ResourceUtil {
     * @return
     */
   def getResourceAsFile(resourceName: String): File = {
-    val file = Option(getClass.getResource(resourceName)) match {
+    Option(getClass.getResource(resourceName)) match {
       case Some(url) if url.toString.startsWith("jar:") =>
         try {
           val inputStream = getClass.getResourceAsStream(resourceName)
           val tmpFile = File.createTempFile("tempfile", ".tmp")
           Files.copy(inputStream, Paths.get(tmpFile.getPath))
-          Some(tmpFile)
+          tmpFile
         } catch {
           case ex: IOException =>
-            None
+            logger.error(s"Failed to copy resource: ${ex.getMessage}")
+            throw ex
         }
-      case Some(url) => Some(new File(url.getFile))
-      case None => None
-    }
-
-    file match {
-      case Some(f) if f.exists() => f
-      case _ => throw new RuntimeException("File " + resourceName + " not found!")
+      case Some(url) => new File(url.getFile)
+      case None =>
+        throw new RuntimeException("File " + resourceName + " not found!")
     }
   }
 }

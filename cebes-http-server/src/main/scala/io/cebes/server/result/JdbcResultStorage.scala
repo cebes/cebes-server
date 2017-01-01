@@ -22,21 +22,20 @@ import com.google.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
+import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
 import io.cebes.server.routes.{RequestStatuses, SerializableResult}
 import spray.json._
 
 @Singleton class JdbcResultStorage @Inject()
-(@Prop(Property.MYSQL_URL) jdbcUrl: String,
- @Prop(Property.MYSQL_USERNAME) jdbcUsername: String,
- @Prop(Property.MYSQL_PASSWORD) jdbcPassword: String,
- @Prop(Property.MYSQL_DRIVER) jdbcDriver: String,
- @Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String) extends ResultStorage with LazyLogging {
+(@Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
+ mySqlCreds: MySqlBackendCredentials) extends ResultStorage with LazyLogging {
 
   case class Store(createdAt: Long, status: String, response: String, request: String)
 
   private lazy val jdbcPersistence = JdbcPersistenceBuilder.newBuilder[UUID, Store]()
-    .withCredentials(jdbcUrl, jdbcUsername, jdbcPassword, TableNames.RESULT_STORE, jdbcDriver)
+    .withCredentials(mySqlCreds.url, mySqlCreds.userName,
+      mySqlCreds.password, TableNames.RESULT_STORE, mySqlCreds.driver)
     .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
       JdbcPersistenceColumn("status", "VARCHAR(50)"),
       JdbcPersistenceColumn("response", "MEDIUMTEXT"),
@@ -45,6 +44,7 @@ import spray.json._
     .withSqlToValue {
       case (_, f) => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4))
     }
+    .withStrToKey(UUID.fromString)
     .build()
 
   private lazy val cache: LoadingCache[UUID, Store] = {

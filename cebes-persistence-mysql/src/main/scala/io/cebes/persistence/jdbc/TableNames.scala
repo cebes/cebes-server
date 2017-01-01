@@ -24,4 +24,6 @@ object TableNames {
   val RESULT_STORE = "persistence_result_store"
 
   val DF_STORE = "dataframe_store"
+
+  val TAG_STORE = "tag_store"
 }

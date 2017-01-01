@@ -9,17 +9,25 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  *
- * Created by phvu on 23/09/16.
+ * Created by phvu on 28/12/2016.
  */
 
-package io.cebes.persistence.helpers
+package io.cebes.server.routes
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.server.routes.HttpJsonProtocol._
 
-import io.cebes.prop.types.TestProperties
-import org.scalatest.{Ignore, Tag}
+class GeneralRouteSuite extends AbstractRouteSuite {
 
-trait TestPropertyHelper {
+  test("version") {
+    Get("/version") ~> routes ~> check {
+      val v = responseAs[VersionResponse]
+      assert(v.api === Routes.API_VERSION)
+    }
+  }
 
-  val properties: TestProperties = CebesPersistenceTestInjector.instance[TestProperties]
-
-  object JdbcTestsEnabled extends Tag(if (properties.hasJdbcCredentials) "" else classOf[Ignore].getName)
+  test("index") {
+    Get("/") ~> routes ~> check {
+      assert(handled)
+    }
+  }
 }

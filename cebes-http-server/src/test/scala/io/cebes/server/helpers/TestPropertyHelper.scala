@@ -14,6 +14,7 @@
 
 package io.cebes.server.helpers
 
+import io.cebes.prop.types.TestProperties
 import org.scalatest.{Ignore, Tag}
 
 trait TestPropertyHelper {

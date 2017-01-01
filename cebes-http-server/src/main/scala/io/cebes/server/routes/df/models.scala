@@ -16,14 +16,16 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
-import io.cebes.df.DataframeService.AggregationTypes
+import io.cebes.common.Tag
 import io.cebes.df.Column
+import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions.Expression
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.server.routes.HttpJsonProtocol
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import spray.json._
 
+import scala.util.{Failure, Success, Try}
 
 case class DataframeRequest(df: UUID)
 
@@ -61,6 +63,12 @@ case class FreqItemsRequest(df: UUID, colNames: Array[String], support: Double)
 
 case class SampleByRequest(df: UUID, colName: String, fractions: Map[Any, Double], seed: Long)
 
+case class TagAddRequest(tag: Tag, df: UUID)
+
+case class TagDeleteRequest(tag: Tag)
+
+case class TagsGetRequest(pattern: Option[String], maxCount: Int = 100)
+
 /**
   * Perform aggregation on the [[io.cebes.df.Dataframe]] of the given ID.
   * The aggregation can be `groupBy`, `rollup` or `cube`, depending on `aggType`.
@@ -73,9 +81,9 @@ case class SampleByRequest(df: UUID, colName: String, fractions: Map[Any, Double
   * After the aggregation (and pivot, if needed), perform some actual computation:
   *  - If `genericAggExprs` is provided: perform the computation specified in this argument
   *  - Otherwise, compute the aggregation functions specified in `aggFunc`.
-  *  Supported values of `aggFunc` are: count, min, mean, max, sum.
-  *  `aggFunc` will only be applied on columns specified in `aggColNames`, otherwise it will be applied on
-  *  all numeric non-aggregate columns.
+  * Supported values of `aggFunc` are: count, min, mean, max, sum.
+  * `aggFunc` will only be applied on columns specified in `aggColNames`, otherwise it will be applied on
+  * all numeric non-aggregate columns.
   */
 case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Array[Any]],
@@ -259,6 +267,23 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
     }
   }
 
+  implicit object TagFormat extends RootJsonFormat[Tag] {
+    override def write(obj: Tag): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): Tag = json match {
+      case jsStr: JsString =>
+        Try(Tag.fromString(jsStr.value)) match {
+          case Success(t) => t
+          case Failure(f) => deserializationError(s"Failed to parse tag: ${f.getMessage}", f)
+        }
+      case other =>
+        deserializationError(s"Expected a JsString, got ${other.compactPrint}")
+    }
+  }
+
+  implicit val tagAddRequestFormat = jsonFormat2(TagAddRequest)
+  implicit val tagDeleteRequestFormat = jsonFormat1(TagDeleteRequest)
+  implicit val tagsGetRequestFormat = jsonFormat2(TagsGetRequest)
 }
 
 object HttpDfJsonProtocol extends HttpDfJsonProtocol
