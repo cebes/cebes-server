@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package cebes;
+option java_multiple_files = true;
+option java_package = "io.cebes.pipeline.protos";
+option java_outer_classname = "ParamProtos";
+
+import "value.proto";
+
+message ParamDef {
+    // name of the parameter
+    // must satisfy the regexp [a-z][a-zA-Z0-9_]*
+    string name = 1;
+
+    ValueDef value = 2;
+}

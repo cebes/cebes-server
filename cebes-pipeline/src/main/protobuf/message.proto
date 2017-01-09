@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package cebes;
+option java_multiple_files = true;
+option java_package = "io.cebes.pipeline.protos";
+option java_outer_classname = "PipelineMessageProtos";
+
+import "value.proto";
+
+message DataframeMessageDef {
+
+}
+
+message SampleMessageDef {
+
+}
+
+message ModelMessageDef {
+
+}
+
+// The message being sent between stages in a pipeline
+// This can be one of: a dataframe, a value, a dataframe sample, a model, etc...
+message PipelineMessageDef {
+    oneof msg {
+        DataframeMessageDef df = 1;
+        ValueDef value = 2;
+        SampleMessageDef df_sample = 3;
+        ModelMessageDef model = 4;
+    }
+}

@@ -24,7 +24,7 @@ import scala.util.matching.Regex
   *             or with host name and host port: abc.com:500/abc-d/efgh_ijklm
   * @param version version. If user doesn't specify, default will be "latest"
   */
-case class Tag private(name: String, version: String = "latest") {
+case class Tag private(name: String, version: String = Tag.DEFAULT_VERSION) {
 
   override def toString: String = s"$name:$version"
 
@@ -48,6 +48,8 @@ case class Tag private(name: String, version: String = "latest") {
 
 object Tag {
 
+  val DEFAULT_VERSION = "latest"
+
   val tagExpr = new Regex("""^((([a-z][a-z0-9-_\.]*)(:([0-9]+))?)(/[a-z0-9-_]+)*)(:([a-z0-9-_]+))?$""",
     "name", "server", "host", "", "port", "path", "", "version")
 
@@ -57,13 +59,13 @@ object Tag {
 
   /**
     * Parse a string into a [[Tag]].
-    * If version isn't defined, it will be default as "latest"
+    * If version isn't defined, it will be default as [[Tag.DEFAULT_VERSION]]
     */
   def fromString(str: String): Tag = {
     tagExpr.findFirstMatchIn(str) match {
       case None => throw new IllegalArgumentException(s"Invalid tag expression: $str")
       case Some(m) =>
-        Tag(m.group("name"), Option(m.group("version")).getOrElse("latest"))
+        Tag(m.group("name"), Option(m.group("version")).getOrElse(Tag.DEFAULT_VERSION))
     }
   }
 }
