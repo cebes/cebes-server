@@ -14,6 +14,28 @@ package io.cebes.pipeline.models
 
 import io.cebes.pipeline.protos.stage.StageDef
 
-class StageFactory(proto: StageDef) {
+import scala.concurrent.ExecutionContext
+import scala.util.{Success, Try}
 
+class StageFactory {
+
+  private implicit val ec: ExecutionContext = ExecutionContext.global
+  private val stageNamespaces: Seq[String] = Seq("io.cebes.pipeline.models")
+
+  def create(proto: StageDef): Stage = {
+    val cls = stageNamespaces.map { ns =>
+      Try(Class.forName(s"$ns.${proto.stage}"))
+    }.collectFirst {
+      case Success(cl) if cl.getInterfaces.contains(classOf[Stage]) => cl
+    } match {
+      case Some(ns) => Class.forName(s"$ns.${proto.stage}")
+      case None => throw new IllegalArgumentException(s"Stage class not found: ${proto.stage}")
+    }
+    cls.getConstructors.find { c =>
+      c.getParameterCount == 2 && c.getParameterTypes.sameElements(Array(classOf[String], classOf[ExecutionContext]))
+    } match {
+      case Some(cl) => cl.newInstance(proto.name, ec).asInstanceOf[Stage]
+      case None => throw new IllegalArgumentException(s"Failed to initialize stage class ${cls.getName}")
+    }
+  }
 }
