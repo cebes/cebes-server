@@ -18,13 +18,14 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 class InputsTestClass extends Inputs {
-  override val _inputs: Seq[Input[PipelineMessage]] = Seq(
-    ModelInput("m"), DataframeInput("data"), SampleInput("s")
+
+  override val _inputs: Seq[Slot[PipelineMessage]] = Seq(
+    ModelSlot("m"), SampleSlot("s")
   )
 
   def run(): Future[String] = {
-    withInputs("m", "s") { (m: ModelMessage, s: SampleMessage) =>
-      s"In run(): ${m.getClass.getSimpleName} ${s.getClass.getSimpleName}"
+    withAllInputs { seq =>
+      s"In run(): ${seq.head.getClass.getSimpleName} ${seq.last.getClass.getSimpleName}"
     }
   }
 }
@@ -37,15 +38,15 @@ class InputsSuite extends FunSuite {
     val ex1 = intercept[NoSuchElementException] {
       Await.result(c.run(), Duration.Inf)
     }
-    assert(ex1.getMessage.startsWith("Input named s is not specified."))
+    assert(ex1.getMessage.startsWith("Slot named s is not specified."))
 
-    c.input(2, Future(new SampleMessage()))
+    c.input(1, Future(new SampleMessage()))
     assert(Await.result(c.run(), Duration.Inf) === "In run(): ModelMessage SampleMessage")
 
     c.input(0, Future(new DataframeMessage()))
     val ex = intercept[IllegalArgumentException] {
       Await.result(c.run(), Duration.Inf)
     }
-    assert(ex.getMessage.contains("invalid type for input named m, expected ModelMessage, got DataframeMessage"))
+    assert(ex.getMessage.contains("invalid input type at slot #0 (m), expected a ModelMessage, got DataframeMessage"))
   }
 }

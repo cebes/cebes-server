@@ -12,23 +12,37 @@
 
 package io.cebes.pipeline.models
 
+import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
+
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-abstract class Input[+T <: PipelineMessage](val name: String, val doc: String)
+/**
+  * A Slot is a "placeholder" for receiving (input) or sending (output) messages in a Pipeline.
+  * A Pipeline Component having a Slot[DataframeMessage] as its input
+  * means that it expects the message that that slot to be of type [DataframeMessage].
+  * Subclasses of [[Slot]] are specific cases of those slots
+  */
+abstract class Slot[+T <: PipelineMessage](val name: String, val doc: String)(implicit tag: ClassTag[T]) {
+  def messageClass[U >: T]: Class[U] = tag.runtimeClass.asInstanceOf[Class[U]]
+}
 
-case class DataframeInput(override val name: String = "df",
-                          override val doc: String = "Dataframe Input") extends Input[DataframeMessage](name, doc)
+case class DataframeSlot(override val name: String = "df",
+                         override val doc: String = "Dataframe Slot")
+  extends Slot[DataframeMessage](name, doc)
 
-case class SampleInput(override val name: String = "sample",
-                       override val doc: String = "DataSample Input") extends Input[SampleMessage](name, doc)
+case class SampleSlot(override val name: String = "sample",
+                      override val doc: String = "DataSample Slot")
+  extends Slot[SampleMessage](name, doc)
 
-case class ModelInput(override val name: String = "model",
-                      override val doc: String = "Model Input") extends Input[ModelMessage](name, doc)
+case class ModelSlot(override val name: String = "model",
+                     override val doc: String = "Model Slot")
+  extends Slot[ModelMessage](name, doc)
 
-case class ValueInput(override val name: String = "value",
-                      override val doc: String = "Value Input") extends Input[ValueMessage](name, doc)
+case class ValueSlot(override val name: String = "value",
+                     override val doc: String = "Value Slot")
+  extends Slot[ValueMessage](name, doc)
 
 /**
   * Trait for components that take inputs. This also provides an internal map to store
@@ -36,174 +50,108 @@ case class ValueInput(override val name: String = "value",
   */
 trait Inputs {
 
-  // list of all inputs required by this component.
-  // To be specified by the class that implements this trait
-  protected val _inputs: Seq[Input[PipelineMessage]] = Nil
+  /**
+    * list of all inputs required by this component.
+    * To be specified by the class that implements this trait
+    */
+  protected val _inputs: Seq[Slot[PipelineMessage]]
 
   /** Internal map for inputs */
-  private val inputMap: InputMap = InputMap.empty
+  private final val inputMap: SlotMap = SlotMap.empty
 
-  /** Gets an input by its name. */
-  private def getInput[T <: PipelineMessage](inputName: String): Input[T] = {
-    _inputs.find(_.name == inputName).getOrElse {
-      throw new NoSuchElementException(s"Input $inputName does not exist.")
-    }.asInstanceOf[Input[T]]
-  }
+  /** The read-write lock for inputMap */
+  protected val inputLock: ReadWriteLock = new ReentrantReadWriteLock()
+
+  /** The inputMap just got updated */
+  @volatile protected var hasNewInput: Boolean = true
 
   /** Gets an input by its index. */
-  private def getInput[T <: PipelineMessage](inputIdx: Int): Input[T] = {
+  private final def getInput[T <: PipelineMessage](inputIdx: Int): Slot[T] = {
     require(0 <= inputIdx && inputIdx < _inputs.size,
-      s"Invalid input index: $inputIdx. Has to be in between 0 and ${_inputs.size}")
-    _inputs(inputIdx).asInstanceOf[Input[T]]
+      s"Invalid input index: $inputIdx. Has to be in [0, ${_inputs.size})")
+    _inputs(inputIdx).asInstanceOf[Slot[T]]
   }
 
   /** Set a value for the input at the given location */
   def input[T <: PipelineMessage](i: Int, value: Future[T]): this.type = {
-    val inp = _inputs(i)
-    inputMap.put(inp, value)
+    inputLock.writeLock().lock()
+    try {
+      inputMap.put(getInput(i), value)
+      hasNewInput = true
+    } finally {
+      inputLock.writeLock().unlock()
+    }
     this
   }
 
-  protected def withInputs[T <: PipelineMessage, R]
-  (inputName: String)(work: T => R)(implicit executor: ExecutionContext, tag: ClassTag[T]): Future[R] = {
-    for {
-      inp <- inputMap(getInput[T](inputName))
-    } yield {
-      checkMessageType[T](inp, inputName)
-      work(inp)
+  /**
+    * Run some work on all the input, return a Future[R] where R is the return type of the work.
+    * Throw exception if some input is missing, or the input is of the wrong type
+    *
+    * NOTE: This is reading on the input maps, so callers of this method should acquire
+    * the readLock() on `inputLock`
+    */
+  protected def withAllInputs[R](work: Seq[PipelineMessage] => R)(implicit ec: ExecutionContext): Future[R] = {
+    val v = _inputs.map(inp => inputMap(inp))
+    Future.sequence(v).map { seq =>
+      seq.zip(_inputs).zipWithIndex.foreach { case ((m, s), i) =>
+        if (m.getClass != s.messageClass) {
+          throw new IllegalArgumentException(
+            s"Stage $toString: invalid input type at slot #$i (${s.name}), " +
+              s"expected a ${s.messageClass.getSimpleName}, got ${m.getClass.getSimpleName}")
+        }
+      }
+      work(seq)
     }
-  }
-
-  protected def withInputs[T1 <: PipelineMessage, T2 <: PipelineMessage, R]
-  (inputName1: String, inputName2: String)(work: (T1, T2) => R)
-  (implicit executor: ExecutionContext, tag1: ClassTag[T1], tag2: ClassTag[T2]): Future[R] = {
-    for {
-      inp1 <- inputMap(getInput[T1](inputName1))
-      inp2 <- inputMap(getInput[T2](inputName2))
-    } yield {
-      checkMessageType[T1](inp1, inputName1)
-      checkMessageType[T2](inp2, inputName2)
-      work(inp1, inp2)
-    }
-  }
-
-  protected def withInputs[T1 <: PipelineMessage, T2 <: PipelineMessage, T3 <: PipelineMessage, R]
-  (inputName1: String, inputName2: String, inputName3: String)(work: (T1, T2, T3) => R)
-  (implicit executor: ExecutionContext, tag1: ClassTag[T1], tag2: ClassTag[T2], tag3: ClassTag[T3]): Future[R] = {
-    for {
-      inp1 <- inputMap(getInput[T1](inputName1))
-      inp2 <- inputMap(getInput[T2](inputName2))
-      inp3 <- inputMap(getInput[T3](inputName3))
-    } yield {
-      checkMessageType[T1](inp1, inputName1)
-      checkMessageType[T2](inp2, inputName2)
-      checkMessageType[T3](inp3, inputName3)
-      work(inp1, inp2, inp3)
-    }
-  }
-
-  protected def withInputs[T <: PipelineMessage, R]
-  (idx: Int)(work: T => R)
-  (implicit executor: ExecutionContext, tag: ClassTag[T]): Future[R] = {
-    for {
-      inp <- inputMap(getInput(idx))
-    } yield {
-      checkMessageType[T](inp, idx)
-      work(inp)
-    }
-  }
-
-  protected def withInputs[T1 <: PipelineMessage, T2 <: PipelineMessage, R]
-  (idx1: Int, idx2: Int)(work: (T1, T2) => R)
-  (implicit executor: ExecutionContext, tag1: ClassTag[T1], tag2: ClassTag[T2]): Future[R] = {
-    for {
-      inp1 <- inputMap(getInput[T1](idx1))
-      inp2 <- inputMap(getInput[T2](idx2))
-    } yield {
-      checkMessageType[T1](inp1, idx1)
-      checkMessageType[T2](inp2, idx2)
-      work(inp1, inp2)
-    }
-  }
-
-  protected def withInputs[T1 <: PipelineMessage, T2 <: PipelineMessage, T3 <: PipelineMessage, R]
-  (idx1: Int, idx2: Int, idx3: Int)(work: (T1, T2, T3) => R)
-  (implicit executor: ExecutionContext, tag1: ClassTag[T1], tag2: ClassTag[T2], tag3: ClassTag[T3]): Future[R] = {
-    for {
-      inp1 <- inputMap(getInput[T1](idx1))
-      inp2 <- inputMap(getInput[T2](idx2))
-      inp3 <- inputMap(getInput[T3](idx3))
-    } yield {
-      checkMessageType[T1](inp1, idx1)
-      checkMessageType[T2](inp2, idx2)
-      checkMessageType[T3](inp3, idx3)
-      work(inp1, inp2, inp3)
-    }
-  }
-
-  private def checkMessageType[T <: PipelineMessage]
-  (inp: PipelineMessage, inputName: String)(implicit tag: ClassTag[T]): Unit = {
-    val cls = tag.runtimeClass.asInstanceOf[Class[T]]
-    require(inp.getClass == cls,
-      s"${getClass.getName}: invalid type for input named $inputName, " +
-        s"expected ${cls.getSimpleName}, got ${inp.getClass.getSimpleName}")
-  }
-
-  private def checkMessageType[T <: PipelineMessage]
-  (inp: PipelineMessage, inputIdx: Int)(implicit tag: ClassTag[T]): Unit = {
-    val cls = tag.runtimeClass.asInstanceOf[Class[T]]
-    require(inp.getClass == cls,
-      s"${getClass.getName}: invalid type for input #$inputIdx, " +
-        s"expected ${cls.getSimpleName}, got ${inp.getClass.getSimpleName}")
   }
 }
 
 /**
-  * A map of input to the values.
-  * This is similar to [[ParamMap]], however we use Future[T] for the actual value of the input
+  * A map of slots to the actual values.
+  * This is similar to [[ParamMap]], however we use Future[T] for the actual value of the slots
   */
-class InputMap(private val map: mutable.Map[Input[PipelineMessage], Future[PipelineMessage]]) {
+class SlotMap(private val map: mutable.Map[Slot[PipelineMessage], Future[PipelineMessage]]) {
 
   def this() = this(mutable.Map.empty)
 
   /**
-    * Puts a (input, value) pair (overwrites if the input exists).
+    * Puts a (slot, value) pair (overwrites if the slot exists).
     */
-  def put[T <: PipelineMessage](input: Input[T], value: Future[T]): this.type = {
-    map(input.asInstanceOf[Input[T]]) = value
+  def put[T <: PipelineMessage](slot: Slot[T], value: Future[T]): this.type = {
+    map(slot.asInstanceOf[Slot[T]]) = value
     this
   }
 
   /**
-    * Optionally returns the value associated with an input.
+    * Optionally returns the value associated with a slot.
     */
-  def get[T <: PipelineMessage](input: Input[T]): Option[Future[T]] = {
-    map.get(input.asInstanceOf[Input[T]]).asInstanceOf[Option[Future[T]]]
+  def get[T <: PipelineMessage](slot: Slot[T]): Option[Future[T]] = {
+    map.get(slot.asInstanceOf[Slot[T]]).asInstanceOf[Option[Future[T]]]
   }
 
   /**
-    * Returns the value associated with an input or a default value.
+    * Returns the value associated with a slot or a default value.
     */
-  def getOrElse[T <: PipelineMessage](input: Input[T], default: Future[T]): Future[T] = {
-    get(input).getOrElse(default)
+  def getOrElse[T <: PipelineMessage](slot: Slot[T], default: Future[T]): Future[T] = {
+    get(slot).getOrElse(default)
   }
 
   /**
-    * Gets the value of the input or its default value if it does not exist.
-    * Raises a NoSuchElementException if there is no value associated with the given input.
+    * Gets the value of the slot or its default value if it does not exist.
+    * Raises a [[NoSuchElementException]] if there is no value associated with the given slot.
     */
-  def apply[T <: PipelineMessage](input: Input[T]): Future[T] = {
-    get(input).getOrElse {
-      throw new NoSuchElementException(s"Input named ${input.name} is not specified.")
+  def apply[T <: PipelineMessage](slot: Slot[T]): Future[T] = {
+    get(slot).getOrElse {
+      throw new NoSuchElementException(s"Slot named ${slot.name} is not specified.")
     }
   }
 }
 
-object InputMap {
+object SlotMap {
 
   /**
-    * Returns an empty param map.
+    * Returns an empty slot map.
     */
-  def empty: InputMap = new InputMap()
+  def empty: SlotMap = new SlotMap()
 
 }
