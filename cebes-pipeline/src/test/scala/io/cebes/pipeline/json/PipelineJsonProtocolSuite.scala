@@ -12,10 +12,7 @@
 
 package io.cebes.pipeline.json
 
-import io.cebes.pipeline.json.PipelineJsonProtocol._
-import io.cebes.pipeline.protos.EchoMessage
 import org.scalatest.FunSuite
-import spray.json._
 
 class PipelineJsonProtocolSuite extends FunSuite {
 

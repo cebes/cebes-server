@@ -20,22 +20,33 @@ import scala.collection.mutable
   * Generic parameter with default value, documentation and some validator
   */
 class Param[T](val name: String, val defaultValue: Option[T],
-               val doc: String, val validator: T => Boolean)
+               val doc: String, val validator: T => Boolean = ParamValidators.default) {
+  ParamValidators.checkValidParamName(name)
+}
+
+case class StringParam(override val name: String, override val defaultValue: Option[String],
+                       override val doc: String,
+                       override val validator: String => Boolean = ParamValidators.default)
+  extends Param[String](name, defaultValue, doc, validator)
 
 case class BooleanParam(override val name: String, override val defaultValue: Option[Boolean],
-                        override val doc: String, override val validator: Boolean => Boolean)
+                        override val doc: String,
+                        override val validator: Boolean => Boolean = ParamValidators.default)
   extends Param[Boolean](name, defaultValue, doc, validator)
 
 case class IntParam(override val name: String, override val defaultValue: Option[Int],
-                    override val doc: String, override val validator: Int => Boolean)
+                    override val doc: String,
+                    override val validator: Int => Boolean = ParamValidators.default)
   extends Param[Int](name, defaultValue, doc, validator)
 
 case class FloatParam(override val name: String, override val defaultValue: Option[Float],
-                      override val doc: String, override val validator: Float => Boolean)
+                      override val doc: String,
+                      override val validator: Float => Boolean = ParamValidators.default)
   extends Param[Float](name, defaultValue, doc, validator)
 
 case class DoubleParam(override val name: String, override val defaultValue: Option[Double],
-                       override val doc: String, override val validator: Double => Boolean)
+                       override val doc: String,
+                       override val validator: Double => Boolean = ParamValidators.default)
   extends Param[Double](name, defaultValue, doc, validator)
 
 
@@ -76,6 +87,8 @@ trait Params extends Serializable {
     * Sets a parameter in the embedded param map.
     */
   final def set[T](param: Param[T], value: T): this.type = {
+    require(param.validator(value),
+      s"$toString: Invalid value (${value.toString}) for parameter ${param.name}")
     paramMap.put(param, value)
     this
   }

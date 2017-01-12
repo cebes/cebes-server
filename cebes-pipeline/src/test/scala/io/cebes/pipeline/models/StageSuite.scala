@@ -22,7 +22,7 @@ class StageSuite extends FunSuite {
 
   test("bad input") {
 
-    val s = new StageFoo("foo")
+    val s = new StageFoo().setName("foo")
     val ex = intercept[NoSuchElementException] {
       Await.result(s.output(0), Duration.Inf)
     }
@@ -36,7 +36,8 @@ class StageSuite extends FunSuite {
       "expected a DataframeMessage, got ValueMessage"))
 
     s.input(0, Future(new DataframeMessage()))
-    assert(Await.result(s.output(0), Duration.Inf).isInstanceOf[DataframeMessage])
+    val out1 = Await.result(s.output(0), Duration.Inf)
+    assert(out1.isInstanceOf[DataframeMessage])
 
     val ex3 = intercept[IllegalArgumentException] {
       s.input(2, Future(new DataframeMessage()))
@@ -44,8 +45,26 @@ class StageSuite extends FunSuite {
     assert(ex3.getMessage.contains("Invalid input index: 2. Has to be in [0, 1)"))
   }
 
+  test ("caching") {
+    val s = new StageFoo().setName("foo")
+    s.input(0, Future(new DataframeMessage()))
+    val out1 = Await.result(s.output(0), Duration.Inf)
+    assert(out1.isInstanceOf[DataframeMessage])
+
+    // calling output() again (and again and again) will give the same output
+    assert(out1 eq Await.result(s.output(0), Duration.Inf))
+    assert(out1 eq Await.result(s.output(0), Duration.Inf))
+    assert(out1 eq Await.result(s.output(0), Duration.Inf))
+
+    // feed a different input, it will change the result
+    s.input(0, Future(new DataframeMessage()))
+    val out2 = Await.result(s.output(0), Duration.Inf)
+    assert(out1 ne out2)
+    assert(out2 eq Await.result(s.output(0), Duration.Inf))
+  }
+
   test("bad output size") {
-    val stage1 = new StageBadOutputSize("stage1")
+    val stage1 = new StageBadOutputSize().setName("stage1")
 
     val ex1 = intercept[IllegalArgumentException] {
       stage1.input(0, Future(new DataframeMessage()))
@@ -66,7 +85,7 @@ class StageSuite extends FunSuite {
   }
 
   test("bad output type") {
-    val stage1 = new StageBadOutputType("stage1")
+    val stage1 = new StageBadOutputType().setName("stage1")
 
     val ex1 = intercept[IllegalArgumentException] {
       stage1.input(0, Future(new DataframeMessage()))
@@ -81,8 +100,8 @@ class StageSuite extends FunSuite {
   }
 
   test("chaining") {
-    val s1 = new StageFoo("s1")
-    val s2 = new StageTwoInputs("s2")
+    val s1 = new StageFoo().setName("s1")
+    val s2 = new StageTwoInputs().setName("s2")
 
     s1.input(0, Future(new DataframeMessage()))
     s2.input(0, s1.output(0))
@@ -96,7 +115,7 @@ class StageSuite extends FunSuite {
   }
 }
 
-class StageFoo(override val name: String)(implicit val ec: ExecutionContext) extends Stage {
+class StageFoo extends Stage {
 
   override protected val _inputs: Seq[Slot[PipelineMessage]] = Seq(DataframeSlot("dfIn"))
 
@@ -109,7 +128,7 @@ class StageFoo(override val name: String)(implicit val ec: ExecutionContext) ext
   }
 }
 
-class StageTwoInputs(override val name: String)(implicit val ec: ExecutionContext) extends Stage {
+class StageTwoInputs extends Stage {
 
   override protected val _inputs: Seq[Slot[PipelineMessage]] = Seq(DataframeSlot("dfIn"), ModelSlot("m"))
 
@@ -123,7 +142,7 @@ class StageTwoInputs(override val name: String)(implicit val ec: ExecutionContex
   }
 }
 
-class StageBar(override val name: String)(implicit val ec: ExecutionContext) extends Stage {
+class StageBar extends Stage {
 
   override protected val _inputs: Seq[Slot[PipelineMessage]] = Seq(DataframeSlot("df1"))
 
@@ -136,7 +155,7 @@ class StageBar(override val name: String)(implicit val ec: ExecutionContext) ext
   }
 }
 
-class StageBadOutputType(override val name: String)(implicit val ec: ExecutionContext) extends Stage {
+class StageBadOutputType extends Stage {
 
   override protected val _inputs: Seq[Slot[PipelineMessage]] = Nil
 
@@ -148,7 +167,7 @@ class StageBadOutputType(override val name: String)(implicit val ec: ExecutionCo
   }
 }
 
-class StageBadOutputSize(override val name: String)(implicit val ec: ExecutionContext) extends Stage {
+class StageBadOutputSize extends Stage {
 
   override protected val _inputs: Seq[Slot[PipelineMessage]] = Nil
 

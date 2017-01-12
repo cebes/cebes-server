@@ -12,10 +12,8 @@
 
 package io.cebes.pipeline.models
 
-import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
-
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /**
@@ -43,68 +41,6 @@ case class ModelSlot(override val name: String = "model",
 case class ValueSlot(override val name: String = "value",
                      override val doc: String = "Value Slot")
   extends Slot[ValueMessage](name, doc)
-
-/**
-  * Trait for components that take inputs. This also provides an internal map to store
-  * input values attached to the instance.
-  */
-trait Inputs {
-
-  /**
-    * list of all inputs required by this component.
-    * To be specified by the class that implements this trait
-    */
-  protected val _inputs: Seq[Slot[PipelineMessage]]
-
-  /** Internal map for inputs */
-  private final val inputMap: SlotMap = SlotMap.empty
-
-  /** The read-write lock for inputMap */
-  protected val inputLock: ReadWriteLock = new ReentrantReadWriteLock()
-
-  /** The inputMap just got updated */
-  @volatile protected var hasNewInput: Boolean = true
-
-  /** Gets an input by its index. */
-  private final def getInput[T <: PipelineMessage](inputIdx: Int): Slot[T] = {
-    require(0 <= inputIdx && inputIdx < _inputs.size,
-      s"Invalid input index: $inputIdx. Has to be in [0, ${_inputs.size})")
-    _inputs(inputIdx).asInstanceOf[Slot[T]]
-  }
-
-  /** Set a value for the input at the given location */
-  def input[T <: PipelineMessage](i: Int, value: Future[T]): this.type = {
-    inputLock.writeLock().lock()
-    try {
-      inputMap.put(getInput(i), value)
-      hasNewInput = true
-    } finally {
-      inputLock.writeLock().unlock()
-    }
-    this
-  }
-
-  /**
-    * Run some work on all the input, return a Future[R] where R is the return type of the work.
-    * Throw exception if some input is missing, or the input is of the wrong type
-    *
-    * NOTE: This is reading on the input maps, so callers of this method should acquire
-    * the readLock() on `inputLock`
-    */
-  protected def withAllInputs[R](work: Seq[PipelineMessage] => R)(implicit ec: ExecutionContext): Future[R] = {
-    val v = _inputs.map(inp => inputMap(inp))
-    Future.sequence(v).map { seq =>
-      seq.zip(_inputs).zipWithIndex.foreach { case ((m, s), i) =>
-        if (m.getClass != s.messageClass) {
-          throw new IllegalArgumentException(
-            s"Stage $toString: invalid input type at slot #$i (${s.name}), " +
-              s"expected a ${s.messageClass.getSimpleName}, got ${m.getClass.getSimpleName}")
-        }
-      }
-      work(seq)
-    }
-  }
-}
 
 /**
   * A map of slots to the actual values.
@@ -154,4 +90,25 @@ object SlotMap {
     */
   def empty: SlotMap = new SlotMap()
 
+}
+
+/** A descriptor of slot at index `idx` of stage with name `parent` */
+case class SlotDescriptor(parent: String, idx: Int)
+
+object SlotDescriptor {
+
+  /**
+    * Parse a string of format stage[:slot] into a [[SlotDescriptor]] object
+    */
+  def apply(descriptor: String): SlotDescriptor = {
+    ParamValidators.slotDescriptorRegex.findFirstMatchIn(descriptor) match {
+      case None =>
+        throw new IllegalArgumentException(s"Invalid slot descriptor: $descriptor")
+      case Some(result) =>
+        Option(result.group(2)) match {
+          case None => new SlotDescriptor(result.group(0), 0)
+          case Some(idx) => new SlotDescriptor(result.group(0), idx.toInt)
+        }
+    }
+  }
 }

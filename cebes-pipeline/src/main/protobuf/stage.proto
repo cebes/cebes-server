@@ -16,10 +16,11 @@ message StageDef {
     // Class name of the stage
     string stage = 2;
 
-    // Each input is "stage:src_output" with "stage" being a string name and
-    // "src_output" indicating which output tensor to use from "stage". If
-    // "src_output" is 0 the ":0" suffix can be omitted.
-    repeated string input = 3;
+    // map of inputs to this stage. Each entry is input_slot -> src_stage[:output_slot]
+    // where input_slot is the input slot index of this stage,
+    // src_stage is the name from which the output is retrieved,
+    // from the output_slot. If output_slot isn't specified, it is default to be 0.
+    map<int32, string> input = 3;
 
     repeated PipelineMessageDef output = 4;
 

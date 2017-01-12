@@ -9,7 +9,7 @@ option java_outer_classname = "ValueProtos";
 // Note that oneof can be unspecified,
 // in which case it represents "null" or empty value
 message ScalarDef {
-    oneof val {
+    oneof value {
         string string_val = 1;
         bool bool_val = 2;
         int32 byte_val = 3;
