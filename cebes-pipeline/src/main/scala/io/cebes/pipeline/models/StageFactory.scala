@@ -60,7 +60,7 @@ class StageFactory {
                 stage.set[Int](stage.getParam(p.name).asInstanceOf[IntParam], i)
               case ScalarDef.Value.FloatVal(f) =>
                 stage.set[Float](stage.getParam(p.name).asInstanceOf[FloatParam], f)
-              case ScalarDef.Value.Int32Val(d) =>
+              case ScalarDef.Value.DoubleVal(d) =>
                 stage.set[Double](stage.getParam(p.name).asInstanceOf[DoubleParam], d)
               case scalaVal =>
                 throw new UnsupportedOperationException("Unsupported scala value for stage parameters: " +
