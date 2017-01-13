@@ -22,7 +22,7 @@ import io.cebes.df.Dataframe
   * Storing dataframes, maybe backed by a LoadingCache
   * Subclasses of this trait should be singleton.
   */
-trait DataframeStore {
+trait DataframeStore extends CachedStore[Dataframe] {
 
   /**
     * Store the dataframe. If there is already a Dataframe with the same key,
@@ -52,14 +52,4 @@ trait DataframeStore {
     * Return the (possibly unpersisted) [[Dataframe]] if it exists
     */
   def unpersist(dfId: UUID): Option[Dataframe]
-
-  /**
-    * Get the [[Dataframe]] with the given ID
-    * Throws [[IllegalArgumentException]] if the ID doesn't exist in the store
-    */
-  def apply(id: UUID): Dataframe = get(id) match {
-    case Some(df) => df
-    case None =>
-      throw new IllegalArgumentException(s"Dataframe ID not found: ${id.toString}")
-  }
 }

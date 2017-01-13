@@ -47,18 +47,19 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   }
 
   override def tag(dfId: UUID, tag: Tag): Dataframe = {
-    val optionDf = dfStore.get(dfId)
-    if (optionDf.isEmpty) {
-      throw new NoSuchElementException(s"Dataframe ID not found: ${dfId.toString}")
-    }
-    Try(tagStore.insert(tag, dfId)) match {
-      case Success(_) =>
-        dfStore.persist(optionDf.get)
-        optionDf.get
-      case Failure(_: IllegalArgumentException) =>
-        // throw a user-friendly exception
-        throw new IllegalArgumentException(s"Tag ${tag.toString} already exists")
-      case Failure(f) => throw f
+    dfStore.get(dfId) match {
+      case None =>
+        throw new NoSuchElementException(s"Dataframe ID not found: ${dfId.toString}")
+      case Some(df) =>
+        Try(tagStore.insert(tag, dfId)) match {
+          case Success(_) =>
+            dfStore.persist(df)
+            df
+          case Failure(_: IllegalArgumentException) =>
+            // throw a user-friendly exception
+            throw new IllegalArgumentException(s"Tag ${tag.toString} already exists")
+          case Failure(f) => throw f
+        }
     }
   }
 

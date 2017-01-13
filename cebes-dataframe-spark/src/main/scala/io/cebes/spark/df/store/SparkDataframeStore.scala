@@ -38,7 +38,7 @@ import spray.json._
   * using guava's [[LoadingCache]] with JDBC persistence backend
   */
 @Singleton class SparkDataframeStore @Inject()
-(@Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
+(@Prop(Property.CACHESPEC_DF_STORE) cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
  hasSparkSession: HasSparkSession,
  dfFactory: SparkDataframeFactory,
@@ -104,6 +104,7 @@ import spray.json._
   }
 
   override def persist(dataframe: Dataframe): Unit = {
+    SparkDataframeStore.persist(dataframe)
     jdbcPersistence.upsert(dataframe.id, dataframe)
   }
 

@@ -14,7 +14,7 @@ package io.cebes.pipeline.json
 
 import com.trueaccord.scalapb.GeneratedMessage
 import io.cebes.pipeline.json.PipelineJsonProtocol._
-import io.cebes.pipeline.protos.value.{ScalarDef, ValueDef}
+import io.cebes.pipeline.protos.value.{MapDef, ScalarDef, ValueDef}
 import org.scalatest.FunSuite
 import spray.json._
 
@@ -23,9 +23,18 @@ class PipelineJsonProtocolSuite extends FunSuite {
   test("simple cases") {
     val value: GeneratedMessage = ValueDef().withScalar(ScalarDef().withDoubleVal(20.14))
     val s1 = value.toJson.compactPrint
-
     val value1 = s1.parseJson.convertTo[GeneratedMessage]
     assert(value1.isInstanceOf[ValueDef])
     assert(value === value1)
+
+    val mapMsg: GeneratedMessage = ValueDef().withMap(MapDef().withEntry(Seq(
+      MapDef.MapEntryDef().withKey(ValueDef().withScalar(ScalarDef().withStringVal("param100"))),
+      MapDef.MapEntryDef().withKey(ValueDef().withScalar(ScalarDef().withDoubleVal(20.14)))
+    )))
+    val s2 = mapMsg.toJson.compactPrint
+    println(s2)
+    val mapMsg1 = s2.parseJson.convertTo[GeneratedMessage]
+    assert(mapMsg1.isInstanceOf[ValueDef])
+    assert(mapMsg === mapMsg1)
   }
 }
