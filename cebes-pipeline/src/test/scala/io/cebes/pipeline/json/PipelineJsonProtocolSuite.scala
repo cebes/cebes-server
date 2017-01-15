@@ -23,7 +23,6 @@ class PipelineJsonProtocolSuite extends FunSuite {
   test("simple cases") {
     val value: GeneratedMessage = ValueDef().withScalar(ScalarDef().withDoubleVal(20.14))
     val s1 = value.toJson.compactPrint
-    println(s1)
     val value1 = s1.parseJson.convertTo[GeneratedMessage]
     assert(value1.isInstanceOf[ValueDef])
     assert(value === value1)
@@ -33,7 +32,6 @@ class PipelineJsonProtocolSuite extends FunSuite {
       MapDef.MapEntryDef().withKey(ValueDef().withScalar(ScalarDef().withDoubleVal(20.14)))
     )))
     val s2 = mapMsg.toJson.compactPrint
-    println(s2)
     val mapMsg1 = s2.parseJson.convertTo[GeneratedMessage]
     assert(mapMsg1.isInstanceOf[ValueDef])
     assert(mapMsg === mapMsg1)
