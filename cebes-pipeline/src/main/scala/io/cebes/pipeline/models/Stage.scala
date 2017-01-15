@@ -14,6 +14,13 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
+import io.cebes.df.Column
+import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.pipeline.protos.param.ParamDef
+import io.cebes.pipeline.protos.stage.StageDef
+import io.cebes.pipeline.protos.value.{ArrayDef, ColumnDef, ScalarDef, ValueDef}
+import spray.json._
+
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -181,4 +188,38 @@ trait Stage extends Params {
   }
 
   override def toString: String = s"${getClass.getSimpleName}(name=$getName)"
+
+  def toProto: StageDef = {
+    StageDef().withName(getName)
+      .withStage(getClass.getSimpleName)
+        .addAllParam(_params.filter(get(_).isDefined).map { parameter =>
+          val paramValue = (parameter, get(parameter).get) match {
+            case (_: StringParam, v: String) =>
+              ValueDef().withScalar(ScalarDef().withStringVal(v))
+            case (_: BooleanParam, v: Boolean) =>
+              ValueDef().withScalar(ScalarDef().withBoolVal(v))
+            case (_: IntParam, v: Int) =>
+              ValueDef().withScalar(ScalarDef().withInt32Val(v))
+            case (_: LongParam, v: Long) =>
+              ValueDef().withScalar(ScalarDef().withInt64Val(v))
+            case (_: FloatParam, v: Float) =>
+              ValueDef().withScalar(ScalarDef().withFloatVal(v))
+            case (_: DoubleParam, v: Double) =>
+              ValueDef().withScalar(ScalarDef().withDoubleVal(v))
+            case (_: StringArrayParam, v: Array[String]) =>
+              ValueDef().withArray(ArrayDef()
+                .addAllElement(v.map(s => ValueDef().withScalar(ScalarDef().withStringVal(s)))))
+            case (_: ColumnParam, v: Column) =>
+              ValueDef().withColumn(ColumnDef(v.toJson.compactPrint))
+            case _ =>
+              throw new IllegalArgumentException(s"Unknown parameter ${parameter.name} of " +
+                s"type ${parameter.getClass.getName}")
+          }
+          ParamDef().withName(parameter.name).withValue(paramValue)
+        })
+  }
+
+  implicit def toDataframeMessage(m: PipelineMessage): DataframeMessage = {
+    m.asInstanceOf[DataframeMessage]
+  }
 }

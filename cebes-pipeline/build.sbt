@@ -7,7 +7,7 @@ PB.targets in Compile := Seq(
 )
 
 libraryDependencies ++= Seq(
-  //"io.grpc" % "grpc-all" % "1.0.3",
+  "com.google.inject" % "guice" % Common.guiceVersion,
   "com.trueaccord.scalapb" %% "scalapb-runtime-grpc" % com.trueaccord.scalapb.compiler.Version.scalapbVersion,
   "io.spray" %% "spray-json" % Common.sprayJsonVersion
 )

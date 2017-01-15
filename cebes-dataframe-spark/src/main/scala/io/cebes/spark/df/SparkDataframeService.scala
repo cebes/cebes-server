@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import io.cebes.common.Tag
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.sample.DataSample
-import io.cebes.df.store.{DataframeStore, TagStore}
+import io.cebes.df.store.{DataframeStore, DataframeTagStore}
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.{Column, Dataframe, DataframeService}
@@ -36,7 +36,7 @@ import scala.util.{Failure, Success, Try}
   */
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
                                       dfStore: DataframeStore,
-                                      tagStore: TagStore,
+                                      tagStore: DataframeTagStore,
                                       dfFactory: SparkDataframeFactory) extends DataframeService {
 
   private val sparkSession = hasSparkSession.session
@@ -124,32 +124,22 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     }
   }
 
-  override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe
-
-  = dfStore.add {
+  override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = dfStore.add {
     dfStore(dfId).inferVariableTypes(sampleSize)
   }
 
-  override def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe
-
-  = dfStore.add {
+  override def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe = dfStore.add {
     dfStore(dfId).withVariableTypes(variableTypes)
   }
 
-  override def count(dfId: UUID): Long
+  override def count(dfId: UUID): Long = dfStore(dfId).count()
 
-  = dfStore(dfId).count()
-
-  override def take(dfId: UUID, n: Int): DataSample
-
-  = {
+  override def take(dfId: UUID, n: Int): DataSample = {
     dfStore(dfId).take(n)
   }
 
   override def sample(dfId: UUID, withReplacement: Boolean,
-                      fraction: Double, seed: Long): Dataframe
-
-  = dfStore.add {
+                      fraction: Double, seed: Long): Dataframe = dfStore.add {
     dfStore(dfId).sample(withReplacement, fraction, seed)
   }
 
@@ -157,33 +147,23 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   // Data exploration
   ////////////////////////////////////////////////////////////////////////////////////
 
-  override def sort(dfId: UUID, sortExprs: Column*): Dataframe
-
-  = dfStore.add {
+  override def sort(dfId: UUID, sortExprs: Column*): Dataframe = dfStore.add {
     dfStore(dfId).sort(sortExprs: _*)
   }
 
-  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe
-
-  = dfStore.add {
+  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe = dfStore.add {
     dfStore(dfId).drop(colNames)
   }
 
-  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe
-
-  = dfStore.add {
+  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe = dfStore.add {
     dfStore(dfId).dropDuplicates(colNames)
   }
 
-  override def dropNA(dfId: UUID, minNonNulls: Int, cols: Seq[String]): Dataframe
-
-  = dfStore.add {
+  override def dropNA(dfId: UUID, minNonNulls: Int, cols: Seq[String]): Dataframe = dfStore.add {
     dfStore(dfId).na.drop(minNonNulls, cols)
   }
 
-  override def fillNA(dfId: UUID, value: Either[String, Double], cols: Seq[String]): Dataframe
-
-  = dfStore.add {
+  override def fillNA(dfId: UUID, value: Either[String, Double], cols: Seq[String]): Dataframe = dfStore.add {
     val df = dfStore(dfId)
     value match {
       case Right(d) => df.na.fill(d, cols)
@@ -191,52 +171,36 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     }
   }
 
-  override def fillNA(dfId: UUID, valueMap: Map[String, Any]): Dataframe
-
-  = dfStore.add {
+  override def fillNA(dfId: UUID, valueMap: Map[String, Any]): Dataframe = dfStore.add {
     dfStore(dfId).na.fill(valueMap)
   }
 
-  override def replace[T](dfId: UUID, cols: Seq[String], replacement: Map[T, T]): Dataframe
-
-  = dfStore.add {
+  override def replace[T](dfId: UUID, cols: Seq[String], replacement: Map[T, T]): Dataframe = dfStore.add {
     dfStore(dfId).na.replace[T](cols, replacement)
   }
 
   override def approxQuantile(dfId: UUID, col: String, probabilities: Array[Double],
-                              relativeError: Double): Array[Double]
-
-  = {
+                              relativeError: Double): Array[Double] = {
     dfStore(dfId).stat.approxQuantile(col, probabilities, relativeError)
   }
 
-  override def cov(dfId: UUID, col1: String, col2: String): Double
-
-  = {
+  override def cov(dfId: UUID, col1: String, col2: String): Double = {
     dfStore(dfId).stat.cov(col1, col2)
   }
 
-  override def corr(dfId: UUID, col1: String, col2: String): Double
-
-  = {
+  override def corr(dfId: UUID, col1: String, col2: String): Double = {
     dfStore(dfId).stat.corr(col1, col2)
   }
 
-  override def crosstab(dfId: UUID, col1: String, col2: String): Dataframe
-
-  = dfStore.add {
+  override def crosstab(dfId: UUID, col1: String, col2: String): Dataframe = dfStore.add {
     dfStore(dfId).stat.crosstab(col1, col2)
   }
 
-  override def freqItems(dfId: UUID, cols: Seq[String], support: Double): Dataframe
-
-  = dfStore.add {
+  override def freqItems(dfId: UUID, cols: Seq[String], support: Double): Dataframe = dfStore.add {
     dfStore(dfId).stat.freqItems(cols, support)
   }
 
-  override def sampleBy[T](dfId: UUID, col: String, fractions: Map[T, Double], seed: Long): Dataframe
-
-  = dfStore.add {
+  override def sampleBy[T](dfId: UUID, col: String, fractions: Map[T, Double], seed: Long): Dataframe = dfStore.add {
     dfStore(dfId).stat.sampleBy(col, fractions, seed)
   }
 
@@ -248,63 +212,49 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     * Returns a new [[Dataframe]] by adding a column or replacing
     * the existing column that has the same name (case-insensitive).
     */
-  override def withColumn(dfId: UUID, colName: String, col: Column): Dataframe
-
-  = dfStore.add {
+  override def withColumn(dfId: UUID, colName: String, col: Column): Dataframe = dfStore.add {
     dfStore(dfId).withColumn(colName, col)
   }
 
   /**
     * Returns a new [[Dataframe]] with a column renamed.
     */
-  override def withColumnRenamed(dfId: UUID, existingName: String, newName: String): Dataframe
-
-  = dfStore.add {
+  override def withColumnRenamed(dfId: UUID, existingName: String, newName: String): Dataframe = dfStore.add {
     dfStore(dfId).withColumnRenamed(existingName, newName)
   }
 
   /**
     * Selects a set of columns based on expressions.
     */
-  override def select(dfId: UUID, columns: Column*): Dataframe
-
-  = dfStore.add {
+  override def select(dfId: UUID, columns: Column*): Dataframe = dfStore.add {
     dfStore(dfId).select(columns: _*)
   }
 
   /**
     * Filters rows using the given condition.
     */
-  override def where(dfId: UUID, column: Column): Dataframe
-
-  = dfStore.add {
+  override def where(dfId: UUID, column: Column): Dataframe = dfStore.add {
     dfStore(dfId).where(column)
   }
 
   /**
     * Returns a new Dataframe with an alias set.
     */
-  override def alias(dfId: UUID, alias: String): Dataframe
-
-  = dfStore.add {
+  override def alias(dfId: UUID, alias: String): Dataframe = dfStore.add {
     dfStore(dfId).alias(alias)
   }
 
   /**
     * Join with another [[Dataframe]], using the given join expression.
     */
-  override def join(leftDfId: UUID, rightDfId: UUID, joinExprs: Column, joinType: String): Dataframe
-
-  = dfStore.add {
+  override def join(leftDfId: UUID, rightDfId: UUID, joinExprs: Column, joinType: String): Dataframe = dfStore.add {
     dfStore(leftDfId).join(dfStore(rightDfId), joinExprs, joinType)
   }
 
   /**
     * Returns a new [[Dataframe]] by taking the first `n` rows.
     */
-  override def limit(dfId: UUID, n: Int): Dataframe
-
-  = dfStore.add {
+  override def limit(dfId: UUID, n: Int): Dataframe = dfStore.add {
     dfStore(dfId).limit(n)
   }
 
@@ -314,9 +264,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def union(dfId: UUID, otherDfId: UUID): Dataframe
-
-  = dfStore.add {
+  override def union(dfId: UUID, otherDfId: UUID): Dataframe = dfStore.add {
     dfStore(dfId).union(dfStore(otherDfId))
   }
 
@@ -328,9 +276,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def intersect(dfId: UUID, otherDfId: UUID): Dataframe
-
-  = dfStore.add {
+  override def intersect(dfId: UUID, otherDfId: UUID): Dataframe = dfStore.add {
     dfStore(dfId).intersect(dfStore(otherDfId))
   }
 
@@ -343,9 +289,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def except(dfId: UUID, otherDfId: UUID): Dataframe
-
-  = dfStore.add {
+  override def except(dfId: UUID, otherDfId: UUID): Dataframe = dfStore.add {
     dfStore(dfId).except(dfStore(otherDfId))
   }
 
@@ -354,9 +298,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def broadcast(dfId: UUID): Dataframe
-
-  = dfStore.add {
+  override def broadcast(dfId: UUID): Dataframe = dfStore.add {
     dfStore(dfId).broadcast
   }
 
@@ -366,48 +308,36 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   override def aggregateAgg(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            aggExprs: Seq[Column]): Dataframe
-
-  = dfStore.add {
+                            aggExprs: Seq[Column]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).agg(aggExprs.head, aggExprs.tail: _*)
   }
 
   override def aggregateCount(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                              pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe
-
-  = dfStore.add {
+                              pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).count()
   }
 
   override def aggregateMin(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            minColNames: Seq[String]): Dataframe
-
-  = dfStore.add {
+                            minColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).min(minColNames: _*)
   }
 
   override def aggregateMean(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                              pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                             meanColNames: Seq[String]): Dataframe
-
-  = dfStore.add {
+                             meanColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).mean(meanColNames: _*)
   }
 
   override def aggregateMax(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            maxColNames: Seq[String]): Dataframe
-
-  = dfStore.add {
+                            maxColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).max(maxColNames: _*)
   }
 
   override def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            sumColNames: Seq[String]): Dataframe
-
-  = dfStore.add {
+                            sumColNames: Seq[String]): Dataframe = dfStore.add {
     agg(dfId, cols, aggType, pivotColName, pivotValues).sum(sumColNames: _*)
   }
 
@@ -416,9 +346,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   ////////////////////////
 
   private def agg(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                  pivotColName: Option[String], pivotValues: Option[Seq[Any]]): GroupedDataframe
-
-  = {
+                  pivotColName: Option[String], pivotValues: Option[Seq[Any]]): GroupedDataframe = {
     val gdf1 = aggType match {
       case AggregationTypes.GroupBy =>
         dfStore(dfId).groupBy(cols: _*)

@@ -181,7 +181,6 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol {
           s"Unexpected value ($value) for field ${fd.getJsonName} of ${fd.getContainingType.getName}")
       }
   }
-
 }
 
 object PipelineJsonProtocol extends PipelineJsonProtocol

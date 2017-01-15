@@ -9,8 +9,13 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
+
 package io.cebes.pipeline
 
-class PipelineStore {
+import io.cebes.df.store.CachedStore
+import io.cebes.pipeline.models.Pipeline
 
-}
+/**
+  * Store of Pipelines object, with cache
+  */
+trait PipelineStore extends CachedStore[Pipeline]

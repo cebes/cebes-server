@@ -35,6 +35,12 @@ message MapDef {
     repeated MapEntryDef entry = 3;
 }
 
+message ColumnDef {
+
+    // the JSON representation of the column
+    string column_json = 1;
+}
+
 // Generic message on the wire for encoding "any" value
 // can be used to represent the value of a parameter,
 // value in a data sample, etc...
@@ -43,5 +49,11 @@ message ValueDef {
         ScalarDef scalar = 1;
         ArrayDef array = 2;
         MapDef map = 3;
+
+        // value as a Column
+        // this is mainly for the Param[Column] (i.e. ColumnParam)
+        // of the pipeline.
+        // Normal values shouldn't be using this field.
+        ColumnDef column = 4;
     }
 }

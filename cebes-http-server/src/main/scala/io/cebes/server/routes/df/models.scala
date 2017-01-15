@@ -19,7 +19,6 @@ import java.util.UUID
 import io.cebes.common.Tag
 import io.cebes.df.Column
 import io.cebes.df.DataframeService.AggregationTypes
-import io.cebes.df.expressions.Expression
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.server.routes.HttpJsonProtocol
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
@@ -94,30 +93,23 @@ case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationT
 
 trait HttpDfJsonProtocol extends HttpJsonProtocol {
 
-  implicit object SparkExpressionFormat extends AbstractExpressionFormat {
+  implicit object SparkPrimitiveExpressionFormat extends JsonFormat[SparkPrimitiveExpression] {
 
-    override protected def writeExpression(expr: Expression): Option[JsValue] = expr match {
-      case s: SparkPrimitiveExpression =>
-        Some(JsObject(Map("SparkPrimitiveExpression" -> JsTrue,
-          "dfId" -> s.dfId.toJson,
-          "colName" -> JsString(s.colName))))
-      case _ => None
+    override def write(obj: SparkPrimitiveExpression): JsValue = {
+      JsObject(Map("dfId" -> obj.dfId.toJson,
+        "colName" -> obj.colName.toJson))
     }
 
-    override protected def readExpression(json: JsValue): Option[Expression] = {
-      json match {
-        case jsObj: JsObject =>
-          jsObj.fields.get("SparkPrimitiveExpression") match {
-            case Some(JsTrue) =>
-              Some(SparkPrimitiveExpression(jsObj.fields("dfId").convertTo[UUID],
-                jsObj.fields("colName").convertTo[String], None))
-            case _ => None
-          }
-        case _ => None
-      }
+    override def read(json: JsValue): SparkPrimitiveExpression = json match {
+      case jsObj: JsObject =>
+        SparkPrimitiveExpression(jsObj.fields("dfId").convertTo[UUID],
+          jsObj.fields("colName").convertTo[String], None)
+      case other =>
+        deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
     }
   }
-
+  //implicit val columnFormat: RootJsonFormat[Column] = jsonFormat1[Expression, Column](new Column(_))
+  /*
   implicit object ColumnFormat extends JsonFormat[Column] {
 
     override def write(obj: Column): JsValue = {
@@ -134,6 +126,7 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
         deserializationError("A JsObject is expected")
     }
   }
+  */
 
   implicit val dataframeRequestFormat = jsonFormat1(DataframeRequest)
   implicit val withVariableTypesRequestFormat = jsonFormat2(WithVariableTypesRequest)

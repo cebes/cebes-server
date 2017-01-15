@@ -13,6 +13,8 @@ package io.cebes.pipeline.models
 
 import java.util.UUID
 
+import com.google.inject.Inject
+import io.cebes.common.HasId
 import io.cebes.pipeline.protos.pipeline.PipelineDef
 import io.cebes.pipeline.protos.stage.StageDef
 
@@ -20,42 +22,37 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
-class PipelineFactory(stageFactory: StageFactory) {
+class PipelineFactory @Inject()(stageFactory: StageFactory) {
 
   def create(proto: PipelineDef)(implicit ec: ExecutionContext): Pipeline = {
-    proto.id.trim match {
-      case "" =>
-        // lookup the pipeline
-        throw new NotImplementedError()
-
-      case s =>
-        // construct the pipeline from the protobuf message
-        val id = Try(UUID.fromString(s)) match {
-          case Success(d) => d
-          case Failure(f) => throw new IllegalArgumentException(s"Invalid pipeline ID: $s", f)
-        }
-
-        // topological sort to make sure there is no loop
-        topoSort(proto.stage)
-
-        val stageMap = mutable.Map.empty[String, Stage]
-        proto.stage.map { s =>
-          val stage = stageFactory.create(s)
-          if (stageMap.contains(stage.getName)) {
-            throw new IllegalArgumentException(s"Duplicated stage name: ${stage.getName}")
-          }
-          stageMap.put(stage.getName, stage)
-        }
-        // wire the inputs
-        proto.stage.foreach { stage =>
-          stage.input.foreach { case (inpSlot, srcDesc) =>
-            val srcSlot = SlotDescriptor(srcDesc)
-            stageMap(stage.name).input(inpSlot, stageMap(srcSlot.parent).output(srcSlot.idx))
-          }
-        }
-        Pipeline(id, stageMap.toMap)
-
+    val id = proto.id.trim match {
+      case "" => HasId.randomId
+      case s => Try(UUID.fromString(s)) match {
+        case Success(existingId) => existingId
+        case Failure(f) =>
+          throw new IllegalArgumentException(s"Invalid pipeline ID: $s", f)
+      }
     }
+
+    // topological sort to make sure there is no loop
+    topoSort(proto.stage)
+
+    val stageMap = mutable.Map.empty[String, Stage]
+    proto.stage.map { s =>
+      val stage = stageFactory.create(s)
+      if (stageMap.contains(stage.getName)) {
+        throw new IllegalArgumentException(s"Duplicated stage name: ${stage.getName}")
+      }
+      stageMap.put(stage.getName, stage)
+    }
+    // wire the inputs
+    proto.stage.foreach { stage =>
+      stage.input.foreach { case (inpSlot, srcDesc) =>
+        val srcSlot = SlotDescriptor(srcDesc)
+        stageMap(stage.name).input(inpSlot, stageMap(srcSlot.parent).output(srcSlot.idx))
+      }
+    }
+    Pipeline(id, stageMap.toMap)
   }
 
   private def topoSort(stages: Seq[StageDef]): Unit = {

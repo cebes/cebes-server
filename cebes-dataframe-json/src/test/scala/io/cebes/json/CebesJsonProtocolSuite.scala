@@ -218,13 +218,6 @@ class CebesJsonProtocolSuite extends FunSuite {
   }
 
   test("Expression") {
-    implicit object MyExprFormat extends AbstractExpressionFormat {
-
-      override protected def writeExpression(expr: Expression): Option[JsValue] = None
-
-      override protected def readExpression(json: JsValue): Option[Expression] = None
-    }
-
     val abs: exprs.Expression = exprs.Abs(exprs.Literal("100"))
     val js = abs.toJson.compactPrint
 

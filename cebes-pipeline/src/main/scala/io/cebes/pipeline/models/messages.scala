@@ -11,12 +11,13 @@
  */
 package io.cebes.pipeline.models
 
+import io.cebes.df.Dataframe
 import io.cebes.pipeline.protos.message.{DataframeMessageDef, ModelMessageDef, PipelineMessageDef, SampleMessageDef}
 import io.cebes.pipeline.protos.value.ValueDef
 
 trait PipelineMessage
 
-class DataframeMessage extends PipelineMessage
+case class DataframeMessage(df: Dataframe) extends PipelineMessage
 
 class SampleMessage extends PipelineMessage
 

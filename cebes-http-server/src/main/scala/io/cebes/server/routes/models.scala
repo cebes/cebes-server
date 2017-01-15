@@ -63,17 +63,6 @@ case class VersionResponse(api: String)
 
 trait HttpJsonProtocol extends CebesCoreJsonProtocol {
 
-  // clumsy custom JsonFormats
-  implicit object UUIDFormat extends JsonFormat[UUID] {
-
-    def write(obj: UUID): JsValue = JsString(obj.toString)
-
-    def read(json: JsValue): UUID = json match {
-      case JsString(x) => UUID.fromString(x)
-      case _ => deserializationError("Expected UUID as JsString")
-    }
-  }
-
   implicit object RequestStatusFormat extends JsonFormat[RequestStatuses.RequestStatus] {
     override def write(obj: RequestStatuses.RequestStatus): JsValue = JsString(obj.name)
 

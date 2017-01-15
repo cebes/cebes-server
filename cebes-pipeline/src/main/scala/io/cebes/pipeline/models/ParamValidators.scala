@@ -29,6 +29,16 @@ object ParamValidators {
     s.matches(re)
   }
 
+  /**
+    * Validate if the value belong to the given list of options
+    */
+  def oneOf[T](options: T*): T => Boolean = options.contains
+
+  /** Validate x if x >= min */
+  def greaterOrEqual(min: Double): Double => Boolean = { v =>
+    v >= min
+  }
+
   /////////////////////////////////////////////////////////////////////////////
   // Specialized validators
   /////////////////////////////////////////////////////////////////////////////

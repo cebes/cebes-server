@@ -15,6 +15,7 @@ package io.cebes.pipeline.models
 import java.util.UUID
 
 import io.cebes.common.HasId
+import io.cebes.pipeline.protos.pipeline.PipelineDef
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -48,5 +49,12 @@ case class Pipeline(id: UUID, stages: Map[String, Stage]) extends HasId {
       })
     }
     Await.result(result, Duration.Inf)
+  }
+
+  /**
+    * Get the protobuf definition of this pipeline
+    */
+  def toProto: PipelineDef = {
+    PipelineDef().withId(id.toString).addAllStage(stages.valuesIterator.map(_.toProto))
   }
 }

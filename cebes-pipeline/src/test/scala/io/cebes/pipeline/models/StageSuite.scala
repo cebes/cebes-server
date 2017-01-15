@@ -21,7 +21,6 @@ class StageSuite extends FunSuite {
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   test("bad input") {
-
     val s = new StageFoo().setName("foo")
     val ex = intercept[NoSuchElementException] {
       Await.result(s.output(0), Duration.Inf)
@@ -35,19 +34,19 @@ class StageSuite extends FunSuite {
     assert(ex2.getMessage.contains("invalid input type at slot #0 (dfIn), " +
       "expected a DataframeMessage, got ValueMessage"))
 
-    s.input(0, Future(new DataframeMessage()))
+    s.input(0, Future(DataframeMessage(null)))
     val out1 = Await.result(s.output(0), Duration.Inf)
     assert(out1.isInstanceOf[DataframeMessage])
 
     val ex3 = intercept[IllegalArgumentException] {
-      s.input(2, Future(new DataframeMessage()))
+      s.input(2, Future(DataframeMessage(null)))
     }
     assert(ex3.getMessage.contains("Invalid input index: 2. Has to be in [0, 1)"))
   }
 
   test ("caching") {
     val s = new StageFoo().setName("foo")
-    s.input(0, Future(new DataframeMessage()))
+    s.input(0, Future(DataframeMessage(null)))
     val out1 = Await.result(s.output(0), Duration.Inf)
     assert(out1.isInstanceOf[DataframeMessage])
 
@@ -57,7 +56,7 @@ class StageSuite extends FunSuite {
     assert(out1 eq Await.result(s.output(0), Duration.Inf))
 
     // feed a different input, it will change the result
-    s.input(0, Future(new DataframeMessage()))
+    s.input(0, Future(DataframeMessage(null)))
     val out2 = Await.result(s.output(0), Duration.Inf)
     assert(out1 ne out2)
     assert(out2 eq Await.result(s.output(0), Duration.Inf))
@@ -67,7 +66,7 @@ class StageSuite extends FunSuite {
     val stage1 = new StageBadOutputSize().setName("stage1")
 
     val ex1 = intercept[IllegalArgumentException] {
-      stage1.input(0, Future(new DataframeMessage()))
+      stage1.input(0, Future(DataframeMessage(null)))
     }
     assert(ex1.getMessage.contains("Invalid input index: 0. Has to be in [0, 0)"))
 
@@ -88,7 +87,7 @@ class StageSuite extends FunSuite {
     val stage1 = new StageBadOutputType().setName("stage1")
 
     val ex1 = intercept[IllegalArgumentException] {
-      stage1.input(0, Future(new DataframeMessage()))
+      stage1.input(0, Future(DataframeMessage(null)))
     }
     assert(ex1.getMessage.contains("Invalid input index: 0. Has to be in [0, 0)"))
 
@@ -103,7 +102,7 @@ class StageSuite extends FunSuite {
     val s1 = new StageFoo().setName("s1")
     val s2 = new StageTwoInputs().setName("s2")
 
-    s1.input(0, Future(new DataframeMessage()))
+    s1.input(0, Future(DataframeMessage(null)))
     s2.input(0, s1.output(0))
     val ex1 = intercept[NoSuchElementException] {
       Await.result(s2.output(0), Duration.Inf)
@@ -124,7 +123,7 @@ class StageFoo extends Stage {
   override protected def run(inputs: Seq[PipelineMessage]): Seq[PipelineMessage] = {
     assert(inputs.size == 1)
     assert(inputs.head.isInstanceOf[DataframeMessage])
-    Seq(new DataframeMessage())
+    Seq(DataframeMessage(null))
   }
 }
 
@@ -138,7 +137,7 @@ class StageTwoInputs extends Stage {
     assert(inputs.size == 2)
     assert(inputs.head.isInstanceOf[DataframeMessage])
     assert(inputs.last.isInstanceOf[ModelMessage])
-    Seq(new DataframeMessage())
+    Seq(DataframeMessage(null))
   }
 }
 
@@ -163,7 +162,7 @@ class StageBadOutputType extends Stage {
 
   override protected def run(inputs: Seq[PipelineMessage]): Seq[PipelineMessage] = {
     assert(inputs.isEmpty)
-    Seq(new DataframeMessage())
+    Seq(DataframeMessage(null))
   }
 }
 
@@ -175,6 +174,6 @@ class StageBadOutputSize extends Stage {
 
   override protected def run(inputs: Seq[PipelineMessage]): Seq[PipelineMessage] = {
     assert(inputs.isEmpty)
-    Seq(new ModelMessage(), new DataframeMessage())
+    Seq(new ModelMessage(), DataframeMessage(null))
   }
 }

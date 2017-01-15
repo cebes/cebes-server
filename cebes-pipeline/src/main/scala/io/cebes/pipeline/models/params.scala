@@ -14,6 +14,8 @@ package io.cebes.pipeline.models
 
 import java.lang.reflect.Modifier
 
+import io.cebes.df.Column
+
 import scala.collection.mutable
 
 /**
@@ -39,6 +41,11 @@ case class IntParam(override val name: String, override val defaultValue: Option
                     override val validator: Int => Boolean = ParamValidators.default)
   extends Param[Int](name, defaultValue, doc, validator)
 
+case class LongParam(override val name: String, override val defaultValue: Option[Long],
+                       override val doc: String,
+                       override val validator: Long => Boolean = ParamValidators.default)
+  extends Param[Long](name, defaultValue, doc, validator)
+
 case class FloatParam(override val name: String, override val defaultValue: Option[Float],
                       override val doc: String,
                       override val validator: Float => Boolean = ParamValidators.default)
@@ -49,6 +56,15 @@ case class DoubleParam(override val name: String, override val defaultValue: Opt
                        override val validator: Double => Boolean = ParamValidators.default)
   extends Param[Double](name, defaultValue, doc, validator)
 
+case class StringArrayParam(override val name: String, override val defaultValue: Option[Array[String]],
+                            override val doc: String,
+                            override val validator: Array[String] => Boolean = ParamValidators.default)
+  extends Param[Array[String]](name, defaultValue, doc, validator)
+
+case class ColumnParam(override val name: String, override val defaultValue: Option[Column],
+                       override val doc: String,
+                       override val validator: Column => Boolean = ParamValidators.default)
+  extends Param[Column](name, defaultValue, doc, validator)
 
 /**
   * Trait for components that take parameters. This also provides an internal param map to store
@@ -61,7 +77,7 @@ trait Params extends Serializable {
     * list all public methods that have no arguments and return [[Param]].
     *
     */
-  lazy val params: Array[Param[_]] = {
+  protected lazy val _params: Array[Param[_]] = {
     val methods = this.getClass.getMethods
     methods.filter { m =>
       Modifier.isPublic(m.getModifiers) &&
@@ -73,12 +89,12 @@ trait Params extends Serializable {
 
   /** Tests whether this instance contains a param with a given name. */
   def hasParam(paramName: String): Boolean = {
-    params.exists(_.name == paramName)
+    _params.exists(_.name == paramName)
   }
 
   /** Gets a param by its name. */
   def getParam(paramName: String): Param[Any] = {
-    params.find(_.name == paramName).getOrElse {
+    _params.find(_.name == paramName).getOrElse {
       throw new NoSuchElementException(s"Param $paramName does not exist.")
     }.asInstanceOf[Param[Any]]
   }
@@ -108,8 +124,14 @@ trait Params extends Serializable {
     paramMap.get(param)
   }
 
+  /** Take the value of the given parameter */
+  final def param[T](p: Param[T]): T = get(p) match {
+    case Some(t) => t
+    case None => throw new IllegalArgumentException(s"Stage $toString: Parameter ${p.name} is not specified")
+  }
+
   /** Internal param map for user-supplied values. */
-  private val paramMap: ParamMap = ParamMap.empty
+  protected final val paramMap: ParamMap = ParamMap.empty
 
   /** Validates that the input param belongs to this instance. */
   private def shouldOwn(param: Param[_]): Unit = {

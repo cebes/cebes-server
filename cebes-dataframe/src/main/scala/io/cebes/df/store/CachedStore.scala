@@ -16,11 +16,14 @@ package io.cebes.df.store
 
 import java.util.UUID
 
+import io.cebes.common.HasId
+import io.cebes.df.Dataframe
+
 /**
-  * Storing various objects, indexed by a UUID.
+  * Storing objects, indexed by a UUID.
   * The store maybe backed by a LoadingCache.
   */
-trait CachedStore[T] {
+trait CachedStore[T <: HasId] {
 
   /**
     * Store the object. If there is already a object with the same key,
@@ -61,3 +64,9 @@ trait CachedStore[T] {
       throw new IllegalArgumentException(s"Object ID not found: ${id.toString}")
   }
 }
+
+/**
+  * Storing dataframes, maybe backed by a LoadingCache
+  * Subclasses of this trait should be singleton.
+  */
+trait DataframeStore extends CachedStore[Dataframe]

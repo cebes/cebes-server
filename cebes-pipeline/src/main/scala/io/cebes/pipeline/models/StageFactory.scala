@@ -12,8 +12,11 @@
 
 package io.cebes.pipeline.models
 
+import io.cebes.df.Column
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.pipeline.protos.stage.StageDef
 import io.cebes.pipeline.protos.value.{ScalarDef, ValueDef}
+import spray.json._
 
 import scala.util.{Success, Try}
 
@@ -34,7 +37,7 @@ class StageFactory {
     }.collectFirst {
       case Success(cl) if cl.getInterfaces.contains(classOf[Stage]) => cl
     } match {
-      case Some(ns) => Class.forName(s"$ns.${proto.stage}")
+      case Some(cl) => cl
       case None => throw new IllegalArgumentException(s"Stage class not found: ${proto.stage}")
     }
 
@@ -53,20 +56,25 @@ class StageFactory {
           case ValueDef.Value.Scalar(scalarDef) =>
             scalarDef.value match {
               case ScalarDef.Value.StringVal(s) =>
-                stage.set[String](stage.getParam(p.name).asInstanceOf[StringParam], s)
+                stage.set(stage.getParam(p.name).asInstanceOf[StringParam], s)
               case ScalarDef.Value.BoolVal(b) =>
-                stage.set[Boolean](stage.getParam(p.name).asInstanceOf[BooleanParam], b)
+                stage.set(stage.getParam(p.name).asInstanceOf[BooleanParam], b)
               case ScalarDef.Value.Int32Val(i) =>
-                stage.set[Int](stage.getParam(p.name).asInstanceOf[IntParam], i)
+                stage.set(stage.getParam(p.name).asInstanceOf[IntParam], i)
+              case ScalarDef.Value.Int64Val(l) =>
+                stage.set(stage.getParam(p.name).asInstanceOf[LongParam], l)
               case ScalarDef.Value.FloatVal(f) =>
-                stage.set[Float](stage.getParam(p.name).asInstanceOf[FloatParam], f)
+                stage.set(stage.getParam(p.name).asInstanceOf[FloatParam], f)
               case ScalarDef.Value.DoubleVal(d) =>
-                stage.set[Double](stage.getParam(p.name).asInstanceOf[DoubleParam], d)
-              case scalaVal =>
-                throw new UnsupportedOperationException("Unsupported scala value for stage parameters: " +
+                stage.set(stage.getParam(p.name).asInstanceOf[DoubleParam], d)
+              case scalarVal =>
+                throw new UnsupportedOperationException("Unsupported scalar value for stage parameters: " +
                 s"Parameter name ${p.name} of stage ${proto.stage}(${proto.name}) " +
-                  s"with value ${scalaVal.toString} of type ${scalaVal.getClass.getName}")
+                  s"with value ${scalarVal.toString} of type ${scalarVal.getClass.getName}")
             }
+          case ValueDef.Value.Column(columnDef) =>
+            stage.set(stage.getParam(p.name).asInstanceOf[ColumnParam],
+              columnDef.columnJson.parseJson.convertTo[Column])
           case valueDef =>
             throw new UnsupportedOperationException("Unsupported non-scala value for stage parameters: " +
               s"Parameter name ${p.name} of stage ${proto.stage}(${proto.name}) " +

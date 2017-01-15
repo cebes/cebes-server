@@ -23,7 +23,7 @@ import scala.collection.mutable
 
 
 /**
-  * An implementation of [[io.cebes.df.store.TagStore]] with JDBC persistence backend.
+  * An implementation of [[TagStore]] with JDBC persistence backend.
   */
 abstract class JdbcTagStore(mySqlCreds: MySqlBackendCredentials, tableName: String) extends TagStore {
 

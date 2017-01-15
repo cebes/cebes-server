@@ -37,12 +37,12 @@ lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
 
 lazy val cebesPipeline = project.in(file("cebes-pipeline")).
   settings(commonSettings: _*).
-  dependsOn(cebesDataframe)
+  dependsOn(cebesDataframe, cebesDataframeJson)
 
 lazy val cebesDataframeSpark = project.in(file("cebes-dataframe-spark")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
-  dependsOn(cebesDataframeJson, cebesPersistenceMysql)
+  dependsOn(cebesDataframeJson, cebesPersistenceMysql, cebesPipeline)
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
   dependsOn(cebesAuth, cebesDataframeSpark)

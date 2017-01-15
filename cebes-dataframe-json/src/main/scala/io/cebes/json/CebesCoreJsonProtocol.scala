@@ -15,8 +15,9 @@
 package io.cebes.json
 
 import java.sql.Timestamp
-import java.util.Date
+import java.util.{Date, UUID}
 
+import io.cebes.df.Column
 import io.cebes.df.expressions.Expression
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{Schema, SchemaField}
@@ -37,6 +38,16 @@ import scala.util.{Failure, Success, Try}
   * All JSON protocols for all JSON-serializable classes in cebes-dataframe
   */
 trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
+
+  implicit object UUIDFormat extends JsonFormat[UUID] {
+
+    def write(obj: UUID): JsValue = JsString(obj.toString)
+
+    def read(json: JsValue): UUID = json match {
+      case JsString(x) => UUID.fromString(x)
+      case _ => deserializationError("Expected UUID as JsString")
+    }
+  }
 
   implicit object DataFormatFormat extends JsonFormat[DataFormat] {
     override def write(obj: DataFormat): JsValue = JsString(obj.name)
@@ -230,9 +241,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
 
   private lazy val runtimeMirror: universe.Mirror = universe.runtimeMirror(getClass.getClassLoader)
 
-  abstract class AbstractExpressionFormat extends JsonFormat[Expression] {
-
-    protected def writeExpression(expr: Expression): Option[JsValue]
+  implicit object ExpressionFormat extends JsonFormat[Expression] {
 
     private def writeExpressionGeneric(expr: Expression): JsValue = {
       val classSymbol = runtimeMirror.classSymbol(expr.getClass)
@@ -280,19 +289,16 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
       JsObject(Map("exprType" -> JsString(expr.getClass.getName)) ++ jsParams)
     }
 
-    override def write(obj: Expression): JsValue =
-      writeExpression(obj).getOrElse(writeExpressionGeneric(obj))
+    override def write(obj: Expression): JsValue = writeExpressionGeneric(obj)
 
     ////////////////
     // read
     ////////////////
 
-    protected def readExpression(json: JsValue): Option[Expression]
-
     private def readExpressionGeneric(json: JsValue): Any = {
       json match {
         case jsArr: JsArray => jsArr.elements.map {
-          js => readExpression(js).getOrElse(readExpressionGeneric(js))
+          js => readExpressionGeneric(js)
         }
         case jsObj: JsObject =>
           jsObj.fields.get("exprType") match {
@@ -317,7 +323,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
                 jsObj.fields.get(s"param_$idx") match {
                   case None => result
                   case Some(js) =>
-                    getField(idx + 1, result :+ readExpression(js).getOrElse(readExpressionGeneric(js)))
+                    getField(idx + 1, result :+ readExpressionGeneric(js))
                 }
               }
 
@@ -356,13 +362,29 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
       }
     }
 
-    override def read(json: JsValue): Expression =
-      readExpression(json).getOrElse {
-        readExpressionGeneric(json) match {
-          case expr: Expression => expr
-          case other => deserializationError(s"Got unwanted type from Json: ${other.toString}")
-        }
+    override def read(json: JsValue): Expression = {
+      readExpressionGeneric(json) match {
+        case expr: Expression => expr
+        case other => deserializationError(s"Got unwanted type from Json: ${other.toString}")
       }
+    }
+  }
+
+  implicit object ColumnFormat extends JsonFormat[Column] {
+
+    override def write(obj: Column): JsValue = {
+      JsObject(Map("expr" -> obj.expr.toJson))
+    }
+
+    override def read(json: JsValue): Column = json match {
+      case jsObj: JsObject =>
+        jsObj.fields.get("expr") match {
+          case Some(obj) => new Column(obj.convertTo[Expression])
+          case _ => deserializationError("Expression must be provided in key 'expr'")
+        }
+      case _ =>
+        deserializationError("A JsObject is expected")
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -410,6 +432,8 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
         toJsObject("seq", JsArray(seq.map(writeJson): _*))
       case s: StorageType =>
         toJsObject("storageType", s.toJson)
+      case uuid: UUID =>
+        toJsObject("uuid", uuid.toJson)
       case other =>
         serializationError(s"Don't know how to serialize values of class ${
           other.getClass.getName
@@ -478,6 +502,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
             Map(elements: _*)
           case JsString("seq") => asJsType[JsArray](jsData).elements.map(readJson)
           case JsString("storageType") => jsData.convertTo[StorageType]
+          case JsString("uuid") => jsData.convertTo[UUID]
           case other =>
             deserializationError(s"Expected type as 'array', 'wrapped_array' or 'map', " +
               s"got: ${
@@ -487,9 +512,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol {
               }")
         }
       case other =>
-        deserializationError(s"Don't support deserializing JSON value: ${
-          other.compactPrint
-        }")
+        deserializationError(s"Don't support deserializing JSON value: ${other.compactPrint}")
     }
   }
 

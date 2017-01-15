@@ -8,24 +8,23 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 26/09/16.
  */
+package io.cebes.spark.pipeline.etl
 
-package io.cebes.common
-
-import java.util.UUID
+import io.cebes.df.Dataframe
+import io.cebes.pipeline.models.StringArrayParam
+import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
-  * Object comes with an ID
+  * Returns a new Dataframe with columns dropped.
+  * This is a no-op if schema doesn't contain column name(s).
   */
-trait HasId {
+class Drop extends UnaryTransformer {
 
-  val id: UUID
-}
+  val colNames = StringArrayParam("colNames", Some(Array()),
+    "List of column names to be dropped")
 
-object HasId {
-
-  /** Returns a random ID */
-  def randomId: UUID = UUID.randomUUID()
+  override protected def transform(df: Dataframe): Dataframe = {
+    df.drop(param(colNames))
+  }
 }
