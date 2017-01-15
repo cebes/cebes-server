@@ -15,7 +15,8 @@ import io.cebes.df.Dataframe
 import io.cebes.pipeline.models._
 import io.cebes.pipeline.stages.BinaryTransformer
 
-class Join extends BinaryTransformer {
+/** Do a Join between 2 dataframes */
+case class Join() extends BinaryTransformer {
 
   val joinType = StringParam("joinType", Some("inner"),
     "Type of the join, must be one of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`",

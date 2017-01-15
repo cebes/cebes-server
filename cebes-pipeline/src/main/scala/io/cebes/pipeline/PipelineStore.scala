@@ -15,7 +15,5 @@ package io.cebes.pipeline
 import io.cebes.df.store.CachedStore
 import io.cebes.pipeline.models.Pipeline
 
-/**
-  * Store of Pipelines object, with cache
-  */
+/** Store of Pipelines object, with cache */
 trait PipelineStore extends CachedStore[Pipeline]

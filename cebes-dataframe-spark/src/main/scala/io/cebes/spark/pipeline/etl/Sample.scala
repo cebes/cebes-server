@@ -18,7 +18,7 @@ import io.cebes.pipeline.stages.UnaryTransformer
 /**
   * Randomly sample n rows from a [[Dataframe]], returns another [[Dataframe]]
   */
-class Sample extends UnaryTransformer {
+case class Sample() extends UnaryTransformer {
 
   val withReplacement = BooleanParam("withReplacement", Some(true), "Whether to sample with replacement")
   val fraction = DoubleParam("fraction", Some(0.5), "Fraction of rows to generate", ParamValidators.greaterOrEqual(0))

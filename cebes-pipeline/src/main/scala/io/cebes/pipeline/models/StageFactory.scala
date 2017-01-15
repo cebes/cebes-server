@@ -20,9 +20,7 @@ import spray.json._
 
 import scala.util.{Success, Try}
 
-class StageFactory {
-
-  private val stageNamespaces: Seq[String] = Seq("io.cebes.pipeline.models")
+class StageFactory(private val stageNamespaces: Seq[String] = Seq("io.cebes.pipeline.models")) {
 
   /**
     * Construct the stage object, given the proto
@@ -30,12 +28,11 @@ class StageFactory {
     * It will ignore any value specified in the `output` field of the proto message.
     */
   def create(proto: StageDef): Stage = {
-
     // find the class
     val cls = stageNamespaces.map { ns =>
       Try(Class.forName(s"$ns.${proto.stage}"))
     }.collectFirst {
-      case Success(cl) if cl.getInterfaces.contains(classOf[Stage]) => cl
+      case Success(cl) if classOf[Stage].isAssignableFrom(cl) => cl
     } match {
       case Some(cl) => cl
       case None => throw new IllegalArgumentException(s"Stage class not found: ${proto.stage}")

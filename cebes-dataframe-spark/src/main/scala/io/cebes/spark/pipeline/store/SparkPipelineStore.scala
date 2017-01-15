@@ -13,49 +13,46 @@ package io.cebes.spark.pipeline.store
 
 import java.util.UUID
 
-import com.google.inject.Inject
+import com.google.inject.{Inject, Singleton}
 import com.trueaccord.scalapb.GeneratedMessage
-import io.cebes.df.store.PipelineTagStore
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.persistence.store.JdbcCachedStore
-import io.cebes.pipeline.PipelineStore
 import io.cebes.pipeline.json.PipelineJsonProtocol._
 import io.cebes.pipeline.models.{Pipeline, PipelineFactory}
 import io.cebes.pipeline.protos.pipeline.PipelineDef
+import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
 import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
 import spray.json._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * An implementation of [[io.cebes.pipeline.PipelineStore]] for Spark,
   * using guava's LoadingCache with JDBC persistence backend
   */
-class SparkPipelineStore @Inject()
+@Singleton class SparkPipelineStore @Inject()
 (@Prop(Property.CACHESPEC_PIPELINE_STORE) val cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
  pipelineFactory: PipelineFactory,
- tagStore: PipelineTagStore,
- ec: ExecutionContext) extends JdbcCachedStore[Pipeline](cacheSpec) with PipelineStore {
+ tagStore: PipelineTagStore) extends JdbcCachedStore[Pipeline](cacheSpec) with PipelineStore {
 
   /**
     * The JDBC persistence that backs the LoadingCache.
     * To be defined by the subclasses
     */
-  override protected val jdbcPersistence: JdbcPersistence[UUID, Pipeline] =
+  override protected lazy val jdbcPersistence: JdbcPersistence[UUID, Pipeline] =
     JdbcPersistenceBuilder.newBuilder[UUID, Pipeline]()
       .withCredentials(mySqlCreds.url, mySqlCreds.userName,
         mySqlCreds.password, TableNames.PIPELINE_STORE, mySqlCreds.driver)
-      .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
+      .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
         JdbcPersistenceColumn("proto", "MEDIUMTEXT")))
       .withValueToSeq { pipeline =>
         Seq(System.currentTimeMillis(), pipeline.toProto.asInstanceOf[GeneratedMessage].toJson.compactPrint)
       }.withSqlToValue { (_, entry) =>
-        val proto = entry.getString(2).parseJson.convertTo[GeneratedMessage].asInstanceOf[PipelineDef]
-        pipelineFactory.create(proto)(ec)
-      }
-      .withStrToKey(s => UUID.fromString(s))
+      val proto = entry.getString(2).parseJson.convertTo[GeneratedMessage].asInstanceOf[PipelineDef]
+      pipelineFactory.create(proto)
+    }.withStrToKey(s => UUID.fromString(s))
       .build()
 
   /** Check whether the object with the given ID should be persisted or not. */

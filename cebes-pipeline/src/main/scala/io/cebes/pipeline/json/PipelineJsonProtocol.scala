@@ -12,6 +12,7 @@
 
 package io.cebes.pipeline.json
 
+import com.google.common.reflect.ClassPath
 import com.google.protobuf.ByteString
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType
 import com.google.protobuf.Descriptors.{EnumValueDescriptor, FieldDescriptor}
@@ -26,6 +27,19 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol {
   implicit object ProtobufMessageFormat extends JsonFormat[GeneratedMessage] {
 
     private lazy val runtimeMirror: universe.Mirror = universe.runtimeMirror(getClass.getClassLoader)
+
+    private lazy val protoMessageClasses = {
+      val classpath = ClassPath.from(getClass.getClassLoader)
+      JavaConversions.collectionAsScalaIterable(
+        classpath.getTopLevelClassesRecursive("io.cebes.pipeline.protos")).flatMap { c =>
+        val cls = c.load()
+        cls +: cls.getClasses.toSeq
+      }.filter { cls =>
+        classOf[GeneratedMessage].isAssignableFrom(cls)
+      }.map { cls =>
+        cls
+      }
+    }
 
     override def write(obj: GeneratedMessage): JsValue = {
       val b = List.newBuilder[JsField]
@@ -44,17 +58,20 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol {
           }
         }
       }
-      JsObject(Map("className" -> JsString(obj.getClass.getName),
+      JsObject(Map("className" -> JsString(obj.getClass.getSimpleName),
         "obj" -> JsObject(b.result(): _*)))
     }
 
     override def read(json: JsValue): GeneratedMessage = {
       json match {
         case JsObject(fields) if fields.contains("className") =>
-          val cls = Class.forName(fields("className").asInstanceOf[JsString].value)
-            .asInstanceOf[Class[GeneratedMessage]]
-          val classSymbol = runtimeMirror.classSymbol(cls)
+          val className = fields("className").asInstanceOf[JsString].value
 
+          val cls = protoMessageClasses.find(_.getSimpleName == className) match {
+            case None => deserializationError(s"Proto message class not found: $className")
+            case Some(cl) => cl.asInstanceOf[Class[GeneratedMessage]]
+          }
+          val classSymbol = runtimeMirror.classSymbol(cls)
           val companionMirror = runtimeMirror.reflectModule(classSymbol.companion.asModule)
           val cmp = companionMirror.instance.asInstanceOf[GeneratedMessageCompanion[_]]
 
@@ -181,6 +198,7 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol {
           s"Unexpected value ($value) for field ${fd.getJsonName} of ${fd.getContainingType.getName}")
       }
   }
+
 }
 
 object PipelineJsonProtocol extends PipelineJsonProtocol

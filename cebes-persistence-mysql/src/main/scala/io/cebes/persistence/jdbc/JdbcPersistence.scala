@@ -20,6 +20,8 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.persistence.{ClosableIterator, KeyValuePersistence}
 import org.apache.commons.dbcp2.BasicDataSource
 
+import scala.util.{Failure, Success, Try}
+
 /**
   * Implementation of [[KeyValuePersistence]] using JDBC
   *
@@ -99,7 +101,12 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     JdbcUtil.cleanJdbcCall(stmt)(_.close()) { s =>
       JdbcUtil.cleanJdbcCall(s.executeQuery())(_.close()) { result =>
         if (result.next()) {
-          Some(sqlToValue(key, result))
+          Try(sqlToValue(key, result)) match {
+            case Success(v) => Some(v)
+            case Failure(f) =>
+              logger.error(s"Exception caught in sqlToValue", f)
+              None
+          }
         } else {
           None
         }

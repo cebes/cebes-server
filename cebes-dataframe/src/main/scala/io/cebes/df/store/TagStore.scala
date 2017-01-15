@@ -49,5 +49,3 @@ trait TagStore {
 }
 
 trait DataframeTagStore extends TagStore
-
-trait PipelineTagStore extends TagStore

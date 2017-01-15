@@ -9,22 +9,9 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.spark.pipeline.etl
+package io.cebes.pipeline
 
-import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.StringArrayParam
-import io.cebes.pipeline.stages.UnaryTransformer
+import io.cebes.df.store.TagStore
 
-/**
-  * Returns a new Dataframe with columns dropped.
-  * This is a no-op if schema doesn't contain column name(s).
-  */
-case class Drop() extends UnaryTransformer {
-
-  val colNames = StringArrayParam("colNames", Some(Array()),
-    "List of column names to be dropped")
-
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.drop(param(colNames))
-  }
-}
+/** A TagStore for Pipelines */
+trait PipelineTagStore extends TagStore

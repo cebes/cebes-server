@@ -51,9 +51,9 @@ import spray.json._
     JdbcPersistenceBuilder.newBuilder[UUID, Dataframe]()
       .withCredentials(mySqlCreds.url, mySqlCreds.userName,
         mySqlCreds.password, TableNames.DF_STORE, mySqlCreds.driver)
-      .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
+      .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
         JdbcPersistenceColumn("table_name", "VARCHAR(200)"),
-        JdbcPersistenceColumn("schema", "MEDIUMTEXT")))
+        JdbcPersistenceColumn("df_schema", "MEDIUMTEXT")))
       .withValueToSeq { df =>
         SparkDataframeStore.persist(df)
         Seq(System.currentTimeMillis(), SparkDataframeStore.hiveTableName(df.id),

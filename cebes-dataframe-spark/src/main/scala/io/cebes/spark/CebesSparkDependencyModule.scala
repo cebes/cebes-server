@@ -16,8 +16,11 @@ package io.cebes.spark
 
 import com.google.inject.AbstractModule
 import io.cebes.df.store.{DataframeStore, DataframeTagStore}
+import io.cebes.pipeline.models.StageFactory
+import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
 import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
 import io.cebes.spark.df.store.{JdbcDataframeTagStore, SparkDataframeStore}
+import io.cebes.spark.pipeline.store.{JdbcPipelineTagStore, SparkPipelineStore}
 
 
 class CebesSparkDependencyModule extends AbstractModule {
@@ -26,5 +29,9 @@ class CebesSparkDependencyModule extends AbstractModule {
     bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
     bind(classOf[DataframeStore]).to(classOf[SparkDataframeStore])
     bind(classOf[DataframeTagStore]).to(classOf[JdbcDataframeTagStore])
+    bind(classOf[PipelineStore]).to(classOf[SparkPipelineStore])
+    bind(classOf[PipelineTagStore]).to(classOf[JdbcPipelineTagStore])
+    bind(classOf[StageFactory]).toInstance(
+      new StageFactory(Seq("io.cebes.pipeline.models", "io.cebes.spark.pipeline.etl")))
   }
 }
