@@ -64,7 +64,8 @@ trait Stage extends Params {
     set(name, stageName)
   }
 
-  val name = StringParam("name", None, "Name of the stage, given by the user. Must be unique in a pipeline",
+  val name = StringParam("name", Some(getClass.getSimpleName.toLowerCase),
+    "Name of the stage, given by the user. Must be unique in a pipeline",
     ParamValidators.isValidStageName)
 
   /////////////////////////////////////////////////////////////////////////////

@@ -11,3 +11,5 @@ libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "scalapb-runtime-grpc" % com.trueaccord.scalapb.compiler.Version.scalapbVersion,
   "io.spray" %% "spray-json" % Common.sprayJsonVersion
 )
+
+coverageExcludedPackages := """io\.cebes\.pipeline\.protos\..*;"""

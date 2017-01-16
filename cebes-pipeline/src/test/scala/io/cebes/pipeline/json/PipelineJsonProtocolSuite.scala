@@ -14,13 +14,16 @@ package io.cebes.pipeline.json
 
 import com.trueaccord.scalapb.GeneratedMessage
 import io.cebes.pipeline.json.PipelineJsonProtocol._
+import io.cebes.pipeline.protos.message.PipelineMessageDef
+import io.cebes.pipeline.protos.param.ParamDef
+import io.cebes.pipeline.protos.stage.StageDef
 import io.cebes.pipeline.protos.value.{MapDef, ScalarDef, ValueDef}
 import org.scalatest.FunSuite
 import spray.json._
 
 class PipelineJsonProtocolSuite extends FunSuite {
 
-  test("simple cases") {
+  test("ValueDef") {
     val value: GeneratedMessage = ValueDef().withScalar(ScalarDef().withDoubleVal(20.14))
     val s1 = value.toJson.compactPrint
     val value1 = s1.parseJson.convertTo[GeneratedMessage]
@@ -35,5 +38,18 @@ class PipelineJsonProtocolSuite extends FunSuite {
     val mapMsg1 = s2.parseJson.convertTo[GeneratedMessage]
     assert(mapMsg1.isInstanceOf[ValueDef])
     assert(mapMsg === mapMsg1)
+  }
+
+  test("StageDef") {
+    val stageDef: GeneratedMessage = StageDef().withStage("StageClass").withName("stage1")
+      .withInput(Map(0 -> "s1:0", 1 -> "s2:1"))
+      .withOutput(Seq(PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withInt32Val(20)))))
+      .withParam(Seq(
+        ParamDef().withName("param1").withValue(ValueDef().withScalar(ScalarDef().withFloatVal(3.14f))),
+        ParamDef().withName("param2").withValue(ValueDef().withScalar(ScalarDef().withInt64Val(194L)))))
+    val s1 = stageDef.toJson.compactPrint
+    val stageDef1 = s1.parseJson.convertTo[GeneratedMessage]
+    assert(stageDef1.isInstanceOf[StageDef])
+    assert(stageDef === stageDef1)
   }
 }

@@ -24,6 +24,10 @@ import scala.collection.mutable
 class Param[T](val name: String, val defaultValue: Option[T],
                val doc: String, val validator: T => Boolean = ParamValidators.default) {
   ParamValidators.checkValidParamName(name)
+  if (defaultValue.isDefined) {
+    require(validator(defaultValue.get),
+      s"$toString: Invalid default value (${defaultValue.get.toString}) for parameter $name")
+  }
 }
 
 case class StringParam(override val name: String, override val defaultValue: Option[String],

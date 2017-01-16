@@ -219,6 +219,7 @@ class CebesJsonProtocolSuite extends FunSuite {
 
   test("Expression") {
     val abs: exprs.Expression = exprs.Abs(exprs.Literal("100"))
+    assert(abs.name === "Abs")
     val js = abs.toJson.compactPrint
 
     val abs2 = js.parseJson.convertTo[Expression]
