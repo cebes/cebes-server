@@ -25,7 +25,7 @@ class JoinSuite extends CebesBaseSuite with TestDataHelper with TestPipelineHelp
     createOrReplaceCylinderBands()
   }
 
-  test("join") {
+  ignore("join") {
     val df = getCylinderBands
 
     val df1 = df.select("*").where(df("customer").isin("GUIDEPOSTS", "ECKERD")).alias("small")
