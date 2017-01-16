@@ -108,25 +108,6 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
         deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
     }
   }
-  //implicit val columnFormat: RootJsonFormat[Column] = jsonFormat1[Expression, Column](new Column(_))
-  /*
-  implicit object ColumnFormat extends JsonFormat[Column] {
-
-    override def write(obj: Column): JsValue = {
-      JsObject(Map("expr" -> obj.expr.toJson))
-    }
-
-    override def read(json: JsValue): Column = json match {
-      case jsObj: JsObject =>
-        jsObj.fields.get("expr") match {
-          case Some(obj) => new Column(obj.convertTo[Expression])
-          case _ => deserializationError("Expression must be provided in key 'expr'")
-        }
-      case _ =>
-        deserializationError("A JsObject is expected")
-    }
-  }
-  */
 
   implicit val dataframeRequestFormat = jsonFormat1(DataframeRequest)
   implicit val withVariableTypesRequestFormat = jsonFormat2(WithVariableTypesRequest)
