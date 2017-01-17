@@ -8,33 +8,28 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 29/12/2016.
  */
-
-package io.cebes.spark.df.store
+package io.cebes.persistence.store
 
 import java.util.UUID
 
-import com.google.inject.{Inject, Singleton}
 import io.cebes.common.Tag
 import io.cebes.df.store.TagStore
 import io.cebes.persistence.ClosableIterator
-import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
+import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn}
 import io.cebes.prop.types.MySqlBackendCredentials
 
 import scala.collection.mutable
 
+
 /**
-  * An implementation of [[TagStore]] for Spark,
-  * with JDBC persistence backend.
+  * An implementation of [[TagStore]] with JDBC persistence backend.
   */
-@Singleton class SparkTagStore @Inject()
-(mySqlCreds: MySqlBackendCredentials) extends TagStore {
+abstract class JdbcTagStore(mySqlCreds: MySqlBackendCredentials, tableName: String) extends TagStore {
 
   private val jdbcStore = JdbcPersistenceBuilder.newBuilder[Tag, UUID]()
     .withCredentials(mySqlCreds.url, mySqlCreds.userName, mySqlCreds.password,
-      TableNames.TAG_STORE, mySqlCreds.driver)
+      tableName, mySqlCreds.driver)
     .withValueSchema(Seq(
       JdbcPersistenceColumn("uuid", "VARCHAR(200)")
     ))

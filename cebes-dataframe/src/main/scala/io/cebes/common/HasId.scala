@@ -23,3 +23,9 @@ trait HasId {
 
   val id: UUID
 }
+
+object HasId {
+
+  /** Returns a random ID */
+  def randomId: UUID = UUID.randomUUID()
+}

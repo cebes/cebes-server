@@ -18,7 +18,7 @@ import java.util.UUID
 
 import io.cebes.df.{Column, functions}
 import io.cebes.df.DataframeService.AggregationTypes
-import io.cebes.df.expressions.{Literal, Pow}
+import io.cebes.df.expressions.{Expression, Literal, Pow}
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import org.scalatest.FunSuite
 import spray.json._
@@ -26,10 +26,17 @@ import io.cebes.server.routes.df.HttpDfJsonProtocol._
 
 class HttpDfJsonProtocolSuite extends FunSuite {
 
+  test("SparkPrimitiveExpression") {
+    val expr: Expression = SparkPrimitiveExpression(UUID.randomUUID(), "timestamp", None)
+    val exprStr = expr.toJson.compactPrint
+    val expr2 = exprStr.parseJson.convertTo[Expression]
+    assert(expr2.isInstanceOf[SparkPrimitiveExpression])
+    assert(expr2 === expr)
+  }
+
   test("Column") {
     val col = new Column(Pow(SparkPrimitiveExpression(UUID.randomUUID(), "col_blah", None), Literal(200)))
     val colStr = col.toJson.compactPrint
-
     val col2 = colStr.parseJson.convertTo[Column]
     assert(col2.expr === col.expr)
   }

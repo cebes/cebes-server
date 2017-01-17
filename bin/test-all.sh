@@ -19,6 +19,16 @@ done
 
 export SBT_OPTS="-Xmx2G -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled -Xss2M"
 
+CEBES_PATH="$(cd "$(dirname "$0")/../"; pwd)"
+if [ -f "${CEBES_PATH}/bin/env.sh" ]
+then
+    echo "Environment file ${CEBES_PATH}/bin/env.sh exists. Sourcing the variables:"
+    . "${CEBES_PATH}/bin/env.sh" --test=true
+    env | grep "CEBES"
+    echo
+fi
+
+
 if [[ "${COVERAGE}" == "false" ]]; then
     echo "Coverage report disabled"
     sbt clean compile package test

@@ -183,7 +183,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val ex = intercept[ServerException] {
       request[DataframeRequest, Long]("df/count", DataframeRequest(UUID.randomUUID()))
     }
-    assert(ex.message.startsWith("Dataframe ID not found"))
+    assert(ex.message.startsWith("Object ID not found"))
   }
 
   test("InferVariableTypes") {
@@ -228,7 +228,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val ex2 = intercept[ServerException] {
       request[LimitRequest, DataSample]("df/take", LimitRequest(UUID.randomUUID(), 15))
     }
-    assert(ex2.message.startsWith("Dataframe ID not found"))
+    assert(ex2.message.startsWith("Object ID not found"))
   }
 
   test("sample") {
@@ -241,7 +241,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val ex = intercept[ServerException] {
       requestDf("df/sample", SampleRequest(UUID.randomUUID(), withReplacement = true, 0.5, 42))
     }
-    assert(ex.message.startsWith("Dataframe ID not found"))
+    assert(ex.message.startsWith("Object ID not found"))
   }
 
   test("sort") {

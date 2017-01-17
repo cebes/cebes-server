@@ -45,6 +45,10 @@ public enum Property {
             "maximumSize=100,expireAfterAccess=30m",
             "Spec for the cache used for result storage in cebes-http-server"),
 
+    CACHESPEC_PIPELINE_STORE("CEBES_CACHESPEC_PIPELINE_STORE", "cebes.cachespec.pipeline.store",
+            "maximumSize=100,expireAfterAccess=30m",
+            "Spec for the cache used for pipeline storage in cebes-dataframe-spark"),
+
     // MYSQL backend
     MYSQL_URL("CEBES_MYSQL_URL", "cebes.mysql.url", "", "URL for MySQL database"),
     MYSQL_DRIVER("CEBES_MYSQL_DRIVER", "cebes.mysql.driver", "com.mysql.cj.jdbc.Driver", "Driver for MySQL database"),

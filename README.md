@@ -10,17 +10,24 @@ All the variables are defined in `Property.java` in the `cebes-properties` modul
 
 ## Tests
 
-1. Configure cebes to use MySQL metastore for Hive. The relevant configurations
-are:
+1. Copy the environment variable file:
 
-        CEBES_HIVE_METASTORE_URL: jdbc:mysql://<host>:<port>/<database_name>
-        CEBES_HIVE_METASTORE_DRIVER: com.mysql.cj.jdbc.Driver
-        CEBES_HIVE_METASTORE_USERNAME: Username for the metastore database
-        CEBES_HIVE_METASTORE_PASSWORD: Password
+        $ cp bin/env.sh.example bin/env.sh
     
-    You can either export those variables when running tests, or put 
-    corresponding configurations in the `test/resources/application.conf` file
-    of `cebes-dataframe-spark` and `cebes-http-server`.
+    Open the file `bin/env.sh` and set the variables, especially the username
+    and password for Hive metastore, cebes store in MySQL, the test database and AWS keys:
+     
+        export CEBES_HIVE_METASTORE_USERNAME=""
+        export CEBES_HIVE_METASTORE_PASSWORD=""
+        
+        export CEBES_MYSQL_USERNAME=""
+        export CEBES_MYSQL_PASSWORD=""
+
+        export CEBES_TEST_JDBC_USERNAME=""
+        export CEBES_TEST_JDBC_PASSWORD=""
+
+        export CEBES_TEST_AWS_ACCESSKEY=""
+        export CEBES_TEST_AWS_SECRETKEY=""
     
     You can also use Postgres for the Hive metastore, but then you will need
     to put Postgresql jar files in the class path, since Cebes only includes
@@ -29,6 +36,10 @@ are:
 2. Run the test script (with coverage report and so on):
    
         $ bin/test-all.sh
+        
+    Test coverage report can be exported with the `--coverage` option:
+    
+        $ bin/test-all.sh -c=true   # or bin/test-all.sh --coverage=true
 
 ## Logging
 

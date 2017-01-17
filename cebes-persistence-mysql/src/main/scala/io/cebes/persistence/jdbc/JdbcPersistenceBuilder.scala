@@ -146,7 +146,18 @@ object JdbcPersistenceBuilder extends LazyLogging {
       valueSchema.foreach { col =>
         val stmtIndex = connection.prepareStatement(s"CREATE INDEX index_${newTableName}_${col.name} " +
           s"ON $newTableName (${col.name})")
-        JdbcUtil.cleanJdbcCall(stmtIndex)(_.close())(_.executeUpdate())
+        Try(JdbcUtil.cleanJdbcCall(stmtIndex)(_.close())(_.executeUpdate())).recoverWith {
+          // fix for MySQL:
+          // SQLSyntaxErrorException: BLOB/TEXT column 'xxx' used in key specification without a key length
+          case _: SQLSyntaxErrorException =>
+            val stmtIndexWithSize = connection.prepareStatement(s"CREATE INDEX index_${newTableName}_${col.name} " +
+              s"ON $newTableName (${col.name}(40))")
+            Try(JdbcUtil.cleanJdbcCall(stmtIndexWithSize)(_.close())(_.executeUpdate()))
+        } match {
+          case Success(_) =>
+          case Failure(f) =>
+            logger.warn(s"Failed to create index on column ${col.name}", f)
+        }
       }
     }
     newTableName

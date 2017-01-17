@@ -47,3 +47,5 @@ trait TagStore {
     */
   def elements: ClosableIterator[(Tag, UUID)]
 }
+
+trait DataframeTagStore extends TagStore

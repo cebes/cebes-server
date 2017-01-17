@@ -25,5 +25,9 @@ object TableNames {
 
   val DF_STORE = "dataframe_store"
 
-  val TAG_STORE = "tag_store"
+  val DF_TAG_STORE = "df_tag_store"
+
+  val PIPELINE_STORE = "pipeline_store"
+
+  val PIPELINE_TAG_STORE = "pipeline_tag_store"
 }

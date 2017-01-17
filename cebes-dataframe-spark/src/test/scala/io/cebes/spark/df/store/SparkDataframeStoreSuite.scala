@@ -38,7 +38,7 @@ class SparkDataframeStoreSuite extends CebesBaseSuite
     assert(df2.eq(df))
 
     val ex = intercept[IllegalArgumentException](dfStore(UUID.randomUUID()))
-    assert(ex.getMessage.startsWith("Dataframe ID not found"))
+    assert(ex.getMessage.startsWith("Object ID not found"))
   }
 
   test("persist and unpersist") {

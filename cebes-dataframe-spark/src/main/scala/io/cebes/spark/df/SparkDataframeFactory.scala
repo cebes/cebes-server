@@ -17,6 +17,7 @@ package io.cebes.spark.df
 import java.util.UUID
 
 import com.google.inject.{Inject, Singleton}
+import io.cebes.common.HasId
 import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
 import io.cebes.spark.df.expressions.SparkExpressionParser
@@ -38,11 +39,11 @@ import org.apache.spark.sql.DataFrame
     * Returns a new instance of [[Dataframe]], with a random ID
     */
   def df(sparkDf: DataFrame, schema: Schema): Dataframe =
-    df(sparkDf, schema, UUID.randomUUID())
+    df(sparkDf, schema, HasId.randomId)
 
   /**
     * Returns a new instance of [[Dataframe]], with a random ID and an automatically-inferred Schema
     */
   def df(sparkDf: DataFrame): Dataframe =
-    df(sparkDf, SparkSchemaUtils.getSchema(sparkDf), UUID.randomUUID())
+    df(sparkDf, SparkSchemaUtils.getSchema(sparkDf), HasId.randomId)
 }

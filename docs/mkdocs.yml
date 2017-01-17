@@ -4,7 +4,7 @@ docs_dir: sources
 repo_url: http://github.com/phvu/cebes-server
 site_url: http://cebes.io/
 
-site_description: 'Documentation for Cebes, the Data Science toolbox for Big Data.'
+site_description: 'Documentation for Cebes, the integrated framework for Data Science at Scale'
 
 pages:
 - Home:
