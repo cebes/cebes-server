@@ -24,10 +24,10 @@ class ResultSetIterator[T](connection: Connection, stmt: PreparedStatement,
 
   private val resultSet = stmt.executeQuery()
 
-  private def _isEmpty = !resultSet.isBeforeFirst && resultSet.getRow == 0
+  private def checkEmptySet = !resultSet.isBeforeFirst && resultSet.getRow == 0
 
   override def hasNext: Boolean = {
-    !_isEmpty && !resultSet.isLast
+    !checkEmptySet && !resultSet.isLast
   }
 
   override def next(): T = {
@@ -39,7 +39,7 @@ class ResultSetIterator[T](connection: Connection, stmt: PreparedStatement,
   }
 
   private def safeClose(a: AutoCloseable): Unit = {
-    if (a != null) {
+    if (Option(a).isDefined) {
       try {
         a.close()
       } catch {

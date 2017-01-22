@@ -170,7 +170,9 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol {
           case _ => deserializationError(
             s"Expected an array for repeated field ${fd.getJsonName} of ${fd.getContainingType.getName}")
         }
-      } else parseSingleValue(cmp, fd, value)
+      } else {
+        parseSingleValue(cmp, fd, value)
+      }
     }
 
     protected def parseSingleValue(cmp: GeneratedMessageCompanion[_], fd: FieldDescriptor, value: JsValue): Any =

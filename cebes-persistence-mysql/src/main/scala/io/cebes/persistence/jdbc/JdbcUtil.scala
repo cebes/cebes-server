@@ -36,8 +36,9 @@ object JdbcUtil extends LazyLogging {
   def getConnection(url: String, userName: String, password: String, driver: String): Connection = {
     // Only load driver first time
     this.synchronized {
-      if (!driverLoaded)
+      if (!driverLoaded) {
         loadDriver(driver)
+      }
     }
 
     try {
@@ -63,7 +64,7 @@ object JdbcUtil extends LazyLogging {
     }
     finally {
       try {
-        if (resource != null) {
+        if (Option(resource).isDefined) {
           cleanup(resource)
         }
       } catch {
