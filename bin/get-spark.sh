@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+SPARK_VERSION="${SPARK_VERSION:-2.1.0}"
 CEBES_PATH="$(cd "$(dirname "$0")/../"; pwd)"
-SPARK_FILE_NAME="spark-2.1.0-bin-hadoop2.7"
+SPARK_FILE_NAME="spark-${SPARK_VERSION}-bin-hadoop2.7"
 
 curl -o ${CEBES_PATH}/spark/${SPARK_FILE_NAME}.tgz \
  http://d3kbcqa49mib13.cloudfront.net/${SPARK_FILE_NAME}.tgz
