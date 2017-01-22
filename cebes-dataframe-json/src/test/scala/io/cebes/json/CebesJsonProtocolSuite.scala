@@ -84,6 +84,7 @@ class CebesJsonProtocolSuite extends FunSuite {
       """{"non-sense": 100}""".parseJson.convertTo[Schema]
     }
   }
+
   test("DataSample empty case") {
     val sample = new DataSample(Schema(), Seq.empty[Seq[Any]])
     val s = sample.toJson.compactPrint

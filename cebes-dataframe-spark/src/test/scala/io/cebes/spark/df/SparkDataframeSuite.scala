@@ -14,6 +14,8 @@
 
 package io.cebes.spark.df
 
+import java.sql.Timestamp
+
 import io.cebes.common.CebesBackendException
 import io.cebes.df.{Column, functions}
 import io.cebes.df.types.storage._
@@ -1586,7 +1588,8 @@ class SparkDataframeSuite extends CebesBaseSuite
     val df = getCylinderBands.limit(100)
 
     def pmod(x: Int, y: Int) = {
-      val r = x % y; if (r < 0) r + y else r
+      val r = x % y;
+      if (r < 0) r + y else r
     }
 
     val df1 = df.select(df("plating_tank"), df("viscosity"),
@@ -1926,6 +1929,33 @@ class SparkDataframeSuite extends CebesBaseSuite
   // Datetime functions
   // TODO: add tests
   ////////////////////////////////////////////////////////////////////////////////////
+
+  test("datetime - window") {
+    val df = getCylinderBands.limit(100)
+    val df1 = df.select(df("timestamp").cast(StorageTypes.TimestampType), df("press"), df("customer"))
+    assert(df1.columns === Seq("timestamp", "press", "customer"))
+    assert(df1.schema("timestamp").storageType === StorageTypes.TimestampType)
+    val sample1 = df1.take(10)
+    sample1("timestamp").forall { v =>
+      val opt = Option(v)
+      opt.isEmpty || opt.get.isInstanceOf[Timestamp]
+    }
+
+    val df2 = df1.groupBy(functions.window(df1("timestamp"), "5 seconds").as("window_col"))
+      .agg(functions.avg("press").as("avg_press"))
+    assert(df2.columns === Seq("window_col", "avg_press"))
+    assert(df2.schema("window_col").storageType.isInstanceOf[StructType])
+    val sample2 = df2.take(10)
+    sample2("window_col").forall { v =>
+      Option(v) match {
+        case None => true
+        case Some(m: Map[_, _]) =>
+          val m2 = m.asInstanceOf[Map[String, Timestamp]]
+          m2.size === 2 && m2.contains("start") && m2.contains("end")
+        case _ => false
+      }
+    }
+  }
 
   ////////////////////////////////////////////////////////////////////////////////////
   // Collection functions
