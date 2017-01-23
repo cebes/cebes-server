@@ -24,7 +24,8 @@ import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import io.cebes.spark.pipeline.etl.{Join, Sample}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll with TestPropertyHelper with TestDataHelper {
+class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
+  with TestPropertyHelper with TestDataHelper {
 
   private def samplePipeline = {
     val stage1 = Join()

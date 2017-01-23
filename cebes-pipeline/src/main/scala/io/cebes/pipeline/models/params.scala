@@ -46,8 +46,8 @@ case class IntParam(override val name: String, override val defaultValue: Option
   extends Param[Int](name, defaultValue, doc, validator)
 
 case class LongParam(override val name: String, override val defaultValue: Option[Long],
-                       override val doc: String,
-                       override val validator: Long => Boolean = ParamValidators.default)
+                     override val doc: String,
+                     override val validator: Long => Boolean = ParamValidators.default)
   extends Param[Long](name, defaultValue, doc, validator)
 
 case class FloatParam(override val name: String, override val defaultValue: Option[Float],
@@ -69,6 +69,11 @@ case class ColumnParam(override val name: String, override val defaultValue: Opt
                        override val doc: String,
                        override val validator: Column => Boolean = ParamValidators.default)
   extends Param[Column](name, defaultValue, doc, validator)
+
+case class ColumnArrayParam(override val name: String, override val defaultValue: Option[Array[Column]],
+                            override val doc: String,
+                            override val validator: Array[Column] => Boolean = ParamValidators.default)
+  extends Param[Array[Column]](name, defaultValue, doc, validator)
 
 /**
   * Trait for components that take parameters. This also provides an internal param map to store
