@@ -5,6 +5,16 @@
   but that is a bit cumbersome.
   So the best way is to wait until grpc-gateway is available in Java/Scala (if that happens at all...)
 
+- Pipeline design:
+    - Pipelines are not thread-safe! Every time you create a new pipeline, it is a new object (with a new ID),
+    and every changes you made only effect that particular pipeline object. When you tag a pipeline, then load
+    it back using the tag, a new ID is given to the returned pipeline.
+
+    Usually this doesn't have any effect to the end users, because they will mostly work with pipelines using
+    the `with` statement. However, pipeline objects are not meant to be passed between different threads and
+    execute concurrently. If you really need to do that, tag the pipeline, and load it back in each thread
+    separately. In this case, the pipeline objects are separated.
+
 - Long-term plan:
   - Scala library
   - Pipeline editor (Azure-like)

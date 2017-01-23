@@ -26,21 +26,21 @@ import io.cebes.util.ResourceUtil
   */
 trait TestDataHelper {
 
-  val sparkStorageService: StorageService = CebesSparkTestInjector.instance[SparkStorageService]
+  protected val sparkStorageService: StorageService = CebesSparkTestInjector.instance[SparkStorageService]
 
-  val sparkDataframeService: DataframeService = CebesSparkTestInjector.instance[SparkDataframeService]
+  protected val sparkDataframeService: DataframeService = CebesSparkTestInjector.instance[SparkDataframeService]
 
-  def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): Dataframe = {
+  protected def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): Dataframe = {
     sparkDataframeService.sql(s"DROP TABLE IF EXISTS $tableName")
     sparkDataframeService.sql(s"CREATE TABLE $tableName ($schema) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','")
     sparkDataframeService.sql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
   }
 
-  val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
+  protected val cylinderBandsTableName = s"cylinder_bands_${getClass.getCanonicalName.replace(".", "_").toLowerCase}"
 
-  def getCylinderBands: Dataframe = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
+  protected def getCylinderBands: Dataframe = sparkDataframeService.sql(s"SELECT * FROM $cylinderBandsTableName")
 
-  def createOrReplaceCylinderBands(tableName: Option[String] = None): Dataframe = {
+  protected def createOrReplaceCylinderBands(tableName: Option[String] = None): Dataframe = {
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
     createOrReplaceHiveTable(tableName.getOrElse(cylinderBandsTableName),
       "timestamp LONG, cylinder_number STRING, " +

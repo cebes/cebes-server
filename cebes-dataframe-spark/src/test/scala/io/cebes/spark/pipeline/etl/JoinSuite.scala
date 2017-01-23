@@ -13,19 +13,19 @@ package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.functions
 import io.cebes.pipeline.models.DataframeMessage
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPipelineHelper}
+import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
+import org.scalatest.FunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class JoinSuite extends CebesBaseSuite with TestDataHelper with TestPipelineHelper {
+class JoinSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     createOrReplaceCylinderBands()
   }
 
-  ignore("join") {
+  test("join") {
     val df = getCylinderBands
 
     val df1 = df.select("*").where(df("customer").isin("GUIDEPOSTS", "ECKERD")).alias("small")

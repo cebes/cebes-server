@@ -17,14 +17,14 @@ package io.cebes.spark.pipeline.store
 import java.util.UUID
 
 import io.cebes.common.HasId
-
 import io.cebes.pipeline.PipelineStore
 import io.cebes.pipeline.models.Pipeline
 import io.cebes.spark.CebesSparkTestInjector
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
+import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import io.cebes.spark.pipeline.etl.{Join, Sample}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkPipelineStoreSuite extends CebesBaseSuite with TestPropertyHelper with TestDataHelper {
+class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll with TestPropertyHelper with TestDataHelper {
 
   private def samplePipeline = {
     val stage1 = Join()
