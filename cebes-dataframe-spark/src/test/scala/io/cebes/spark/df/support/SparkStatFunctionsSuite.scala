@@ -17,9 +17,10 @@ package io.cebes.spark.df.support
 import io.cebes.common.CebesBackendException
 import io.cebes.df.functions
 import io.cebes.df.types.storage.LongType
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
+import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkStatFunctionsSuite extends CebesBaseSuite
+class SparkStatFunctionsSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
   override def beforeAll(): Unit = {

@@ -24,7 +24,7 @@ trait TestPipelineHelper {
   private val waitTime = Duration(2, TimeUnit.MINUTES)
 
   /** Generic wait function for getting a Pipeline message */
-  protected def result(waitable: => Future[PipelineMessage]): PipelineMessage = Await.result(waitable, waitTime)
+  protected def result(awaitable: => Future[PipelineMessage]): PipelineMessage = Await.result(awaitable, waitTime)
 
   /** Specialized wait function for results that are [[DataframeMessage]] */
   protected def resultDf(waitable: => Future[PipelineMessage]): Dataframe = {

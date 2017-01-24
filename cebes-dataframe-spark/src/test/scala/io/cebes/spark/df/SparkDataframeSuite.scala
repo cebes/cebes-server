@@ -17,14 +17,15 @@ package io.cebes.spark.df
 import java.sql.Timestamp
 
 import io.cebes.common.CebesBackendException
-import io.cebes.df.{Column, functions}
 import io.cebes.df.types.storage._
 import io.cebes.df.types.{StorageTypes, VariableTypes}
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
+import io.cebes.df.{Column, functions}
+import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import scala.collection.mutable
 
-class SparkDataframeSuite extends CebesBaseSuite
+class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
   override def beforeAll(): Unit = {

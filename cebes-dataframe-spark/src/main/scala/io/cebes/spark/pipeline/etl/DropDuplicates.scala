@@ -8,17 +8,22 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 01/12/2016.
  */
+package io.cebes.spark.pipeline.etl
 
-package io.cebes.spark.helpers
+import io.cebes.df.Dataframe
+import io.cebes.pipeline.models.StringArrayParam
+import io.cebes.pipeline.stages.UnaryTransformer
 
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+/**
+  * Returns a new Dataframe with duplicated entries removed
+  */
+case class DropDuplicates() extends UnaryTransformer {
 
-trait CebesBaseSuite extends FunSuite with BeforeAndAfterAll {
+  val colNames = StringArrayParam("colNames", Some(Array()),
+    "List of column names to be considered when dropping duplicated entries")
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
+  override protected def transform(df: Dataframe): Dataframe = {
+    df.dropDuplicates(param(colNames))
   }
 }

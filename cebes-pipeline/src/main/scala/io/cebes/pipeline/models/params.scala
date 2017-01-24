@@ -46,8 +46,8 @@ case class IntParam(override val name: String, override val defaultValue: Option
   extends Param[Int](name, defaultValue, doc, validator)
 
 case class LongParam(override val name: String, override val defaultValue: Option[Long],
-                       override val doc: String,
-                       override val validator: Long => Boolean = ParamValidators.default)
+                     override val doc: String,
+                     override val validator: Long => Boolean = ParamValidators.default)
   extends Param[Long](name, defaultValue, doc, validator)
 
 case class FloatParam(override val name: String, override val defaultValue: Option[Float],
@@ -70,6 +70,11 @@ case class ColumnParam(override val name: String, override val defaultValue: Opt
                        override val validator: Column => Boolean = ParamValidators.default)
   extends Param[Column](name, defaultValue, doc, validator)
 
+case class ColumnArrayParam(override val name: String, override val defaultValue: Option[Array[Column]],
+                            override val doc: String,
+                            override val validator: Array[Column] => Boolean = ParamValidators.default)
+  extends Param[Array[Column]](name, defaultValue, doc, validator)
+
 /**
   * Trait for components that take parameters. This also provides an internal param map to store
   * parameter values attached to the instance.
@@ -79,7 +84,6 @@ trait Params extends Serializable {
   /**
     * Returns all params sorted by their names. The default implementation uses Java reflection to
     * list all public methods that have no arguments and return [[Param]].
-    *
     */
   protected lazy val _params: Array[Param[_]] = {
     val methods = this.getClass.getMethods
@@ -103,9 +107,7 @@ trait Params extends Serializable {
     }.asInstanceOf[Param[Any]]
   }
 
-  /**
-    * Sets a parameter in the embedded param map.
-    */
+  /** Sets a parameter in the embedded param map. */
   final def set[T](param: Param[T], value: T): this.type = {
     require(param.validator(value),
       s"$toString: Invalid value (${value.toString}) for parameter ${param.name}")
@@ -113,16 +115,12 @@ trait Params extends Serializable {
     this
   }
 
-  /**
-    * Sets a parameter (by name) in the embedded param map.
-    */
+  /** Sets a parameter (by name) in the embedded param map. */
   protected final def set(param: String, value: Any): this.type = {
     set(getParam(param), value)
   }
 
-  /**
-    * Optionally returns the user-supplied value of a param.
-    */
+  /** Optionally returns the user-supplied value of a param. */
   final def get[T](param: Param[T]): Option[T] = {
     shouldOwn(param)
     paramMap.get(param)
@@ -148,31 +146,23 @@ trait Params extends Serializable {
 // ParamMap
 ///////////////////////////////////////////////////////////////////////////////
 
-/**
-  * A Map of parameters
-  */
+/** A Map of parameters */
 class ParamMap(private val map: mutable.Map[Param[Any], Any]) {
 
   def this() = this(mutable.Map.empty)
 
-  /**
-    * Puts a (param, value) pair (overwrites if the input param exists).
-    */
+  /** Puts a (param, value) pair (overwrites if the input param exists). */
   def put[T](param: Param[T], value: T): this.type = {
     map(param.asInstanceOf[Param[Any]]) = value
     this
   }
 
-  /**
-    * Optionally returns the value associated with a param.
-    */
+  /** Optionally returns the value associated with a param. */
   def get[T](param: Param[T]): Option[T] = {
     map.get(param.asInstanceOf[Param[Any]]).asInstanceOf[Option[T]].orElse(param.defaultValue)
   }
 
-  /**
-    * Returns the value associated with a param or a default value.
-    */
+  /** Returns the value associated with a param or a default value. */
   def getOrElse[T](param: Param[T], default: T): T = {
     get(param).getOrElse(default)
   }
@@ -190,9 +180,7 @@ class ParamMap(private val map: mutable.Map[Param[Any], Any]) {
 
 object ParamMap {
 
-  /**
-    * Returns an empty param map.
-    */
+  /** Returns an empty param map. */
   def empty: ParamMap = new ParamMap()
 
 }

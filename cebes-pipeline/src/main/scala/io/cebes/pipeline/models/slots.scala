@@ -23,6 +23,10 @@ import scala.reflect.ClassTag
   * Subclasses of [[Slot]] are specific cases of those slots
   */
 abstract class Slot[+T <: PipelineMessage](val name: String, val doc: String)(implicit tag: ClassTag[T]) {
+
+  /** the class of the message in this slot, i.e. Class[T],
+    * but implemented with some tricks to overcome scala compiler's constraints.
+    */
   def messageClass[U >: T]: Class[U] = tag.runtimeClass.asInstanceOf[Class[U]]
 }
 

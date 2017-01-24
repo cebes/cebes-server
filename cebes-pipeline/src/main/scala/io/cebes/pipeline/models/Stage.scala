@@ -220,7 +220,7 @@ trait Stage extends Params {
         })
   }
 
-  implicit def toDataframeMessage(m: PipelineMessage): DataframeMessage = {
+  protected implicit def toDataframeMessage(m: PipelineMessage): DataframeMessage = {
     m.asInstanceOf[DataframeMessage]
   }
 }

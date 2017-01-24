@@ -16,10 +16,11 @@ package io.cebes.spark.df.expressions
 
 import io.cebes.df.expressions.Expression
 import io.cebes.spark.CebesSparkTestInjector
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper}
+import io.cebes.spark.helpers.TestDataHelper
 import org.apache.spark.sql.{Column => SparkColumn}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkExpressionParserSuite extends CebesBaseSuite with TestDataHelper {
+class SparkExpressionParserSuite extends FunSuite with BeforeAndAfterAll with TestDataHelper {
 
   override def beforeAll(): Unit = {
     super.beforeAll()

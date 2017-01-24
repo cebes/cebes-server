@@ -14,9 +14,10 @@
 
 package io.cebes.spark.df
 
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
+import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-class SparkDataframeServiceSuite extends CebesBaseSuite
+class SparkDataframeServiceSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper {
 
   override def beforeAll(): Unit = {

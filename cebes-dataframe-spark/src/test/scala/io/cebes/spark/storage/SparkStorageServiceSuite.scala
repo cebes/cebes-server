@@ -19,17 +19,18 @@ import java.util.Comparator
 import java.util.function.Consumer
 
 import com.typesafe.scalalogging.StrictLogging
-import io.cebes.spark.helpers.{CebesBaseSuite, TestDataHelper, TestPropertyHelper}
+import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import io.cebes.spark.storage.rdbms.{HiveDataSource, JdbcDataSource}
 import io.cebes.spark.storage.s3.S3DataSource
 import io.cebes.storage.DataFormats
 import io.cebes.storage.localfs.LocalFsDataSource
 import io.cebes.util.ResourceUtil
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import scala.util.Try
 
-class SparkStorageServiceSuite extends CebesBaseSuite with TestPropertyHelper with TestDataHelper
-  with StrictLogging {
+class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll
+  with TestPropertyHelper with TestDataHelper with StrictLogging {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
