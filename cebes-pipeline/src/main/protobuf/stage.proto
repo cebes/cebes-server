@@ -5,7 +5,6 @@ option java_multiple_files = true;
 option java_package = "io.cebes.pipeline.protos";
 option java_outer_classname = "StageProtos";
 
-import "param.proto";
 import "message.proto";
 
 message StageDef {
@@ -16,13 +15,12 @@ message StageDef {
     // Class name of the stage
     string stage = 2;
 
-    // map of inputs to this stage. Each entry is input_slot -> src_stage[:output_slot]
-    // where input_slot is the input slot index of this stage,
+    // map of inputs to this stage. Each entry is input_slot -> src_stage[:src_slot]
+    // where input_slot is the input slot name of this stage,
     // src_stage is the name from which the output is retrieved,
-    // from the output_slot. If output_slot isn't specified, it is default to be 0.
-    map<int32, string> input = 3;
+    // from the src_slot. If output_slot isn't specified, its default value is "default".
+    map<string, PipelineMessageDef> input = 3;
 
-    repeated PipelineMessageDef output = 4;
-
-    repeated ParamDef param = 5;
+    // map from the output slot name to the message
+    map<string, PipelineMessageDef> output = 4;
 }
