@@ -14,134 +14,72 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
-import io.cebes.df.Column
-import io.cebes.json.CebesCoreJsonProtocol._
-import io.cebes.pipeline.protos.param.ParamDef
-import io.cebes.pipeline.protos.stage.StageDef
-import io.cebes.pipeline.protos.value.{ArrayDef, ColumnDef, ScalarDef, ValueDef}
-import spray.json._
-
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
 /**
-  * A Pipeline stage, with a name, inputs, outputs and parameters
+  * A Pipeline stage, with a name, inputs, outputs
   * The Stage is designed around the concept of [[Future]].
-  * Stage.output(idx) is the output at slot `idx`, of type [[Future[PipelineMessage]] which can be waited on,
+  * Stage.output(s) is the output at slot with name `s`, of type [[Future[Any]] which can be waited on,
   * and cached if the input doesn't change.
   *
   * Note that this makes the stages to be stateful, which is somehow against the philosophy of Scala,
   * but we do it for the sake of runtime "efficiency",
   * although at the price of more code with all kinds of locks.
   */
-trait Stage extends Params {
-
-  /**
-    * list of all inputs required by this component.
-    * To be specified by the class that implements this trait
-    */
-  protected val _inputs: Seq[Slot[PipelineMessage]]
-
-  /**
-    * list of all output slots produced by this component.
-    * To be specified by the class that implements this trait
-    */
-  protected val _outputs: Seq[Slot[PipelineMessage]]
+trait Stage extends Inputs {
 
   /**
     * Implement this to do the real job of transforming inputs into outputs
     */
-  protected def run(inputs: Seq[PipelineMessage]): Seq[PipelineMessage]
+  protected def run(inputs: SlotValueMap): SlotValueMap
 
   /////////////////////////////////////////////////////////////////////////////
-  // name of a stage is simply just a StringParam with name "name"
+  // name of a stage is nothing more than an input slot
   /////////////////////////////////////////////////////////////////////////////
 
-  /** The name of this stage */
-  def getName: String = get(name).get
+  val name: InputSlot[String] = inputSlot[String]("name", "Name of this stage",
+    Some(getClass.getSimpleName.toLowerCase), SlotValidators.isValidStageName)
 
-  /** Convenient method for setting the stage name */
-  def setName(stageName: String): this.type = {
-    set(name, stageName)
-  }
+  def getName: String = input(name).get
 
-  val name = StringParam("name", Some(getClass.getSimpleName.toLowerCase),
-    "Name of the stage, given by the user. Must be unique in a pipeline",
-    ParamValidators.isValidStageName)
-
-  /////////////////////////////////////////////////////////////////////////////
-  // inputs
-  /////////////////////////////////////////////////////////////////////////////
-
-  /** The read-write lock for inputMap */
-  protected val inputLock: ReadWriteLock = new ReentrantReadWriteLock()
-
-  /** Internal map for inputs */
-  private final val inputMap: SlotMap = SlotMap.empty
-
-  /** The inputMap just got updated */
-  @volatile protected var hasNewInput: Boolean = true
-
-  /** Gets an input by its index. */
-  private final def getInput[T <: PipelineMessage](inputIdx: Int): Slot[T] = {
-    require(0 <= inputIdx && inputIdx < _inputs.size,
-      s"Invalid input index: $inputIdx. Has to be in [0, ${_inputs.size})")
-    _inputs(inputIdx).asInstanceOf[Slot[T]]
-  }
-
-  /** Set a value for the input at the given location */
-  def input[T <: PipelineMessage](i: Int, value: Future[T]): this.type = {
-    inputLock.writeLock().lock()
-    try {
-      inputMap.put(getInput(i), value)
-      hasNewInput = true
-    } finally {
-      inputLock.writeLock().unlock()
-    }
-    this
-  }
-
-  /**
-    * Run some work on all the input, return a Future[R] where R is the return type of the work.
-    * Throw exception if some input is missing, or the input is of the wrong type
-    *
-    * NOTE: This is reading on the input maps, so callers of this method should acquire
-    * the readLock() on `inputLock`
-    */
-  protected def withAllInputs[R](work: Seq[PipelineMessage] => R)(implicit ec: ExecutionContext): Future[R] = {
-    val v = _inputs.map(inp => inputMap(inp))
-    Future.sequence(v).map { seq =>
-      seq.zip(_inputs).zipWithIndex.foreach { case ((m, s), i) =>
-        if (m.getClass != s.messageClass) {
-          throw new IllegalArgumentException(
-            s"Stage $toString: invalid input type at slot #$i (${s.name}), " +
-              s"expected a ${s.messageClass.getSimpleName}, got ${m.getClass.getSimpleName}")
-        }
-      }
-      work(seq)
-    }
+  def setName(newName: String): this.type = {
+    input(name, newName)
   }
 
   /////////////////////////////////////////////////////////////////////////////
   // outputs
   /////////////////////////////////////////////////////////////////////////////
 
-  /** Lock object for `outputList` */
+  /** list of all output slots produced by this component */
+  private lazy val _outputs: Array[OutputSlot[_]] = getSlotMembers[OutputSlot[_]]
+
+  /** Lock object for `outputMap` */
   private val outputLock: ReadWriteLock = new ReentrantReadWriteLock()
 
   /** List that holds the outputs */
-  private var outputList: Option[Seq[Future[PipelineMessage]]] = None
+  private var outputMap: Option[Map[OutputSlot[Any], Future[Any]]] = None
+
+  /** Gets output slot by its name. */
+  final def getOutput(slotName: String): OutputSlot[Any] = {
+    _outputs.find(_.name == slotName).getOrElse {
+      throw new NoSuchElementException(s"Slot $slotName does not exist.")
+    }
+  }
 
   /**
     * Return the actual output at the given index.
     */
-  def output(idx: Int)(implicit ec: ExecutionContext): Future[PipelineMessage] = {
+  def output[T](outputSlot: OutputSlot[T])(implicit ec: ExecutionContext): Future[T] = {
+    require(_outputs.contains(outputSlot), s"Output name ${outputSlot.name} not found in stage $toString")
+
     inputLock.readLock().lock()
     outputLock.readLock().lock()
-    if (outputList.isEmpty || hasNewInput) {
+    if (outputMap.isEmpty || hasNewInput) {
       outputLock.readLock().unlock()
       outputLock.writeLock().lock()
       try {
-        outputList = Some(computeOutput)
+        outputMap = Some(computeOutput)
         hasNewInput = false
 
         // Downgrade by acquiring read lock before releasing write lock
@@ -155,10 +93,11 @@ trait Stage extends Params {
     }
 
     try {
-      val outputsVal = outputList.get
-      require(0 <= idx && idx < outputsVal.size,
-        s"Stage $toString: invalid output index $idx, has to be in [0, ${outputsVal.size})")
-      outputsVal(idx)
+      outputMap.get.get(outputSlot.asInstanceOf[OutputSlot[Any]]) match {
+        case Some(f) => f.asInstanceOf[Future[T]]
+        case None =>
+          throw new NoSuchElementException(s"Stage $toString: slot named ${outputSlot.name} is not computed.")
+      }
     } finally {
       outputLock.readLock().unlock()
     }
@@ -167,60 +106,39 @@ trait Stage extends Params {
   /**
     * Compute the output, check the types and number of output slots
     */
-  private def computeOutput(implicit ec: ExecutionContext): Seq[Future[PipelineMessage]] = {
+  private def computeOutput(implicit ec: ExecutionContext): Map[OutputSlot[Any], Future[Any]] = {
     val futureOutput = withAllInputs { inps =>
+      // remove the default slot containing the name of this stage
+      // subclasses don't need the name in their "run()" function
+      inps.remove(name)
+
       val out = run(inps)
-      require(out.size == _outputs.size,
-        s"Stage $toString has ${_outputs.size} output, but its run() function " +
-          s"returns ${out.size} output")
-      out.zip(_outputs).zipWithIndex.foreach { case ((m, s), i) =>
-        if (s.messageClass != m.getClass) {
-          throw new IllegalArgumentException(s"Stage $toString: invalid output type at slot #$i (${s.name}), " +
-            s"expected a ${s.messageClass.getSimpleName}, got ${m.getClass.getSimpleName}")
+      _outputs.foreach { s =>
+        if (!out.contains(s)) {
+          throw new IllegalArgumentException(s"Stage $toString: output doesn't contain result for slot ${s.name}")
+        }
+        Option(out(s)) match {
+          case Some(v) =>
+            if (!s.messageClass.isAssignableFrom(v.getClass)) {
+              throw new IllegalArgumentException(s"Stage $toString: output slot ${s.name} expects type " +
+                s"${s.messageClass.getSimpleName}, but got value ${v.toString} of type ${v.getClass.getSimpleName}")
+            }
+          case None =>
         }
       }
       out
     }
-    _outputs.indices.map { i =>
-      futureOutput.map { seq =>
-        seq(i)
-      }
-    }
+    _outputs.map { s =>
+      s -> futureOutput.map(seq => seq(s))
+    }.toMap
+  }
+
+  /** Create an **output** slot of the given type */
+  final protected def outputSlot[T](name: String, doc: String, defaultValue: Option[T],
+                                    validator: SlotValidator[T] = SlotValidators.default[T])
+                                   (implicit tag: ClassTag[T]): OutputSlot[T] = {
+    OutputSlot[T](name, doc, defaultValue, validator)
   }
 
   override def toString: String = s"${getClass.getSimpleName}(name=$getName)"
-
-  def toProto: StageDef = {
-    StageDef().withName(getName)
-      .withStage(getClass.getSimpleName)
-        .addAllParam(_params.filter(get(_).isDefined).map { parameter =>
-          val paramValue = (parameter, get(parameter).get) match {
-            case (_: StringParam, v: String) =>
-              ValueDef().withScalar(ScalarDef().withStringVal(v))
-            case (_: BooleanParam, v: Boolean) =>
-              ValueDef().withScalar(ScalarDef().withBoolVal(v))
-            case (_: IntParam, v: Int) =>
-              ValueDef().withScalar(ScalarDef().withInt32Val(v))
-            case (_: LongParam, v: Long) =>
-              ValueDef().withScalar(ScalarDef().withInt64Val(v))
-            case (_: FloatParam, v: Float) =>
-              ValueDef().withScalar(ScalarDef().withFloatVal(v))
-            case (_: DoubleParam, v: Double) =>
-              ValueDef().withScalar(ScalarDef().withDoubleVal(v))
-            case (_: StringArrayParam, v: Array[String]) =>
-              ValueDef().withArray(ArrayDef()
-                .addAllElement(v.map(s => ValueDef().withScalar(ScalarDef().withStringVal(s)))))
-            case (_: ColumnParam, v: Column) =>
-              ValueDef().withColumn(ColumnDef(v.toJson.compactPrint))
-            case _ =>
-              throw new IllegalArgumentException(s"Unknown parameter ${parameter.name} of " +
-                s"type ${parameter.getClass.getName}")
-          }
-          ParamDef().withName(parameter.name).withValue(paramValue)
-        })
-  }
-
-  protected implicit def toDataframeMessage(m: PipelineMessage): DataframeMessage = {
-    m.asInstanceOf[DataframeMessage]
-  }
 }

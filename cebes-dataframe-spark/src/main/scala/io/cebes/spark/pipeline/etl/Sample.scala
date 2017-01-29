@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{BooleanParam, DoubleParam, LongParam, ParamValidators}
+import io.cebes.pipeline.models._
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,11 +20,13 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Sample() extends UnaryTransformer {
 
-  val withReplacement = BooleanParam("withReplacement", Some(true), "Whether to sample with replacement")
-  val fraction = DoubleParam("fraction", Some(0.5), "Fraction of rows to generate", ParamValidators.greaterOrEqual(0))
-  val seed = LongParam("seed", Some(42), "Seed for sampling")
+  val withReplacement: InputSlot[Boolean] = inputSlot[Boolean]("withReplacement",
+    "Whether to sample with replacement", Some(true))
+  val fraction: InputSlot[Double] = inputSlot[Double]("fraction",
+    "Fraction of rows to generate", Some(0.5), SlotValidators.greaterOrEqual(0))
+  val seed: InputSlot[Long] = inputSlot[Long]("seed", "Seed for sampling", Some(42))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.sample(param(withReplacement), param(fraction), param(seed))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.sample(inputs(withReplacement), inputs(fraction), inputs(seed))
   }
 }

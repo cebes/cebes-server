@@ -48,7 +48,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
       .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
         JdbcPersistenceColumn("proto", "MEDIUMTEXT")))
       .withValueToSeq { pipeline =>
-        Seq(System.currentTimeMillis(), pipeline.toProto.asInstanceOf[GeneratedMessage].toJson.compactPrint)
+        Seq(System.currentTimeMillis(), pipeline.proto.asInstanceOf[GeneratedMessage].toJson.compactPrint)
       }.withSqlToValue { (_, entry) =>
       val proto = entry.getString(2).parseJson.convertTo[GeneratedMessage].asInstanceOf[PipelineDef]
       pipelineFactory.create(proto)

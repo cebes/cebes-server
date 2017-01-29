@@ -19,18 +19,13 @@ import io.cebes.pipeline.models._
   */
 trait UnaryTransformer extends Stage {
 
-  override protected final val _inputs: Seq[Slot[PipelineMessage]] = Seq(
-    DataframeSlot("input", "The input dataframe")
-  )
+  val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The input dataframe", None)
+  val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "The output dataframe", None)
 
-  override protected final val _outputs: Seq[Slot[PipelineMessage]] = Seq(
-    DataframeSlot("output", "The output dataframe")
-  )
-
-  override protected def run(inputs: Seq[PipelineMessage]): Seq[PipelineMessage] = {
-    Seq(DataframeMessage(transform(inputs.head.df)))
+  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+    SlotValueMap(Seq(outputDf -> transform(inputs(inputDf), inputs)))
   }
 
   /** Implement this function to do the transformation */
-  protected def transform(df: Dataframe): Dataframe
+  protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe
 }

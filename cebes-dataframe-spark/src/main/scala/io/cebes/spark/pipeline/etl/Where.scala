@@ -11,8 +11,8 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.ColumnParam
+import io.cebes.df.{Column, Dataframe}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,9 +20,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Where() extends UnaryTransformer {
 
-  val condition = ColumnParam("condition", None, "Condition on which the rows will be selected")
+  val condition: InputSlot[Column] = inputSlot[Column]("condition",
+    "Condition on which the rows will be selected", None)
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.where(param(condition))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.where(inputs(condition))
   }
 }

@@ -11,7 +11,6 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.pipeline.models.DataframeMessage
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -28,9 +27,9 @@ class DropSuite extends FunSuite with ImplicitExecutor with TestDataHelper with 
     val df = getCylinderBands.limit(50)
 
     val s = Drop().setName("drop")
-    s.set(s.colNames, Array[String]("cylinder_number", "non_existed_column"))
-    s.input(0, Future(DataframeMessage(df)))
-    val df2 = resultDf(s.output(0))
+    s.input(s.colNames, Array[String]("cylinder_number", "non_existed_column"))
+    s.input(s.inputDf, Future(df))
+    val df2 = resultDf(s.output(s.outputDf))
     assert(df2.numCols + 1 === df.numCols)
     assert(df2.numRows === df.numRows)
     assert(df2.schema.get("cylinder_number").isEmpty)

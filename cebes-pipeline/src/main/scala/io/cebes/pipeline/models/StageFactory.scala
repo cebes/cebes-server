@@ -12,11 +12,7 @@
 
 package io.cebes.pipeline.models
 
-import io.cebes.df.Column
-import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.pipeline.protos.stage.StageDef
-import io.cebes.pipeline.protos.value.{ScalarDef, ValueDef}
-import spray.json._
 
 import scala.util.{Success, Try}
 
@@ -46,39 +42,11 @@ class StageFactory(private val stageNamespaces: Seq[String] = Seq("io.cebes.pipe
       case None => throw new IllegalArgumentException(s"Failed to initialize stage class ${cls.getName}")
     }
 
-    // set the params
-    proto.param.foreach { p =>
-      p.value.map { paramDef =>
-        paramDef.value match {
-          case ValueDef.Value.Scalar(scalarDef) =>
-            scalarDef.value match {
-              case ScalarDef.Value.StringVal(s) =>
-                stage.set(stage.getParam(p.name).asInstanceOf[StringParam], s)
-              case ScalarDef.Value.BoolVal(b) =>
-                stage.set(stage.getParam(p.name).asInstanceOf[BooleanParam], b)
-              case ScalarDef.Value.Int32Val(i) =>
-                stage.set(stage.getParam(p.name).asInstanceOf[IntParam], i)
-              case ScalarDef.Value.Int64Val(l) =>
-                stage.set(stage.getParam(p.name).asInstanceOf[LongParam], l)
-              case ScalarDef.Value.FloatVal(f) =>
-                stage.set(stage.getParam(p.name).asInstanceOf[FloatParam], f)
-              case ScalarDef.Value.DoubleVal(d) =>
-                stage.set(stage.getParam(p.name).asInstanceOf[DoubleParam], d)
-              case scalarVal =>
-                throw new UnsupportedOperationException("Unsupported scalar value for stage parameters: " +
-                s"Parameter name ${p.name} of stage ${proto.stage}(${proto.name}) " +
-                  s"with value ${scalarVal.toString} of type ${scalarVal.getClass.getName}")
-            }
-          case ValueDef.Value.Column(columnDef) =>
-            stage.set(stage.getParam(p.name).asInstanceOf[ColumnParam],
-              columnDef.columnJson.parseJson.convertTo[Column])
-          case valueDef =>
-            throw new UnsupportedOperationException("Unsupported non-scala value for stage parameters: " +
-              s"Parameter name ${p.name} of stage ${proto.stage}(${proto.name}) " +
-              s"with value ${valueDef.toString} of type ${valueDef.getClass.getName}")
-        }
-      }
+    // set the inputs
+    proto.input.foreach { case (inpName, inpMessage) =>
+      PipelineMessageSerializer.deserialize(inpMessage, stage, inpName)
     }
     stage
   }
 }
+

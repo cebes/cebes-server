@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.StringArrayParam
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -21,10 +21,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Drop() extends UnaryTransformer {
 
-  val colNames = StringArrayParam("colNames", Some(Array()),
-    "List of column names to be dropped")
+  val colNames: InputSlot[Array[String]] = inputSlot[Array[String]]("colNames",
+    "List of column names to be dropped", Some(Array()))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.drop(param(colNames))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.drop(inputs(colNames).toSeq)
   }
 }

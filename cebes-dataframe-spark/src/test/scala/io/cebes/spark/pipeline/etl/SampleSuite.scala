@@ -11,7 +11,6 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.pipeline.models.DataframeMessage
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -28,11 +27,11 @@ class SampleSuite extends FunSuite with ImplicitExecutor with TestDataHelper wit
     val df = getCylinderBands
 
     val s = Sample()
-    s.set(s.withReplacement, true)
-    s.set(s.fraction, 0.2)
-    s.set(s.seed, 128L)
-    s.input(0, Future(DataframeMessage(df)))
-    val df2 = resultDf(s.output(0))
+    s.input(s.withReplacement, true)
+    s.input(s.fraction, 0.2)
+    s.input(s.seed, 128L)
+    s.input(s.inputDf, Future(df))
+    val df2 = resultDf(s.output(s.outputDf))
     assert(df2.numCols === df.numCols)
     assert(df2.numRows < df.numRows)
   }

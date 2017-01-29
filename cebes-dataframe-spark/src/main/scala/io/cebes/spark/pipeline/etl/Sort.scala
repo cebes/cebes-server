@@ -11,8 +11,8 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.ColumnArrayParam
+import io.cebes.df.{Column, Dataframe}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,9 +20,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Sort() extends UnaryTransformer {
 
-  val sortExprs = ColumnArrayParam("sortExprs", Some(Array()), "array of sort expressions")
+  val sortExprs: InputSlot[Array[Column]] = inputSlot[Array[Column]]("sortExprs",
+    "array of sort expressions", Some(Array()))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.sort(param(sortExprs): _*)
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.sort(inputs(sortExprs): _*)
   }
 }

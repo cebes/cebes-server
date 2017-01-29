@@ -16,27 +16,53 @@ package io.cebes.spark.pipeline.store
 
 import java.util.UUID
 
-import io.cebes.common.HasId
+import io.cebes.df.functions
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.pipeline.PipelineStore
-import io.cebes.pipeline.models.Pipeline
+import io.cebes.pipeline.protos.message.{ColumnDef, PipelineMessageDef, StageOutputDef}
+import io.cebes.pipeline.protos.pipeline.PipelineDef
+import io.cebes.pipeline.protos.stage.StageDef
+import io.cebes.pipeline.protos.value.{ScalarDef, ValueDef}
 import io.cebes.spark.CebesSparkTestInjector
-import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
+import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper, TestPropertyHelper}
 import io.cebes.spark.pipeline.etl.{Join, Sample}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import spray.json._
 
 class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
-  with TestPropertyHelper with TestDataHelper {
+  with TestPropertyHelper with TestDataHelper with TestPipelineHelper with ImplicitExecutor {
 
   private def samplePipeline = {
-    val stage1 = Join()
-    stage1.setName("stage1").set(stage1.joinType, "outer")
-    val stage2 = Sample()
-    stage2.setName("stage2")
-      .set(stage2.withReplacement, false)
-      .set(stage2.fraction, 0.2)
-      .set(stage2.seed, 169L)
+    val pipelineProto = PipelineDef().withStage(Seq(
+      StageDef().withName("stage1").withStage("Join")
+        .addAllInput(Map(
+          "joinType" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withStringVal("outer"))),
+          "joinExprs" -> PipelineMessageDef().withColumn(ColumnDef().withColumnJson(
+            functions.col("col1").equalTo(functions.col("col2")).toJson.compactPrint))
+        )),
+      StageDef().withName("stage2").withStage("Sample")
+        .addAllInput(Map(
+          "withReplacement" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withBoolVal(false))),
+          "fraction" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withDoubleVal(0.2))),
+          "seed" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withInt64Val(169L))),
+          "inputDf" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage1", "outputDf"))
+        ))
+    ))
 
-    Pipeline(HasId.randomId, Map(stage1.getName -> stage1, stage2.getName -> stage2))
+    val ppl = pipelineFactory.create(pipelineProto)
+    assert(ppl.stages.size === 2)
+
+    assert(ppl.stages("stage1").isInstanceOf[Join])
+    val joinStage = ppl.stages("stage1").asInstanceOf[Join]
+    assert(joinStage.input(joinStage.joinType).get === "outer")
+
+    assert(ppl.stages("stage2").isInstanceOf[Sample])
+    val sampleStage = ppl.stages("stage2").asInstanceOf[Sample]
+    assert(sampleStage.input(sampleStage.fraction).get === 0.2)
+    assert(sampleStage.input(sampleStage.seed).get === 169L)
+    assert(!sampleStage.input(sampleStage.withReplacement).get)
+
+    ppl
   }
 
   test("add and get") {

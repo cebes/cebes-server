@@ -11,8 +11,8 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{ColumnParam, StringParam}
+import io.cebes.df.{Column, Dataframe}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -21,10 +21,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class WithColumn() extends UnaryTransformer {
 
-  val colName = StringParam("colName", None, "Name of the new column")
-  val col = ColumnParam("col", None, "Expression for the new column")
+  val colName: InputSlot[String] = inputSlot[String]("colName", "Name of the new column", None)
+  val col: InputSlot[Column] = inputSlot[Column]("col", "Expression for the new column", None)
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.withColumn(param(colName), param(col))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.withColumn(inputs(colName), inputs(col))
   }
 }

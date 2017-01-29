@@ -12,12 +12,13 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
+import io.cebes.pipeline.models.SlotValueMap
 import io.cebes.pipeline.stages.BinaryTransformer
 
 /** Intersect of 2 dataframes */
 case class Intersect() extends BinaryTransformer {
 
-  override protected def transform(left: Dataframe, right: Dataframe): Dataframe = {
+  override protected def transform(left: Dataframe, right: Dataframe, inputs: SlotValueMap): Dataframe = {
     left.intersect(right)
   }
 }

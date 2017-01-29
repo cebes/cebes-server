@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{DoubleParam, StringArrayParam, StringParam}
+import io.cebes.pipeline.models._
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,16 +20,16 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class FillNA() extends UnaryTransformer {
 
-  val stringValue = StringParam("stringValue", None, "String value used to replace NAs")
-  val doubleValue = DoubleParam("doubleValue", None, "Double value used to replace NAs")
-  val cols = StringArrayParam("cols", Some(Array()), "Column names to consider")
+  val stringValue: InputSlot[String] = inputSlot[String]("stringValue", "String value used to replace NAs", None)
+  val doubleValue: InputSlot[String] = inputSlot[String]("doubleValue", "Double value used to replace NAs", None)
+  val cols: InputSlot[Array[String]] = inputSlot[Array[String]]("cols", "Column names to consider", Some(Array()))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    (get(stringValue), get(doubleValue)) match {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    (inputs.get(stringValue), inputs.get(doubleValue)) match {
       case (Some(s), None) =>
-        df.na.fill(s, param(cols))
+        df.na.fill(s, inputs(cols))
       case (None, Some(d)) =>
-        df.na.fill(d, param(cols))
+        df.na.fill(d, inputs(cols))
       case _ =>
         throw new IllegalArgumentException("Either stringValue or doubleValue must be provided")
     }
