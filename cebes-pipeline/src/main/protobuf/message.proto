@@ -19,13 +19,31 @@ message ModelMessageDef {
 
 }
 
+message ColumnDef {
+
+    // the JSON representation of the column
+    string column_json = 1;
+}
+
+// represent an output slot of a stage
+message StageOutputDef {
+
+    // name of the stage
+    string stage_name = 1;
+
+    // name of the output slot
+    string output_name = 2;
+}
+
 // The message being sent between stages in a pipeline
 // This can be one of: a dataframe, a value, a dataframe sample, a model, etc...
 message PipelineMessageDef {
     oneof msg {
-        DataframeMessageDef df = 1;
-        ValueDef value = 2;
-        SampleMessageDef df_sample = 3;
-        ModelMessageDef model = 4;
+        ValueDef value = 1;
+        StageOutputDef stage_output = 2;
+        DataframeMessageDef df = 3;
+        SampleMessageDef df_sample = 4;
+        ModelMessageDef model = 5;
+        ColumnDef column = 6;
     }
 }

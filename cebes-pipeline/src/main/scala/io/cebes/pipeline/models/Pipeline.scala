@@ -15,46 +15,136 @@ package io.cebes.pipeline.models
 import java.util.UUID
 
 import io.cebes.common.HasId
+import io.cebes.pipeline.protos.message.PipelineMessageDef
 import io.cebes.pipeline.protos.pipeline.PipelineDef
 
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-case class Pipeline(id: UUID, stages: Map[String, Stage]) extends HasId {
+case class Pipeline(id: UUID, stages: Map[String, Stage], proto: PipelineDef) extends HasId {
 
   private val runLocker = new AnyRef()
 
-  def run(outs: Seq[String], feeds: Map[String, PipelineMessage])
-         (implicit ec: ExecutionContext): Seq[PipelineMessage] = {
+  /**
+    * Execute the pipeline
+    */
+  def run(outs: Seq[String], feeds: Map[String, PipelineMessageDef])
+         (implicit ec: ExecutionContext): Map[String, PipelineMessageDef] = {
     if (outs.isEmpty) {
-      return Nil
+      return Map.empty
+    }
+
+    val feedsWithSlot = feeds.map { case (inpDesc, pipelineMsgDef) =>
+      val slot = SlotDescriptor(inpDesc)
+      stages.get(slot.parent) match {
+        case None =>
+          throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in feed $inpDesc")
+        case Some(_) => slot -> pipelineMsgDef
+      }
     }
 
     val result = runLocker.synchronized {
-      feeds.foreach { case (desc, msg) =>
-        val slot = SlotDescriptor(desc)
-        stages.get(slot.parent) match {
-          case None => throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in feed $desc")
-          case Some(stage) =>
-            stage.input(slot.idx, Future(msg))
+
+      // set everything in feeds which are not StageOutput
+      feedsWithSlot.foreach { case (slot, pipelineMsgDef) =>
+        pipelineMsgDef.msg match {
+          case PipelineMessageDef.Msg.StageOutput(_) =>
+          case _ =>
+            PipelineMessageSerializer.deserialize(pipelineMsgDef, stages(slot.parent), slot.name)
         }
+      }
+
+      // now wire the stages, with connections in feeds overwriting connections in the
+      // original proto definition
+      // Note that wireMap contains the back links: s1 -> s2 meaning s2 provides its output to s1's input
+      val wireMap = proto.stage.flatMap { stageDef =>
+        stageDef.input.map { case (inpSlot, msgDef) =>
+          msgDef.msg match {
+            case PipelineMessageDef.Msg.StageOutput(stageOutputDef) =>
+              Some(SlotDescriptor(stageDef.name, inpSlot) ->
+                SlotDescriptor(stageOutputDef.stageName, stageOutputDef.outputName))
+            case _ => None
+          }
+        }.filter(_.isDefined).map(_.get)
+      }.toMap ++ feedsWithSlot.map { case (slot, pipelineMsgDef) =>
+        pipelineMsgDef.msg match {
+          case PipelineMessageDef.Msg.StageOutput(stageOutputDef) =>
+            Some(slot -> SlotDescriptor(stageOutputDef.stageName, stageOutputDef.outputName))
+          case _ => None
+        }
+      }.filter(_.isDefined).map(_.get).toMap
+
+      Pipeline.topoSort(wireMap)
+
+      // wire them all
+      wireMap.foreach { case (s1, s2) =>
+        val destStage = stages(s1.parent)
+        val srcStage = stages(s2.parent)
+        destStage.input(destStage.getInput(s1.name), srcStage.output(srcStage.getOutput(s2.name)))
       }
 
       Future.sequence(outs.map { desc =>
         val slot = SlotDescriptor(desc)
         stages.get(slot.parent) match {
-          case None => throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in output $desc")
-          case Some(stage) => stage.output(slot.idx)
+          case None =>
+            throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in output $desc")
+          case Some(stage) =>
+            val outputSlot = stage.getOutput(slot.name)
+            stage.output(outputSlot).getFuture.map { out =>
+              desc -> PipelineMessageSerializer.serialize(out, outputSlot)
+            }
         }
-      })
+      }).map(_.toMap)
     }
+
     Await.result(result, Duration.Inf)
   }
 
+}
+
+object Pipeline {
+
+  private def getIncomingVertices(v: String, edges: Map[SlotDescriptor, SlotDescriptor]): Seq[String] = {
+    edges.filter { case (s1, _) =>
+      s1.parent == v
+    }.map { case (_, s2) =>
+      s2.parent
+    }.toSeq
+  }
+
   /**
-    * Get the protobuf definition of this pipeline
+    * Sort the network topologically
+    * Note that wireMap contains the back-links: s1 -> s2 means s2 provides its output to s1's input
     */
-  def toProto: PipelineDef = {
-    PipelineDef().withId(id.toString).addAllStage(stages.valuesIterator.map(_.toProto))
+  private def topoSort(wireMap: Map[SlotDescriptor, SlotDescriptor]): Unit = {
+    val sorted = mutable.ListBuffer.empty[String]
+    val noInputSet = mutable.Queue.empty[String]
+    val hasInputSet = mutable.HashSet.empty[String]
+    val vertices = wireMap.flatMap { case (s1, s2) =>
+      Seq(s1.parent, s2.parent)
+    }.toList.distinct
+
+    vertices.foreach { v =>
+      if (getIncomingVertices(v, wireMap).isEmpty) {
+        noInputSet.enqueue(v)
+      } else {
+        hasInputSet += v
+      }
+    }
+
+    while (noInputSet.nonEmpty) {
+      val n = noInputSet.dequeue()
+      sorted += n
+      val ls = hasInputSet.toList
+      ls.foreach { s2 =>
+        if (!getIncomingVertices(s2, wireMap).exists { depStageName => hasInputSet.contains(depStageName) }) {
+          hasInputSet.remove(s2)
+          noInputSet.enqueue(s2)
+        }
+      }
+    }
+    require(hasInputSet.isEmpty, s"There is a loop in the pipeline, somewhere around the stages " +
+      s"${hasInputSet.mkString(", ")}")
   }
 }

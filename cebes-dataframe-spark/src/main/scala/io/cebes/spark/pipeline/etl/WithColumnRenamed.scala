@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.StringParam
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,10 +20,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class WithColumnRenamed() extends UnaryTransformer {
 
-  val existingName = StringParam("existingName", None, "Name of the column to be renamed")
-  val newName = StringParam("newName", None, "New name of the column")
+  val existingName: InputSlot[String] = inputSlot[String]("existingName", "Name of the column to be renamed", None)
+  val newName: InputSlot[String] = inputSlot[String]("newName", "New name of the column", None)
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.withColumnRenamed(param(existingName), param(newName))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.withColumnRenamed(inputs(existingName), inputs(newName))
   }
 }

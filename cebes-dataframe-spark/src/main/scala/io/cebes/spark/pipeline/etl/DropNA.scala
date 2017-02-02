@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{IntParam, StringArrayParam}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -21,10 +21,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class DropNA() extends UnaryTransformer {
 
-  val minNonNulls = IntParam("minNonNulls", Some(0), "Minumum number of non-null values")
-  val cols = StringArrayParam("cols", Some(Array()), "Array of column names")
+  val minNonNulls: InputSlot[Int] = inputSlot[Int]("minNonNulls", "Minumum number of non-null values", Some(0))
+  val cols: InputSlot[Array[String]] = inputSlot[Array[String]]("cols", "Array of column names", Some(Array()))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.na.drop(param(minNonNulls), param(cols))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.na.drop(inputs(minNonNulls), inputs(cols))
   }
 }

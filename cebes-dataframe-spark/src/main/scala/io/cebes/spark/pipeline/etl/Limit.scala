@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{IntParam, ParamValidators}
+import io.cebes.pipeline.models.{InputSlot, SlotValidators, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -21,10 +21,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Limit() extends UnaryTransformer {
 
-  val size = IntParam("size", Some(10), "Maximum number of records to be retained",
-    ParamValidators.greaterOrEqual(0))
+  val size: InputSlot[Int] = inputSlot[Int]("size", "Maximum number of records to be retained",
+    Some(10), SlotValidators.greaterOrEqual(0))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.limit(param(size))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.limit(inputs(size))
   }
 }

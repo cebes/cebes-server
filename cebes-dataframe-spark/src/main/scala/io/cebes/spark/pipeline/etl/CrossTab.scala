@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.StringParam
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,10 +20,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class CrossTab() extends UnaryTransformer {
 
-  val col1 = StringParam("col1", None, "Name of the first column")
-  val col2 = StringParam("col2", None, "Name of the second column")
+  val col1: InputSlot[String] = inputSlot[String]("col1", "Name of the first column", None)
+  val col2: InputSlot[String] = inputSlot[String]("col2", "Name of the second column", None)
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.stat.crosstab(param(col1), param(col2))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.stat.crosstab(inputs(col1), inputs(col2))
   }
 }

@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.StringParam
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,9 +20,9 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Alias() extends UnaryTransformer {
 
-  val alias = StringParam("alias", None, "Alias for the Dataframe")
+  val alias: InputSlot[String] = inputSlot[String]("alias", "Alias for the Dataframe", None)
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.alias(param(alias))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.alias(inputs(alias))
   }
 }

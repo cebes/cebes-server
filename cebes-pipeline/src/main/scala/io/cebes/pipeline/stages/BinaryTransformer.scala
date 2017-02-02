@@ -19,18 +19,14 @@ import io.cebes.df.Dataframe
   */
 trait BinaryTransformer extends Stage {
 
-  override protected final val _inputs: Seq[Slot[PipelineMessage]] = Seq(
-    DataframeSlot("left", "Left input to the transformation"),
-    DataframeSlot("right", "Right input to the transformation")
-  )
-  override protected final val _outputs: Seq[Slot[PipelineMessage]] = Seq(
-    DataframeSlot("result", "Result of transformation")
-  )
+  val leftDf: InputSlot[Dataframe] = inputSlot[Dataframe]("leftDf", "Left input to the transformation", None)
+  val rightDf: InputSlot[Dataframe] = inputSlot[Dataframe]("rightDf", "Right input to the transformation", None)
+  val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "Result of transformation", None)
 
-  override protected def run(inputs: Seq[PipelineMessage]): Seq[PipelineMessage] = {
-    Seq(DataframeMessage(transform(inputs.head.df, inputs.last.df)))
+  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+    SlotValueMap(Seq(outputDf -> transform(inputs(leftDf), inputs(rightDf), inputs)))
   }
 
   /** Implement this function to do the transformation */
-  protected def transform(left: Dataframe, right: Dataframe): Dataframe
+  protected def transform(left: Dataframe, right: Dataframe, inputs: SlotValueMap): Dataframe
 }

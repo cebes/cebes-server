@@ -12,12 +12,13 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
+import io.cebes.pipeline.models.SlotValueMap
 import io.cebes.pipeline.stages.BinaryTransformer
 
 /** every record in the left, except ones belong to the right */
 case class Except() extends BinaryTransformer {
 
-  override protected def transform(left: Dataframe, right: Dataframe): Dataframe = {
+  override protected def transform(left: Dataframe, right: Dataframe, inputs: SlotValueMap): Dataframe = {
     left.except(right)
   }
 }

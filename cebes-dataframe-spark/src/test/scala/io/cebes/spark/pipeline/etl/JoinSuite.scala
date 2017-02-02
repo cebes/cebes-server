@@ -12,11 +12,8 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.functions
-import io.cebes.pipeline.models.DataframeMessage
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
-
-import scala.concurrent.Future
 
 class JoinSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
@@ -33,23 +30,24 @@ class JoinSuite extends FunSuite with ImplicitExecutor with TestDataHelper with 
 
     // inner join
     val s = Join().setName("join")
-    s.set(s.joinType, "inner")
-    s.set(s.joinExprs, functions.col("small.customer") === functions.col("big.customer"))
-    s.input(0, Future(DataframeMessage(df1)))
+    s.input(s.joinType, "inner")
+    s.input(s.joinExprs, functions.col("small.customer") === functions.col("big.customer"))
+    s.input(s.leftDf, df1)
 
     val ex0 = intercept[NoSuchElementException] {
-      resultDf(s.output(0))
+      resultDf(s.output(s.outputDf).getFuture)
     }
-    assert(ex0.getMessage.contains("Slot named right is not specified"))
+    assert(ex0.getMessage.contains("Input slot rightDf is undefined"))
 
-    s.input(1, Future(DataframeMessage(df2)))
-    val dfj1 = resultDf(s.output(0))
+    s.input(s.rightDf, df2)
+    val dfj1 = resultDf(s.output(s.outputDf).getFuture)
     assert(dfj1.numRows === 117)
 
     // invalid param
     val ex = intercept[IllegalArgumentException] {
-      s.set(s.joinType, "wrong_type")
+      s.input(s.joinType, "wrong_type")
     }
-    assert(ex.getMessage.contains("Invalid value (wrong_type) for parameter joinType"))
+    assert(ex.getMessage === "requirement failed: Join(name=join): Allowed values are: " +
+      "inner, outer, left_outer, right_outer, leftsemi")
   }
 }

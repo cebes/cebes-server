@@ -14,22 +14,25 @@ package io.cebes.spark.helpers
 import java.util.concurrent.TimeUnit
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{DataframeMessage, PipelineMessage}
+import io.cebes.pipeline.factory.PipelineFactory
+import io.cebes.spark.CebesSparkTestInjector
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 trait TestPipelineHelper {
+
+  lazy val pipelineFactory: PipelineFactory = CebesSparkTestInjector.instance[PipelineFactory]
 
   private val waitTime = Duration(2, TimeUnit.MINUTES)
 
   /** Generic wait function for getting a Pipeline message */
-  protected def result(awaitable: => Future[PipelineMessage]): PipelineMessage = Await.result(awaitable, waitTime)
+  protected def result[T](awaitable: => Future[T]): T = Await.result(awaitable, waitTime)
 
-  /** Specialized wait function for results that are [[DataframeMessage]] */
-  protected def resultDf(waitable: => Future[PipelineMessage]): Dataframe = {
+  /** Specialized wait function for results that are [[Dataframe]] */
+  protected def resultDf(waitable: => Future[Dataframe]): Dataframe = {
     val r = result(waitable)
-    assert(r.isInstanceOf[DataframeMessage])
-    r.asInstanceOf[DataframeMessage].df
+    assert(r.isInstanceOf[Dataframe])
+    r
   }
 }

@@ -11,8 +11,8 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.ColumnArrayParam
+import io.cebes.df.{Column, Dataframe}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,9 +20,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class Select() extends UnaryTransformer {
 
-  val columns = ColumnArrayParam("columns", None, "List of column expressions to be selected")
+  val columns: InputSlot[Array[Column]] = inputSlot[Array[Column]]("columns",
+    "List of column expressions to be selected", None)
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.select(param(columns): _*)
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.select(inputs(columns): _*)
   }
 }

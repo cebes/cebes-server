@@ -9,16 +9,13 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.spark.pipeline.etl
+package io.cebes.pipeline.ml
 
-import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.SlotValueMap
-import io.cebes.pipeline.stages.BinaryTransformer
+import io.cebes.common.HasId
 
-/** Union of 2 dataframes */
-case class Union() extends BinaryTransformer {
+/**
+  *
+  */
+trait Model extends HasId {
 
-  override protected def transform(left: Dataframe, right: Dataframe, inputs: SlotValueMap): Dataframe = {
-    left.union(right)
-  }
 }

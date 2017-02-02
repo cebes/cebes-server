@@ -11,20 +11,21 @@
  */
 package io.cebes.spark.pipeline.etl
 
-import io.cebes.df.Dataframe
+import io.cebes.df.{Column, Dataframe}
 import io.cebes.pipeline.models._
 import io.cebes.pipeline.stages.BinaryTransformer
 
 /** Do a Join between 2 dataframes */
 case class Join() extends BinaryTransformer {
 
-  val joinType = StringParam("joinType", Some("inner"),
+  val joinType: InputSlot[String] = inputSlot[String]("joinType",
     "Type of the join, must be one of: `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`",
-    ParamValidators.oneOf("inner", "outer", "left_outer", "right_outer", "leftsemi"))
+    Some("inner"),
+    SlotValidators.oneOf("inner", "outer", "left_outer", "right_outer", "leftsemi"))
 
-  val joinExprs = ColumnParam("joinExprs", None, "The join expression")
+  val joinExprs: InputSlot[Column] = inputSlot[Column]("joinExprs", "The join expression", None)
 
-  override protected def transform(left: Dataframe, right: Dataframe): Dataframe = {
-    left.join(right, param(joinExprs), param(joinType))
+  override protected def transform(left: Dataframe, right: Dataframe, inputs: SlotValueMap): Dataframe = {
+    left.join(right, inputs(joinExprs), inputs(joinType))
   }
 }

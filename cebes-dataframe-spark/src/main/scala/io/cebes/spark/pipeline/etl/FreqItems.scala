@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{DoubleParam, StringArrayParam}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
@@ -20,10 +20,12 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class FreqItems() extends UnaryTransformer {
 
-  val colNames = StringArrayParam("colNames", Some(Array()), "List of column names")
-  val support = DoubleParam("support", Some(0.01), "Minimum support score for a frequent itemset to be included")
+  val colNames: InputSlot[Array[String]] = inputSlot[Array[String]]("colNames",
+    "List of column names", Some(Array()))
+  val support: InputSlot[Double] = inputSlot[Double]("support",
+    "Minimum support score for a frequent itemset to be included", Some(0.01))
 
-  override protected def transform(df: Dataframe): Dataframe = {
-    df.stat.freqItems(param(colNames), param(support))
+  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+    df.stat.freqItems(inputs(colNames).toSeq, inputs(support))
   }
 }

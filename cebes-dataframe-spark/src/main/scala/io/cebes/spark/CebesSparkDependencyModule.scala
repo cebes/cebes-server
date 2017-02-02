@@ -16,7 +16,7 @@ package io.cebes.spark
 
 import com.google.inject.AbstractModule
 import io.cebes.df.store.{DataframeStore, DataframeTagStore}
-import io.cebes.pipeline.models.StageFactory
+import io.cebes.pipeline.factory.StageFactory
 import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
 import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
 import io.cebes.spark.df.store.{JdbcDataframeTagStore, SparkDataframeStore}

@@ -6,7 +6,7 @@ COVERAGE="false"
 
 for i in "$@"
 do
-case $i in
+case ${i} in
     -c=*|--coverage=*)
     COVERAGE="${i#*=}"
     shift
