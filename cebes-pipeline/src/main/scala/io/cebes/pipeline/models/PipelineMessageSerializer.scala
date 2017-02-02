@@ -11,7 +11,6 @@
  */
 package io.cebes.pipeline.models
 
-import com.google.inject.internal.cglib.core.$EmitUtils.ArrayDelimiters
 import io.cebes.df.Column
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.pipeline.protos.message.{ColumnDef, PipelineMessageDef}

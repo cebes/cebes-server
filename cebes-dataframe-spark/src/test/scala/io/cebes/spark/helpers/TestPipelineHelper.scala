@@ -14,7 +14,7 @@ package io.cebes.spark.helpers
 import java.util.concurrent.TimeUnit
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.PipelineFactory
+import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.spark.CebesSparkTestInjector
 
 import scala.concurrent.duration.Duration

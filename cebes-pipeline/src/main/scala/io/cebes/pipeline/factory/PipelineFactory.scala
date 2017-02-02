@@ -9,12 +9,13 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.pipeline.models
+package io.cebes.pipeline.factory
 
 import java.util.UUID
 
 import com.google.inject.Inject
 import io.cebes.common.HasId
+import io.cebes.pipeline.models.{Pipeline, Stage}
 import io.cebes.pipeline.protos.pipeline.PipelineDef
 
 import scala.collection.mutable

@@ -23,6 +23,11 @@ class StageFoo extends Stage {
   }
 }
 
+class StageFooNonDeterministic extends StageFoo {
+  override def nonDeterministic: Boolean = true
+}
+
+
 class StageTwoInputs extends Stage {
 
   val valIn: InputSlot[Array[Int]] = inputSlot[Array[Int]]("valIn", "The input integer array", None)

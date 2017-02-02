@@ -24,19 +24,19 @@ import scala.reflect.ClassTag
 trait Inputs {
 
   /** Internal slot map for user-supplied values. */
-  protected val inputSlotMap: SlotMap = SlotMap.empty
+  private val inputSlotMap: SlotMap = SlotMap.empty
 
   /** The read-write lock for [[inputSlotMap]] */
   protected val inputLock: ReadWriteLock = new ReentrantReadWriteLock()
 
   /** The [[inputSlotMap]] just got updated */
-  @volatile protected var hasNewInput: Boolean = true
+  @volatile private var hasNewInput: Boolean = true
 
   /**
     * Returns all slots sorted by their names. The default implementation uses Java reflection to
     * list all public methods that have no arguments and return [[Slot]].
     */
-  protected final lazy val _inputs: Array[InputSlot[_]] = getSlotMembers[InputSlot[_]]
+  private lazy val _inputs: Array[InputSlot[_]] = getSlotMembers[InputSlot[_]]
 
   /////////////////////////////////////////////////////////////////////////////
   // Public APIs
@@ -59,10 +59,10 @@ trait Inputs {
   /////////////////////////////////
 
   /** Sets a slot in the embedded slot map. */
-  final def input[T](slot: InputSlot[T], value: PresentOrFuture[T]): this.type = {
+  final def input[T](slot: InputSlot[T], value: StageInput[T]): this.type = {
     shouldOwn(slot)
     value match {
-      case Present(v) =>
+      case OrdinaryInput(v) =>
         if (slot.messageClass.isPrimitive || v.getClass.isPrimitive) {
           require(slot.messageClass.getSimpleName.toLowerCase() == v.getClass.getSimpleName.toLowerCase(),
             s"$toString: Input slot ${slot.name} needs type ${slot.messageClass.getName}, but got value " +
@@ -91,25 +91,17 @@ trait Inputs {
     * input(s, v: T) is equivalent to input(s, PresentOrFuture(v))
     */
   final def input[T](slot: InputSlot[T], value: T): this.type = {
-    input(slot, PresentOrFuture(value))
-  }
-
-  /**
-    * Conveniently set a future value for the given input slot
-    * input(s, f: Future[T]) is equivalent to input(s, PresentOrFuture(f))
-    */
-  final def input[T](slot: InputSlot[T], future: Future[T]): this.type = {
-    input(slot, PresentOrFuture(future))
+    input(slot, StageInput(value))
   }
 
   /////////////////////////////////
   // get value of an input slot
   /////////////////////////////////
 
-  /** Get the [[PresentOrFuture]] value of the given slot
+  /** Get the [[StageInput]] value of the given slot
     * Throws exception if it is not specified
     */
-  final def input[T](slot: InputSlot[T]): PresentOrFuture[T] = {
+  final def input[T](slot: InputSlot[T]): StageInput[T] = {
     inputOption(slot) match {
       case Some(t) => t
       case None =>
@@ -118,9 +110,9 @@ trait Inputs {
   }
 
   /**
-    * Optionally get the [[PresentOrFuture]] value of the given slot
+    * Optionally get the [[StageInput]] value of the given slot
     */
-  final def inputOption[T](slot: InputSlot[T]): Option[PresentOrFuture[T]] = {
+  final def inputOption[T](slot: InputSlot[T]): Option[StageInput[T]] = {
     shouldOwn(slot)
     inputSlotMap.get(slot)
   }
@@ -131,6 +123,7 @@ trait Inputs {
     *
     * NOTE: This is reading on the input maps, so callers of this method should acquire
     * the readLock() on [[inputLock]]
+    * See the code example in [[isInputChanged]] for a typical use-case.
     */
   final protected def withAllInputs[R](work: SlotValueMap => R)(implicit ec: ExecutionContext): Future[R] = {
     val v = _inputs.map(inp => input(inp).getFuture).toSeq
@@ -148,6 +141,39 @@ trait Inputs {
         s -> m
       }
       work(SlotValueMap(inputVals))
+    }
+  }
+
+  /**
+    * Check if some input has been changed, useful for caching the output if the input doesn't change.
+    * Typical usage should be:
+    * {{{
+    * inputLock.readLock().lock()
+    * try {
+    *   if (isInputChanged) {
+    *     withAllInputs { inps =>
+    *       // re-compute the output
+    *     }
+    *     inputUnchanged()
+    *   }
+    * } finally {
+    *   inputLock.readLock().unlock()
+    * }
+    * }}}
+    */
+  final protected def isInputChanged: Boolean = {
+    hasNewInput || _inputs.map(s => input(s)).exists {
+      case o: StageOutput[_] => o.isNewOutput
+      case _ => false
+    }
+  }
+
+  /** Reset the [[isInputChanged]] flag */
+  final protected def inputUnchanged(): Unit = {
+    hasNewInput = false
+    _inputs.map(s => input(s)).foreach {
+      case o: StageOutput[_] => o.seen()
+      case _ =>
     }
   }
 

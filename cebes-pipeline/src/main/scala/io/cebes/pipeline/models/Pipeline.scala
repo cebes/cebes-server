@@ -91,7 +91,7 @@ case class Pipeline(id: UUID, stages: Map[String, Stage], proto: PipelineDef) ex
             throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in output $desc")
           case Some(stage) =>
             val outputSlot = stage.getOutput(slot.name)
-            stage.output(outputSlot).map { out =>
+            stage.output(outputSlot).getFuture.map { out =>
               desc -> PipelineMessageSerializer.serialize(out, outputSlot)
             }
         }

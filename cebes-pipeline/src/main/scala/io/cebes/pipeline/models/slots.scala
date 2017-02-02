@@ -48,16 +48,16 @@ case class OutputSlot[+T](override val name: String, override val doc: String,
   extends Slot[T](name, doc, defaultValue, validator)
 
 /**
-  * A map of slots to the actual values, maps [[Slot]][T] into [[PresentOrFuture]][T]
+  * A map of slots to the actual values, maps [[Slot]][T] into [[StageInput]][T]
   */
-class SlotMap(private val map: mutable.Map[Slot[Any], PresentOrFuture[Any]]) {
+class SlotMap(private val map: mutable.Map[Slot[Any], StageInput[Any]]) {
 
   def this() = this(mutable.Map.empty)
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
     */
-  def put[T](slot: Slot[T], value: PresentOrFuture[T]): this.type = {
+  def put[T](slot: Slot[T], value: StageInput[T]): this.type = {
     map(slot.asInstanceOf[Slot[T]]) = value
     this
   }
@@ -65,24 +65,24 @@ class SlotMap(private val map: mutable.Map[Slot[Any], PresentOrFuture[Any]]) {
   /**
     * Optionally returns the value associated with a slot.
     */
-  def get[T](slot: Slot[T]): Option[PresentOrFuture[T]] = {
-    map.get(slot.asInstanceOf[Slot[Any]]).asInstanceOf[Option[PresentOrFuture[T]]]
-      .orElse(slot.defaultValue.map(v => PresentOrFuture(v)))
+  def get[T](slot: Slot[T]): Option[StageInput[T]] = {
+    map.get(slot.asInstanceOf[Slot[Any]]).asInstanceOf[Option[StageInput[T]]]
+      .orElse(slot.defaultValue.map(v => StageInput(v)))
   }
 
   /**
     * Returns the value associated with a slot, or a default value.
     * This will ignore the default value given in the declaration of the slot.
     */
-  def getOrElse[T](slot: Slot[T], default: PresentOrFuture[T]): PresentOrFuture[T] = {
-    map.get(slot.asInstanceOf[Slot[Any]]).asInstanceOf[Option[PresentOrFuture[T]]].getOrElse(default)
+  def getOrElse[T](slot: Slot[T], default: StageInput[T]): StageInput[T] = {
+    map.get(slot.asInstanceOf[Slot[Any]]).asInstanceOf[Option[StageInput[T]]].getOrElse(default)
   }
 
   /**
     * Gets the value of the slot or its default value if it does not exist.
     * Raises a [[NoSuchElementException]] if there is no value associated with the given slot.
     */
-  def apply[T](slot: Slot[T]): PresentOrFuture[T] = {
+  def apply[T](slot: Slot[T]): StageInput[T] = {
     get(slot).getOrElse {
       throw new NoSuchElementException(s"Slot named ${slot.name} is not specified.")
     }

@@ -14,8 +14,6 @@ package io.cebes.spark.pipeline.etl
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
-import scala.concurrent.Future
-
 class SampleSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
   override def beforeAll(): Unit = {
@@ -30,8 +28,8 @@ class SampleSuite extends FunSuite with ImplicitExecutor with TestDataHelper wit
     s.input(s.withReplacement, true)
     s.input(s.fraction, 0.2)
     s.input(s.seed, 128L)
-    s.input(s.inputDf, Future(df))
-    val df2 = resultDf(s.output(s.outputDf))
+    s.input(s.inputDf, df)
+    val df2 = resultDf(s.output(s.outputDf).getFuture)
     assert(df2.numCols === df.numCols)
     assert(df2.numRows < df.numRows)
   }

@@ -11,17 +11,18 @@
  */
 package io.cebes.pipeline.models
 
+import java.util.concurrent.TimeUnit
+
+import io.cebes.pipeline.factory.{PipelineFactory, StageFactory}
 import io.cebes.pipeline.protos.message.{PipelineMessageDef, StageOutputDef}
 import io.cebes.pipeline.protos.pipeline.PipelineDef
 import io.cebes.pipeline.protos.stage.StageDef
 import io.cebes.pipeline.protos.value.{ArrayDef, ScalarDef, ValueDef}
 import org.scalatest.FunSuite
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
 
-/**
-  * Created by d066177 on 29/01/2017.
-  */
 class PipelineSuite extends FunSuite {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
@@ -227,5 +228,56 @@ class PipelineSuite extends FunSuite {
         |  }
         |}
         |""".stripMargin)
+  }
+
+  test("updated in upstream") {
+    val s1 = new StageFoo().setName("stage1")
+    s1.input(s1.strIn, "input1")
+    val s2 = new StageTwoInputs().setName("stage2")
+    s2.input(s2.valIn, s1.output(s1.out)).input(s2.m, "abcd")
+
+    val waitDuration = Duration(10, TimeUnit.SECONDS)
+    val f1 = s1.output(s1.out).getFuture
+    val result1 = Await.result(s2.output(s2.arrOut).getFuture, waitDuration)
+    assert(f1 eq s1.output(s1.out).getFuture)
+    assert(result1 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+    assert(f1 eq s1.output(s1.out).getFuture)
+    assert(result1 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+    assert(f1 eq s1.output(s1.out).getFuture)
+    assert(result1 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+
+    // change input of stage1
+    s1.input(s1.strIn, "new input")
+    assert(f1 ne s1.output(s1.out).getFuture)
+    val result2 = Await.result(s2.output(s2.arrOut).getFuture, waitDuration)
+    assert(result1 ne result2)
+    assert(result2 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+    assert(result2 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+  }
+
+  test("updated in upstream with non-deterministic stage") {
+    val s1 = new StageFooNonDeterministic().setName("stage1")
+    s1.input(s1.strIn, "input1")
+    val s2 = new StageTwoInputs().setName("stage2")
+    s2.input(s2.valIn, s1.output(s1.out)).input(s2.m, "abcd")
+
+    val waitDuration = Duration(10, TimeUnit.SECONDS)
+    val f1 = s1.output(s1.out).getFuture
+    val result1 = Await.result(s2.output(s2.arrOut).getFuture, waitDuration)
+    assert(f1 ne s1.output(s1.out).getFuture)
+    assert(result1 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+    assert(s1.output(s1.out).getFuture ne s1.output(s1.out).getFuture)
+    assert(Await.result(s2.output(s2.arrOut).getFuture, waitDuration) ne
+      Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+
+    // change input of stage1
+    s1.input(s1.strIn, "new input")
+    assert(f1 ne s1.output(s1.out).getFuture)
+    assert(s1.output(s1.out).getFuture ne s1.output(s1.out).getFuture)
+
+    val result2 = Await.result(s2.output(s2.arrOut).getFuture, waitDuration)
+    assert(result1 ne result2)
+    assert(result2 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
+    assert(result2 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
   }
 }

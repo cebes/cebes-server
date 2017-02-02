@@ -10,8 +10,9 @@
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
 
-package io.cebes.pipeline.models
+package io.cebes.pipeline.factory
 
+import io.cebes.pipeline.models.{PipelineMessageSerializer, Stage}
 import io.cebes.pipeline.protos.stage.StageDef
 
 import scala.util.{Success, Try}

@@ -34,6 +34,14 @@ trait Stage extends Inputs {
     */
   protected def run(inputs: SlotValueMap): SlotValueMap
 
+  /**
+    * Whether this is a non-deterministic stage, in that case
+    * the output will be re-computed every time [[computeOutput()]] is called
+    * Default is false, meaning stage is deterministic: the output is cached
+    * as long as there is no new input coming.
+    */
+  def nonDeterministic: Boolean = false
+
   /////////////////////////////////////////////////////////////////////////////
   // name of a stage is nothing more than an input slot
   /////////////////////////////////////////////////////////////////////////////
@@ -58,7 +66,11 @@ trait Stage extends Inputs {
   private val outputLock: ReadWriteLock = new ReentrantReadWriteLock()
 
   /** List that holds the outputs */
-  private var outputMap: Option[Map[OutputSlot[Any], Future[Any]]] = None
+  private lazy val outputMap: Map[OutputSlot[Any], StageOutput[Any]] = _outputs.map { o =>
+    o -> StageOutput(this, o.name)
+  }.toMap
+
+  @volatile private var cachedOutput: Option[Map[OutputSlot[Any], Future[Any]]] = None
 
   /** Gets output slot by its name. */
   final def getOutput(slotName: String): OutputSlot[Any] = {
@@ -70,43 +82,59 @@ trait Stage extends Inputs {
   /**
     * Return the actual output at the given index.
     */
-  def output[T](outputSlot: OutputSlot[T])(implicit ec: ExecutionContext): Future[T] = {
-    require(_outputs.contains(outputSlot), s"Output name ${outputSlot.name} not found in stage $toString")
+  def output[T](outputSlot: OutputSlot[T]): StageOutput[T] = {
+    outputMap(outputSlot).asInstanceOf[StageOutput[T]]
+  }
 
+  /** To be called only by [[StageOutput]] */
+  def computeOutput[T](outputName: String)(implicit ec: ExecutionContext): Future[T] = {
     inputLock.readLock().lock()
-    outputLock.readLock().lock()
-    if (outputMap.isEmpty || hasNewInput) {
-      outputLock.readLock().unlock()
-      outputLock.writeLock().lock()
-      try {
-        outputMap = Some(computeOutput)
-        hasNewInput = false
+    try {
+      outputLock.readLock().lock()
+      if (shouldRecompute()) {
+        outputLock.readLock().unlock()
+        outputLock.writeLock().lock()
+        try {
+          if (shouldRecompute()) {
+            cachedOutput = Some(doComputeOutput(ec))
+            outputMap.valuesIterator.foreach(_.newOutput())
+            inputUnchanged()
+          }
 
-        // Downgrade by acquiring read lock before releasing write lock
-        outputLock.readLock().lock()
-      } finally {
-        inputLock.readLock().unlock()
-        outputLock.writeLock().unlock()
+          // Downgrade by acquiring read lock before releasing write lock
+          outputLock.readLock().lock()
+        } finally {
+          outputLock.writeLock().unlock()
+        }
       }
-    } else {
+    } finally {
       inputLock.readLock().unlock()
     }
 
     try {
-      outputMap.get.get(outputSlot.asInstanceOf[OutputSlot[Any]]) match {
-        case Some(f) => f.asInstanceOf[Future[T]]
-        case None =>
-          throw new NoSuchElementException(s"Stage $toString: slot named ${outputSlot.name} is not computed.")
-      }
+      cachedOutput.get(getOutput(outputName)).asInstanceOf[Future[T]]
     } finally {
       outputLock.readLock().unlock()
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////////////////
+  // Helpers
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /** Whether to re-compute the output map [[cachedOutput]]
+    * We will recompute the output if one of the following is true:
+    *  - No output was computed (cachedOutput is empty)
+    *  - stage is non-deterministic (the [[nonDeterministic]] flag)
+    *  - input is changed (the [[isInputChanged]] flag)
+    * */
+  private def shouldRecompute(): Boolean = {
+    cachedOutput.isEmpty || nonDeterministic || isInputChanged
+  }
   /**
     * Compute the output, check the types and number of output slots
     */
-  private def computeOutput(implicit ec: ExecutionContext): Map[OutputSlot[Any], Future[Any]] = {
+  private def doComputeOutput(implicit ec: ExecutionContext): Map[OutputSlot[Any], Future[Any]] = {
     val futureOutput = withAllInputs { inps =>
       // remove the default slot containing the name of this stage
       // subclasses don't need the name in their "run()" function

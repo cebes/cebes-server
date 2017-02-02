@@ -32,11 +32,6 @@ object SlotValidators {
     */
   def default[T]: SlotValidator[T] = RequiredSlotValidator[T](_ => true, "")
 
-  /** Only validate if the value satisfies the given regexp */
-  def regexp(re: String): String => Boolean = { s =>
-    s.matches(re)
-  }
-
   /**
     * Validate if the value belong to the given list of options
     */

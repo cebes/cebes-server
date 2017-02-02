@@ -15,8 +15,6 @@ import io.cebes.df.functions
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
-import scala.concurrent.Future
-
 class JoinSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
   override def beforeAll(): Unit = {
@@ -34,15 +32,15 @@ class JoinSuite extends FunSuite with ImplicitExecutor with TestDataHelper with 
     val s = Join().setName("join")
     s.input(s.joinType, "inner")
     s.input(s.joinExprs, functions.col("small.customer") === functions.col("big.customer"))
-    s.input(s.leftDf, Future(df1))
+    s.input(s.leftDf, df1)
 
     val ex0 = intercept[NoSuchElementException] {
-      resultDf(s.output(s.outputDf))
+      resultDf(s.output(s.outputDf).getFuture)
     }
     assert(ex0.getMessage.contains("Input slot rightDf is undefined"))
 
-    s.input(s.rightDf, Future(df2))
-    val dfj1 = resultDf(s.output(s.outputDf))
+    s.input(s.rightDf, df2)
+    val dfj1 = resultDf(s.output(s.outputDf).getFuture)
     assert(dfj1.numRows === 117)
 
     // invalid param

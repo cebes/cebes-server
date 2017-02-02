@@ -17,8 +17,9 @@ import com.google.inject.{Inject, Singleton}
 import com.trueaccord.scalapb.GeneratedMessage
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.persistence.store.JdbcCachedStore
+import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.json.PipelineJsonProtocol._
-import io.cebes.pipeline.models.{Pipeline, PipelineFactory}
+import io.cebes.pipeline.models.Pipeline
 import io.cebes.pipeline.protos.pipeline.PipelineDef
 import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
 import io.cebes.prop.types.MySqlBackendCredentials

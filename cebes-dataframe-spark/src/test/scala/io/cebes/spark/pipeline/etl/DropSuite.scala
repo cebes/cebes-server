@@ -14,8 +14,6 @@ package io.cebes.spark.pipeline.etl
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
-import scala.concurrent.Future
-
 class DropSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
   override def beforeAll(): Unit = {
@@ -28,8 +26,8 @@ class DropSuite extends FunSuite with ImplicitExecutor with TestDataHelper with 
 
     val s = Drop().setName("drop")
     s.input(s.colNames, Array[String]("cylinder_number", "non_existed_column"))
-    s.input(s.inputDf, Future(df))
-    val df2 = resultDf(s.output(s.outputDf))
+    s.input(s.inputDf, df)
+    val df2 = resultDf(s.output(s.outputDf).getFuture)
     assert(df2.numCols + 1 === df.numCols)
     assert(df2.numRows === df.numRows)
     assert(df2.schema.get("cylinder_number").isEmpty)
