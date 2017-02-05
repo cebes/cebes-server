@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Abstraction of inputs to a [[Stage]], of type T
   * which can be either an [[OrdinaryInput]] or a [[StageOutput]]
   */
-private[models] trait StageInput[+T] {
+private[pipeline] trait StageInput[+T] {
 
   def get: T
 
@@ -25,13 +25,13 @@ private[models] trait StageInput[+T] {
 
 }
 
-private[models] object StageInput {
+private[pipeline] object StageInput {
 
   def apply[T](value: T): StageInput[T] = OrdinaryInput(value)
 
 }
 
-private case class OrdinaryInput[+T](private val value: T) extends StageInput[T] {
+private[pipeline] case class OrdinaryInput[+T](private val value: T) extends StageInput[T] {
 
   override def get: T = value
 
@@ -45,7 +45,7 @@ private case class OrdinaryInput[+T](private val value: T) extends StageInput[T]
   * The purpose of this class is to delay the computation of the actual output (in [[getFuture]])
   * to the point where it is actually needed.
   */
-case class StageOutput[+T](stage: Stage, outputName: String) extends StageInput[T] {
+private[pipeline] case class StageOutput[+T](stage: Stage, outputName: String) extends StageInput[T] {
 
   @volatile private var isNew: Boolean = true
 

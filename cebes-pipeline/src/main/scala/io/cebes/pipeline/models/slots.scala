@@ -33,6 +33,23 @@ abstract class Slot[+T](val name: String, val doc: String,
     * but implemented with some tricks to overcome scala compiler's constraints.
     */
   def messageClass[U >: T]: Class[U] = tag.runtimeClass.asInstanceOf[Class[U]]
+
+  /** Make sure the type of the given value is suitable to be assigned to this slot,
+    * then call the validator to check if the given value is valid.
+    */
+  def checkInput[U >: T](value: U): Unit = {
+    val errorMsg = s"Slot name: $name"
+    if (messageClass.isPrimitive || value.getClass.isPrimitive) {
+      require(messageClass.getSimpleName.toLowerCase() == value.getClass.getSimpleName.toLowerCase(),
+        s"$errorMsg: Invalid type at slot $name, " +
+          s"expected a ${messageClass.getSimpleName}, got ${value.toString} of type ${value.getClass.getSimpleName}")
+    } else {
+      require(messageClass.isAssignableFrom(value.getClass),
+        s"errorMsg: Invalid type at slot $name, " +
+          s"expected a ${messageClass.getSimpleName}, got ${value.getClass.getSimpleName}")
+    }
+    validator.check(value, errorMsg)
+  }
 }
 
 case class InputSlot[+T](override val name: String, override val doc: String,
@@ -50,14 +67,19 @@ case class OutputSlot[+T](override val name: String, override val doc: String,
 /**
   * A map of slots to the actual values, maps [[Slot]][T] into [[StageInput]][T]
   */
-class SlotMap(private val map: mutable.Map[Slot[Any], StageInput[Any]]) {
+class SlotMap {
 
-  def this() = this(mutable.Map.empty)
+  private val map: mutable.Map[Slot[Any], StageInput[Any]] = mutable.Map.empty
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
     */
   def put[T](slot: Slot[T], value: StageInput[T]): this.type = {
+    value match {
+      case OrdinaryInput(v) =>
+        slot.checkInput(v)
+      case _ =>
+    }
     map(slot.asInstanceOf[Slot[T]]) = value
     this
   }
@@ -101,14 +123,19 @@ object SlotMap {
 /**
   * Map a [[Slot]][T] into the actual value of type T
   */
-class SlotValueMap(private val map: mutable.Map[Slot[Any], Any]) {
+class SlotValueMap {
 
-  def this() = this(mutable.Map.empty)
+  private val map: mutable.Map[Slot[Any], Any] = mutable.Map.empty
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
     */
   def put[T](slot: Slot[T], value: T): this.type = {
+    Option(value) match {
+      case Some(v) =>
+        slot.checkInput(v)
+      case _ =>
+    }
     map(slot.asInstanceOf[Slot[T]]) = value
     this
   }
@@ -163,7 +190,11 @@ object SlotValueMap {
 
   /** Construct a [[io.cebes.pipeline.models.SlotValueMap]] given the sequence of Slot and values */
   def apply(vals: Seq[(Slot[Any], Any)]): SlotValueMap = {
-    new SlotValueMap(mutable.Map(vals: _*))
+    val map = empty
+    vals.foreach { case (s, m) =>
+        map.put(s, m)
+    }
+    map
   }
 
   /** Construct a [[io.cebes.pipeline.models.SlotValueMap]] from a single pair of slot -> value */
@@ -188,5 +219,27 @@ object SlotDescriptor {
           case Some(n) => new SlotDescriptor(result.group(1), n)
         }
     }
+  }
+}
+
+/** Helper for creating input slots */
+trait HasInputSlots {
+
+  /** Create an **input** slot of the given type */
+  final protected def inputSlot[T](name: String, doc: String, defaultValue: Option[T],
+                                   validator: SlotValidator[T] = SlotValidators.default[T])
+                                  (implicit tag: ClassTag[T]): InputSlot[T] = {
+    InputSlot[T](name, doc, defaultValue, validator)
+  }
+}
+
+/** Helper for creating output slots */
+trait HasOutputSlots {
+
+  /** Create an **output** slot of the given type */
+  final protected def outputSlot[T](name: String, doc: String, defaultValue: Option[T],
+                                    validator: SlotValidator[T] = SlotValidators.default[T])
+                                   (implicit tag: ClassTag[T]): OutputSlot[T] = {
+    OutputSlot[T](name, doc, defaultValue, validator)
   }
 }

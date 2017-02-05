@@ -91,5 +91,14 @@ class StageSuite extends FunSuite {
     assert(out === Array(1.0f, 2.0f))
     assert(out eq Await.result(s2.output(s2.arrOut).getFuture, Duration.Inf))
   }
+
+  test("typo in slot name") {
+    val s = new StageFooTypoSlotName()
+    val ex = intercept[IllegalArgumentException] {
+      s.hasInput("strIn")
+    }
+    assert(ex.getMessage.contains("StageFooTypoSlotName: inconsistent slot name: " +
+      "variable named strIn, slot named strInlala"))
+  }
 }
 

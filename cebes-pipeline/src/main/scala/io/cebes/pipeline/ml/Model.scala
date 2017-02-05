@@ -12,10 +12,62 @@
 package io.cebes.pipeline.ml
 
 import io.cebes.common.HasId
+import io.cebes.df.Dataframe
+import io.cebes.pipeline.models._
 
 /**
-  *
+  * A ML model, with an ID, a bunch of inputs, and
+  * a `transform()` function which transforms an input [[Dataframe]] into another [[Dataframe]].
   */
-trait Model extends HasId {
+trait Model extends HasId with Inputs {
 
+  /** Implement this to do the real transformation */
+  def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe
+
+  /////////////////////////////////////////////////////////////////////////////
+  // public APIs
+  /////////////////////////////////////////////////////////////////////////////
+
+  /** Transform the given input [[io.cebes.df.Dataframe]] to the final Dataframe,
+    * using the parameters specified in this Model
+    */
+  def transform(data: Dataframe): Dataframe = withOrdinaryInputs { params =>
+    transformImpl(data, params)
+  }
+
+  /**
+    * Sets a slot in the embedded slot map.
+    * A model can only receive [[OrdinaryInput]] (not to be used in a pipeline)
+    */
+  override def input[T](slot: InputSlot[T], value: StageInput[T]): this.type = {
+    value match {
+      case ordinary: OrdinaryInput[_] =>
+        super.input(slot, ordinary)
+      case _ =>
+        throw new IllegalArgumentException("Only ordinary inputs are allowed")
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Helper
+  /////////////////////////////////////////////////////////////////////////////
+
+  private def withOrdinaryInputs[R](work: SlotValueMap => R): R = {
+    inputLock.readLock().lock()
+    try {
+      val inputVals = _inputs.map { slot =>
+        val inpValue = input(slot) match {
+          case ordinary: OrdinaryInput[_] =>
+            ordinary.get
+          case _ =>
+            throw new IllegalArgumentException("Only ordinary inputs are allowed")
+        }
+        slot -> inpValue
+      }
+
+      work(SlotValueMap(inputVals))
+    } finally {
+      inputLock.readLock().unlock()
+    }
+  }
 }

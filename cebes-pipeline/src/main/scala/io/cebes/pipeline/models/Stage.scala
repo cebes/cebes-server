@@ -15,7 +15,6 @@ package io.cebes.pipeline.models
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
 
 /**
   * A Pipeline stage, with a name, inputs, outputs
@@ -27,7 +26,7 @@ import scala.reflect.ClassTag
   * but we do it for the sake of runtime "efficiency",
   * although at the price of more code with all kinds of locks.
   */
-trait Stage extends Inputs {
+trait Stage extends Inputs with HasOutputSlots {
 
   /**
     * Implement this to do the real job of transforming inputs into outputs
@@ -80,7 +79,7 @@ trait Stage extends Inputs {
   }
 
   /**
-    * Return the actual output at the given index.
+    * Return the output at the given index.
     */
   def output[T](outputSlot: OutputSlot[T]): StageOutput[T] = {
     outputMap(outputSlot).asInstanceOf[StageOutput[T]]
@@ -145,27 +144,12 @@ trait Stage extends Inputs {
         if (!out.contains(s)) {
           throw new IllegalArgumentException(s"Stage $toString: output doesn't contain result for slot ${s.name}")
         }
-        Option(out(s)) match {
-          case Some(v) =>
-            if (!s.messageClass.isAssignableFrom(v.getClass)) {
-              throw new IllegalArgumentException(s"Stage $toString: output slot ${s.name} expects type " +
-                s"${s.messageClass.getSimpleName}, but got value ${v.toString} of type ${v.getClass.getSimpleName}")
-            }
-          case None =>
-        }
       }
       out
     }
     _outputs.map { s =>
       s -> futureOutput.map(seq => seq(s))
     }.toMap
-  }
-
-  /** Create an **output** slot of the given type */
-  final protected def outputSlot[T](name: String, doc: String, defaultValue: Option[T],
-                                    validator: SlotValidator[T] = SlotValidators.default[T])
-                                   (implicit tag: ClassTag[T]): OutputSlot[T] = {
-    OutputSlot[T](name, doc, defaultValue, validator)
   }
 
   override def toString: String = s"${getClass.getSimpleName}(name=$getName)"
