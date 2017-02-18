@@ -66,6 +66,9 @@ trait Inputs extends HasInputSlots {
     try {
       inputSlotMap.put(slot, value)
       hasNewInput = true
+    } catch {
+      case ex: IllegalArgumentException =>
+        throw new IllegalArgumentException(s"$toString: ${ex.getMessage}", ex)
     } finally {
       inputLock.writeLock().unlock()
     }
@@ -74,7 +77,7 @@ trait Inputs extends HasInputSlots {
 
   /**
     * Conveniently set a present value for the given input slot
-    * input(s, v: T) is equivalent to input(s, PresentOrFuture(v))
+    * calling `input(s, v: T)` is equivalent to `input(s, StageInput(v))`
     */
   final def input[T](slot: InputSlot[T], value: T): this.type = {
     input(slot, StageInput(value))
@@ -85,7 +88,7 @@ trait Inputs extends HasInputSlots {
   /////////////////////////////////
 
   /** Get the [[StageInput]] value of the given slot
-    * Throws exception if it is not specified
+    * Throws [[NoSuchElementException]] if it is not specified
     */
   final def input[T](slot: InputSlot[T]): StageInput[T] = {
     inputOption(slot) match {

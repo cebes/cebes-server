@@ -24,7 +24,7 @@ trait BinaryTransformer extends Stage {
   val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "Result of transformation", None)
 
   override protected def run(inputs: SlotValueMap): SlotValueMap = {
-    SlotValueMap(Seq(outputDf -> transform(inputs(leftDf), inputs(rightDf), inputs)))
+    SlotValueMap(outputDf, transform(inputs(leftDf), inputs(rightDf), inputs))
   }
 
   /** Implement this function to do the transformation */

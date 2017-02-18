@@ -21,8 +21,15 @@ trait SlotValidator[+T] {
 
 case class RequiredSlotValidator[T](condition: T => Boolean, errorMsg: String) extends SlotValidator[T] {
 
-  override def check[U >: T](v: U, additionalErrorMsg: String = ""): Unit = require(condition(v.asInstanceOf[T]),
-    if (additionalErrorMsg.isEmpty) errorMsg else s"$additionalErrorMsg: $errorMsg")
+  override def check[U >: T](v: U, additionalErrorMsg: String = ""): Unit =
+    if (!condition(v.asInstanceOf[T])) {
+      val msg = if (additionalErrorMsg.isEmpty) {
+        s"Invalid value '${v.toString}'. $errorMsg"
+      } else {
+        s"$additionalErrorMsg: invalid value '${v.toString}'. $errorMsg"
+      }
+      throw new IllegalArgumentException(msg)
+    }
 }
 
 object SlotValidators {
@@ -41,11 +48,11 @@ object SlotValidators {
 
   /** Validate x if x >= min */
   def greaterOrEqual(min: Double): SlotValidator[Double] =
-    RequiredSlotValidator((v: Double) => v >= min, s"must be greater or equal than $min")
+    RequiredSlotValidator((v: Double) => v >= min, s"Must be greater or equal than $min")
 
   /** Validate x if x >= min */
   def greaterOrEqual(min: Int): SlotValidator[Int] =
-    RequiredSlotValidator((v: Int) => v >= min, s"must be greater or equal than $min")
+    RequiredSlotValidator((v: Int) => v >= min, s"Must be greater or equal than $min")
 
   /////////////////////////////////////////////////////////////////////////////
   // Specialized validators

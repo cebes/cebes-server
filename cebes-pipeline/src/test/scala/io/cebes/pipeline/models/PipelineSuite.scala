@@ -90,8 +90,8 @@ class PipelineSuite extends FunSuite {
           ValueDef().withScalar(ScalarDef().withFloatVal(205.4f)))
       ))
     }
-    assert(ex3.getMessage === "requirement failed: StageFoo(name=stage1): Input slot strIn needs " +
-      "type java.lang.String, but got value 205.4 of type java.lang.Float")
+    assert(ex3.getMessage === "StageFoo(name=stage1): requirement failed: Invalid type at slot strIn, " +
+      "expected a String, got Float")
 
     // feed the output
     val ex4 = intercept[IllegalArgumentException] {
@@ -188,8 +188,8 @@ class PipelineSuite extends FunSuite {
     val ex1 = intercept[IllegalArgumentException] {
       pipelineFactory.create(pipelineDef1)
     }
-    assert(ex1.getMessage.contains("StageTwoInputs(name=stage1): Input slot valIn needs " +
-      "type [I, but got value [F"))
+    assert(ex1.getMessage.contains("StageTwoInputs(name=stage1): requirement failed: " +
+      "Invalid type at slot valIn, expected a int[], got float[]"))
 
     val pipelineDef2 = PipelineDef().withStage(Seq(
       StageDef().withName("stage1").withStage("StageTwoInputs").addAllInput(Seq(
@@ -205,7 +205,8 @@ class PipelineSuite extends FunSuite {
           ValueDef().withArray(ArrayDef(Seq(ValueDef().withScalar(ScalarDef().withFloatVal(10.3f))))))
       ))
     }
-    assert(ex2.getMessage.contains("StageTwoInputs(name=stage1): Input slot valIn needs type [I, but got value [F"))
+    assert(ex2.getMessage.contains("StageTwoInputs(name=stage1): requirement failed: " +
+      "Invalid type at slot valIn, expected a int[], got float[]"))
 
     val result = ppl2.run(Seq("stage1:arrOut"), Map(
       "stage1:valIn" -> PipelineMessageDef().withValue(

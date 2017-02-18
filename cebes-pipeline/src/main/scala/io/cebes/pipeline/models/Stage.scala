@@ -15,6 +15,7 @@ package io.cebes.pipeline.models
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /**
   * A Pipeline stage, with a name, inputs, outputs
@@ -123,13 +124,14 @@ trait Stage extends Inputs with HasOutputSlots {
 
   /** Whether to re-compute the output map [[cachedOutput]]
     * We will recompute the output if one of the following is true:
-    *  - No output was computed (cachedOutput is empty)
+    *  - No output was computed ([[cachedOutput]] is empty)
     *  - stage is non-deterministic (the [[nonDeterministic]] flag)
     *  - input is changed (the [[isInputChanged]] flag)
     * */
   private def shouldRecompute(): Boolean = {
     cachedOutput.isEmpty || nonDeterministic || isInputChanged
   }
+
   /**
     * Compute the output, check the types and number of output slots
     */
@@ -139,7 +141,12 @@ trait Stage extends Inputs with HasOutputSlots {
       // subclasses don't need the name in their "run()" function
       inps.remove(name)
 
-      val out = run(inps)
+      val out = try {
+        run(inps)
+      } catch {
+        case ex: IllegalArgumentException =>
+          throw new IllegalArgumentException(s"$toString: ${ex.getMessage}", ex)
+      }
       _outputs.foreach { s =>
         if (!out.contains(s)) {
           throw new IllegalArgumentException(s"Stage $toString: output doesn't contain result for slot ${s.name}")
@@ -152,5 +159,5 @@ trait Stage extends Inputs with HasOutputSlots {
     }.toMap
   }
 
-  override def toString: String = s"${getClass.getSimpleName}(name=$getName)"
+  override def toString: String = s"${getClass.getSimpleName}(name=${Try(getName).getOrElse("<unknown>")})"
 }

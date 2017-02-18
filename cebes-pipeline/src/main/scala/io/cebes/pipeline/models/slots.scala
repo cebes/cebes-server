@@ -38,17 +38,16 @@ abstract class Slot[+T](val name: String, val doc: String,
     * then call the validator to check if the given value is valid.
     */
   def checkInput[U >: T](value: U): Unit = {
-    val errorMsg = s"Slot name: $name"
     if (messageClass.isPrimitive || value.getClass.isPrimitive) {
       require(messageClass.getSimpleName.toLowerCase() == value.getClass.getSimpleName.toLowerCase(),
-        s"$errorMsg: Invalid type at slot $name, " +
+        s"Invalid type at slot $name, " +
           s"expected a ${messageClass.getSimpleName}, got ${value.toString} of type ${value.getClass.getSimpleName}")
     } else {
       require(messageClass.isAssignableFrom(value.getClass),
-        s"errorMsg: Invalid type at slot $name, " +
+        s"Invalid type at slot $name, " +
           s"expected a ${messageClass.getSimpleName}, got ${value.getClass.getSimpleName}")
     }
-    validator.check(value, errorMsg)
+    validator.check(value, s"slot $name")
   }
 }
 
@@ -73,6 +72,9 @@ class SlotMap {
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
+    * If the given value is an [[OrdinaryInput]], also check if
+    * the given value is valid for the given slot
+    * (by calling the [[Slot.checkInput()]] function on the slot)
     */
   def put[T](slot: Slot[T], value: StageInput[T]): this.type = {
     value match {
@@ -129,6 +131,8 @@ class SlotValueMap {
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
+    * The given value is valid for the given slot
+    * (by calling the [[Slot.checkInput()]] function on the slot)
     */
   def put[T](slot: Slot[T], value: T): this.type = {
     Option(value) match {

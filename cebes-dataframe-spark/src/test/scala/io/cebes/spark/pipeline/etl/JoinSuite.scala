@@ -47,7 +47,7 @@ class JoinSuite extends FunSuite with ImplicitExecutor with TestDataHelper with 
     val ex = intercept[IllegalArgumentException] {
       s.input(s.joinType, "wrong_type")
     }
-    assert(ex.getMessage === "requirement failed: Join(name=join): Allowed values are: " +
-      "inner, outer, left_outer, right_outer, leftsemi")
+    assert(ex.getMessage === "Join(name=join): slot joinType: invalid value 'wrong_type'. " +
+      "Allowed values are: inner, outer, left_outer, right_outer, leftsemi")
   }
 }
