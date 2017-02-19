@@ -28,7 +28,7 @@ trait Model extends HasId with Inputs {
   // public APIs
   /////////////////////////////////////////////////////////////////////////////
 
-  /** Transform the given input [[io.cebes.df.Dataframe]] to the final Dataframe,
+  /** Transform the given input [[Dataframe]] to the final Dataframe,
     * using the parameters specified in this Model
     */
   def transform(data: Dataframe): Dataframe = withOrdinaryInputs { params =>

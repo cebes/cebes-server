@@ -54,6 +54,10 @@ object SlotValidators {
   def greaterOrEqual(min: Int): SlotValidator[Int] =
     RequiredSlotValidator((v: Int) => v >= min, s"Must be greater or equal than $min")
 
+  /** Validate x if min <= x <= max */
+  def between(min: Double, max: Double): SlotValidator[Double] =
+    RequiredSlotValidator((v: Double) => min <= v && v <= max, s"Must be in the range [$min, $max]")
+
   /////////////////////////////////////////////////////////////////////////////
   // Specialized validators
   /////////////////////////////////////////////////////////////////////////////

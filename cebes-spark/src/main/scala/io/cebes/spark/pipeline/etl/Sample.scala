@@ -12,17 +12,21 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
+import io.cebes.pipeline.models.{InputSlot, SlotValidators, SlotValueMap}
 import io.cebes.pipeline.stages.UnaryTransformer
 
 /**
-  * Returns a new Dataframe with an alias set.
+  * Randomly sample n rows from a [[Dataframe]], returns another [[Dataframe]]
   */
-case class Alias() extends UnaryTransformer {
+case class Sample() extends UnaryTransformer {
 
-  val alias: InputSlot[String] = inputSlot[String]("alias", "Alias for the Dataframe", None)
+  val withReplacement: InputSlot[Boolean] = inputSlot[Boolean]("withReplacement",
+    "Whether to sample with replacement", Some(true))
+  val fraction: InputSlot[Double] = inputSlot[Double]("fraction",
+    "Fraction of rows to generate", Some(0.5), SlotValidators.greaterOrEqual(0))
+  val seed: InputSlot[Long] = inputSlot[Long]("seed", "Seed for sampling", Some(42))
 
   override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
-    df.alias(inputs(alias))
+    df.sample(inputs(withReplacement), inputs(fraction), inputs(seed))
   }
 }

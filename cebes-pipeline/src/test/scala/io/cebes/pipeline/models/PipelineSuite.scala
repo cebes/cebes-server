@@ -13,7 +13,8 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.TimeUnit
 
-import io.cebes.pipeline.factory.{PipelineFactory, StageFactory}
+import io.cebes.pipeline.PipelineTestInjector
+import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.protos.message.{PipelineMessageDef, StageOutputDef}
 import io.cebes.pipeline.protos.pipeline.PipelineDef
 import io.cebes.pipeline.protos.stage.StageDef
@@ -27,10 +28,7 @@ class PipelineSuite extends FunSuite {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
-  private lazy val pipelineFactory = {
-    val stageFactory = new StageFactory()
-    new PipelineFactory(stageFactory)
-  }
+  private lazy val pipelineFactory = PipelineTestInjector.instance[PipelineFactory]
 
   test("SlotDescriptor") {
     val slot1 = SlotDescriptor("stage2:out3")

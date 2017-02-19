@@ -216,7 +216,7 @@ import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 
   protected def visitApproxCountDistinct(expr: ApproxCountDistinct,
                                          parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(sparkFunctions.approxCountDistinct(parsedChildren.head, expr.relativeSD))
+    Some(sparkFunctions.approx_count_distinct(parsedChildren.head, expr.relativeSD))
   }
 
   protected def visitAverage(expr: Average,
@@ -547,11 +547,11 @@ import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
   }
 
   protected def visitToDegrees(expr: ToDegrees, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(sparkFunctions.toDegrees(parsedChildren.head))
+    Some(sparkFunctions.degrees(parsedChildren.head))
   }
 
   protected def visitToRadians(expr: ToRadians, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    Some(sparkFunctions.toRadians(parsedChildren.head))
+    Some(sparkFunctions.radians(parsedChildren.head))
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////

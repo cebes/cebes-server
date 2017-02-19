@@ -12,12 +12,17 @@
 
 package io.cebes.pipeline.factory
 
+import com.google.inject.{Inject, Injector}
 import io.cebes.pipeline.models.{PipelineMessageSerializer, Stage}
 import io.cebes.pipeline.protos.stage.StageDef
+import io.cebes.prop.{Prop, Property}
 
 import scala.util.{Success, Try}
 
-class StageFactory(private val stageNamespaces: Seq[String] = Seq("io.cebes.pipeline.models")) {
+class StageFactory @Inject()(private val injector: Injector,
+                             @Prop(Property.PIPELINE_STAGE_NAMESPACES) private val stageNamespaces: String) {
+
+  private val stageNamespacesList = stageNamespaces.split(",").map(_.trim)
 
   /**
     * Construct the stage object, given the proto
@@ -26,7 +31,7 @@ class StageFactory(private val stageNamespaces: Seq[String] = Seq("io.cebes.pipe
     */
   def create(proto: StageDef): Stage = {
     // find the class
-    val cls = stageNamespaces.map { ns =>
+    val cls = stageNamespacesList.map { ns =>
       Try(Class.forName(s"$ns.${proto.stage}"))
     }.collectFirst {
       case Success(cl) if classOf[Stage].isAssignableFrom(cl) => cl
@@ -36,12 +41,14 @@ class StageFactory(private val stageNamespaces: Seq[String] = Seq("io.cebes.pipe
     }
 
     // construct the stage object, set the right name
-    val stage = cls.getConstructors.find { c =>
+    /* val stage = cls.getConstructors.find { c =>
       c.getParameterCount == 0
     } match {
       case Some(cl) => cl.newInstance().asInstanceOf[Stage].setName(proto.name)
       case None => throw new IllegalArgumentException(s"Failed to initialize stage class ${cls.getName}")
     }
+    */
+    val stage = injector.getInstance(cls).asInstanceOf[Stage].setName(proto.name)
 
     // set the inputs
     proto.input.foreach { case (inpName, inpMessage) =>
@@ -50,4 +57,3 @@ class StageFactory(private val stageNamespaces: Seq[String] = Seq("io.cebes.pipe
     stage
   }
 }
-

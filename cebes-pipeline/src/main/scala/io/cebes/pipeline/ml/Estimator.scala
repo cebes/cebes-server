@@ -11,9 +11,14 @@
  */
 package io.cebes.pipeline.ml
 
+import java.util.concurrent.TimeUnit
+
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.Dataframe
 import io.cebes.pipeline.models._
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
 
 /**
   * A special subclass of [[Stage]] that estimates a Machine Learning model.
@@ -30,6 +35,19 @@ trait Estimator extends Stage with LazyLogging {
   override def nonDeterministic: Boolean = true
 
   /**
+    * Train (if needed) and return the model.
+    * Note that other outputs of the [[Estimator]] (if there is any) can still
+    * be accessed normally after this call, using the [[output()]] function.
+    *
+    * @param wait the maximum time allowed for training. If it takes longer to train,
+    *             the function will fail.
+    * @return the trained model
+    */
+  def getModel(wait: Duration = Duration(2, TimeUnit.MINUTES))(implicit ec: ExecutionContext): Model = {
+    Await.result(output(model).getFuture(ec), wait)
+  }
+
+  /**
     * Helper to copy all the ordinary inputs from this estimator to `dest`
     * Normally used to copy the input from the estimator to the output model
     * Return the destination object
@@ -44,7 +62,7 @@ trait Estimator extends Stage with LazyLogging {
             logger.warn(s"$toString: destination class ${dest.toString} does not have input name ${slot.name}")
           }
         case _ =>
-          // ignore other kinds of input
+        // ignore other kinds of input
       }
     }
     dest

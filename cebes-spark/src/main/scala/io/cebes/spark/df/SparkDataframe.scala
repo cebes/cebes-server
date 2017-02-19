@@ -209,7 +209,7 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
     require(other.numCols == numCols,
       s"Excepts only work for tables with the same number of columns, " +
         s"but got ${this.numCols} and ${other.numCols} columns respectively")
-    val otherDf = CebesSparkUtil.getSparkDataframe(other).sparkDf
+    val otherDf = getSparkDataframe(other).sparkDf
     withSparkDataFrame(sparkDf.except(otherDf), schema.copy())
   }
 

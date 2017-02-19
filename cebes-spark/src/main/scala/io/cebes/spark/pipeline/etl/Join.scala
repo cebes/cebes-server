@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.etl
 
 import io.cebes.df.{Column, Dataframe}
-import io.cebes.pipeline.models._
+import io.cebes.pipeline.models.{InputSlot, SlotValidators, SlotValueMap}
 import io.cebes.pipeline.stages.BinaryTransformer
 
 /** Do a Join between 2 dataframes */

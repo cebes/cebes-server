@@ -31,6 +31,8 @@ trait Stage extends Inputs with HasOutputSlots {
 
   /**
     * Implement this to do the real job of transforming inputs into outputs
+    * All the inputs are copied to the `inputs` argument.
+    * Input x can be accessed as `inputs(x)`
     */
   protected def run(inputs: SlotValueMap): SlotValueMap
 
