@@ -15,13 +15,13 @@ import io.cebes.df.Dataframe
 import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.SlotValueMap
 import io.cebes.spark.df.SparkDataframeFactory
-import io.cebes.spark.util.CebesSparkUtil
+import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
 import org.apache.spark.ml.Transformer
 
 /**
   * Generic trait for Spark Machine Learning model
   */
-trait SparkModel extends Model with CebesSparkUtil {
+trait SparkModel extends Model with CebesSparkUtil with SparkSchemaUtils {
 
   val sparkTransformer: Transformer
 
@@ -31,7 +31,6 @@ trait SparkModel extends Model with CebesSparkUtil {
   override def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe = {
     val sparkDf = sparkTransformer.transform(getSparkDataframe(data).sparkDf)
 
-    //TODO: copy schema information from "data" to the resulting DF
-    dfFactory.df(sparkDf)
+    dfFactory.df(sparkDf, getSchema(sparkDf, data.schema, Seq.empty[String]: _*))
   }
 }

@@ -89,6 +89,8 @@ trait Inputs extends HasInputSlots {
 
   /** Get the [[StageInput]] value of the given slot
     * Throws [[NoSuchElementException]] if it is not specified
+    * Note that this will throw exception whenever the value is not specified,
+    * even when the given slot was declared with `optional=true`.
     */
   final def input[T](slot: InputSlot[T]): StageInput[T] = {
     inputOption(slot) match {
@@ -115,7 +117,8 @@ trait Inputs extends HasInputSlots {
     * See the code example in [[isInputChanged]] for a typical use-case.
     */
   final protected def withAllInputs[R](work: SlotValueMap => R)(implicit ec: ExecutionContext): Future[R] = {
-    val v = _inputs.map(inp => input(inp).getFuture).toSeq
+    // only takes input slots that present or not optional
+    val v = _inputs.filterNot(s => s.optional && inputOption(s).isEmpty).map(s => input(s).getFuture).toSeq
     Future.sequence(v).map { seq =>
       val inputVals = seq.zip(_inputs).map { case (m, s) =>
         s -> m
@@ -142,7 +145,7 @@ trait Inputs extends HasInputSlots {
     * }}}
     */
   final protected def isInputChanged: Boolean = {
-    hasNewInput || _inputs.map(s => input(s)).exists {
+    hasNewInput || _inputs.flatMap(inputOption(_)).exists {
       case o: StageOutput[_] => o.isNewOutput
       case _ => false
     }
@@ -151,7 +154,7 @@ trait Inputs extends HasInputSlots {
   /** Reset the [[isInputChanged]] flag */
   final protected def inputUnchanged(): Unit = {
     hasNewInput = false
-    _inputs.map(s => input(s)).foreach {
+    _inputs.flatMap(inputOption(_)).foreach {
       case o: StageOutput[_] => o.seen()
       case _ =>
     }

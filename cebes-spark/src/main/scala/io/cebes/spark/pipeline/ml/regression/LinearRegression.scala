@@ -35,7 +35,7 @@ trait LinearRegressionInputs extends HasFeaturesCol with HasLabelCol with HasPre
     "Whether to fit the intercept",
     Some(true))
 
-  val maxIter: InputSlot[Int] = inputSlot[Int]("maxInter",
+  val maxIter: InputSlot[Int] = inputSlot[Int]("maxIter",
     "maximum number of iterations (>= 0)",
     Some(10), SlotValidators.greaterOrEqual(0))
 
@@ -53,7 +53,7 @@ trait LinearRegressionInputs extends HasFeaturesCol with HasLabelCol with HasPre
 
   val weightCol: InputSlot[String] = inputSlot[String]("weightCol",
     "weight column name. If this is not set or empty, we treat all instance weights as 1.0",
-    None)
+    None, optional = true)
 
   val solver: InputSlot[String] = inputSlot[String]("solver",
     "Set the solver algorithm used for optimization. Valid values are 'l-bfgs', 'normal' or 'auto'",
@@ -84,11 +84,10 @@ class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
 
     val df = getSparkDataframe(inputs(data)).sparkDf
     val lrModel = LinearRegressionModel(HasId.randomId, sparkEstimator.fit(df), dfFactory)
-
-    // TODO: copy the inputs over to the new model
-    SlotValueMap(model, copyOrdinaryInputs(lrModel))
+    SlotValueMap(model, lrModel.copyInputs(inputs))
   }
 }
 
 case class LinearRegressionModel(id: UUID, sparkTransformer: Transformer,
-                                 dfFactory: SparkDataframeFactory) extends SparkModel with LinearRegressionInputs
+                                 dfFactory: SparkDataframeFactory)
+  extends SparkModel with LinearRegressionInputs

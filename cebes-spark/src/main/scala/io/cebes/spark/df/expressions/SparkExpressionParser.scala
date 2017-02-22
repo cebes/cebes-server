@@ -18,8 +18,7 @@ import com.google.inject.{Inject, Singleton}
 import io.cebes.df.Column
 import io.cebes.df.expressions._
 import io.cebes.df.store.DataframeStore
-import io.cebes.spark.df.schema.SparkSchemaUtils
-import io.cebes.spark.util.CebesSparkUtil
+import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
 import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 
 

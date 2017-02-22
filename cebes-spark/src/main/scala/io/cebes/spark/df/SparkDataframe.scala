@@ -24,11 +24,10 @@ import io.cebes.df.types.storage.StorageType
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
-import io.cebes.spark.df.schema.SparkSchemaUtils
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
-import io.cebes.spark.util.CebesSparkUtil
+import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
+import org.apache.spark.sql.{DataFrame, Column => SparkColumn, functions => sparkFunctions}
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -45,7 +44,7 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
                                  private val parser: SparkExpressionParser,
                                  val sparkDf: DataFrame,
                                  val schema: Schema,
-                                 val id: UUID) extends Dataframe with CebesSparkUtil {
+                                 val id: UUID) extends Dataframe with CebesSparkUtil with SparkSchemaUtils {
 
   require(sparkDf.columns.length == schema.length &&
     sparkDf.columns.zip(schema).forall(t => t._2.compareName(t._1)),
@@ -158,15 +157,14 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
   }
 
   override def select(columns: Column*): Dataframe = {
-    //TODO: preserve custom information in schema
-    withSparkDataFrame(sparkDf.select(parser.toSpark(columns): _*))
+    val sparkCols = parser.toSpark(columns)
+    withSparkDataFrame(sparkDf.select(sparkCols: _*), sparkCols)
   }
 
   override def select(col: String, cols: String*): Dataframe = select((col +: cols).map(this.col): _*)
 
   override def where(column: Column): Dataframe = {
-    //TODO: preserve custom information in schema
-    withSparkDataFrame(sparkDf.where(parser.toSpark(column)))
+    withSparkDataFrame(sparkDf.where(parser.toSpark(column)), Seq.empty[SparkColumn])
   }
 
   override def col(colName: String): Column = {
@@ -179,9 +177,8 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
   }
 
   override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = {
-    //TODO: preserve custom information in schema
     val rightDf = getSparkDataframe(right).sparkDf
-    withSparkDataFrame(sparkDf.join(rightDf, parser.toSpark(joinExprs), joinType))
+    withSparkDataFrame(sparkDf.join(rightDf, parser.toSpark(joinExprs), joinType), Seq.empty[SparkColumn])
   }
 
   override def limit(n: Int): Dataframe = {
@@ -235,18 +232,15 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
   // Private helpers
   ////////////////////////////////////////////////////////////////////////////////////
 
-  /**
-    * short-hand for returning a SparkDataframe, with proper exception handling
-    */
-  private def withSparkDataFrame(df: => DataFrame): Dataframe = {
-    dfFactory.df(safeSparkCall(df))
-  }
-
-  /**
-    * short-hand for returning a SparkDataframe, with proper exception handling
-    */
+  /** short-hand for returning a SparkDataframe, with proper exception handling */
   private def withSparkDataFrame(df: => DataFrame, schema: Schema): Dataframe = {
     dfFactory.df(safeSparkCall(df), schema)
+  }
+
+  /** short-hand for returning a SparkDataframe, with proper exception handling */
+  private def withSparkDataFrame(df: => DataFrame, newColumns: Seq[SparkColumn]): Dataframe = {
+    val newSparkDf = safeSparkCall(df)
+    dfFactory.df(newSparkDf, getSchema(newSparkDf, schema, newColumns: _*))
   }
 }
 

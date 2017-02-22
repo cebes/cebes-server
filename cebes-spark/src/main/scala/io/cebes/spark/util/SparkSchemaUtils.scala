@@ -12,15 +12,16 @@
  * Created by phvu on 26/09/16.
  */
 
-package io.cebes.spark.df.schema
+package io.cebes.spark.util
 
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.StorageTypes
 import io.cebes.df.types.storage._
-import org.apache.spark.sql.{DataFrame, types}
+import org.apache.spark.sql.catalyst.expressions.NamedExpression
+import org.apache.spark.sql.{DataFrame, types, Column => SparkColumn}
 
-object SparkSchemaUtils extends LazyLogging {
+trait SparkSchemaUtils extends LazyLogging {
 
   /**
     * Extract the Schema from a Spark's DataFrame object
@@ -30,6 +31,38 @@ object SparkSchemaUtils extends LazyLogging {
     */
   def getSchema(sparkDf: DataFrame): Schema = {
     Schema(sparkDf.schema.map(f => new SchemaField(f.name, sparkTypesToCebes(f.dataType))).toArray)
+  }
+
+  /**
+    * Create a new schema, based on the `originalSchema`, for the new Dataframe created from `sparkDf`
+    * `newColumns` contains the possibly new columns in sparkDf that might not belong to originalSchema.
+    * Normally this is used to infer the schema for the resulting Dataframe after transforming
+    * another Dataframe (which has `originalSchema`).
+    *
+    * @return a new [[Schema]] object
+    */
+  def getSchema(sparkDf: DataFrame, originalSchema: Schema, newColumnNames: String*): Schema = {
+    Schema(sparkDf.schema.map { f =>
+      if (newColumnNames.contains(f.name) || originalSchema.get(f.name).isEmpty) {
+        new SchemaField(f.name, sparkTypesToCebes(f.dataType))
+      } else {
+        originalSchema(f.name).copy()
+      }
+    }.toArray)
+  }
+
+  /**
+    * Similar to [[getSchema()]], but take as input a list of spark columns in `newColumns`
+    */
+  def getSchema(sparkDf: DataFrame, originalSchema: Schema, newColumns: SparkColumn*): Schema = {
+    val sparkColumnNames = newColumns.map { _.expr match {
+      case namedExpr: NamedExpression =>
+        namedExpr.name
+      case expr =>
+        // this is probably over-simplified
+        expr.prettyName.toLowerCase
+    }}
+    getSchema(sparkDf, originalSchema, sparkColumnNames: _*)
   }
 
   /**
@@ -89,5 +122,6 @@ object SparkSchemaUtils extends LazyLogging {
     })
     case t => throw new IllegalArgumentException(s"Unrecognized cebes type: ${t.toString}")
   }
-
 }
+
+object SparkSchemaUtils extends SparkSchemaUtils

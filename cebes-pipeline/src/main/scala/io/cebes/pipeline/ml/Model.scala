@@ -48,6 +48,20 @@ trait Model extends HasId with Inputs {
     }
   }
 
+  /**
+    * Copy all the input values from the given `slotValueMap` to this Model,
+    * if it contains an input slot with the same name
+    * Only input slot with the same name (and type!) will be copied. Anything else is ignored.
+    *
+    * @return this instance
+    */
+  def copyInputs(slotValueMap: SlotValueMap): this.type = {
+    slotValueMap.foreach { case (s: Slot[_], v) if hasInput(s.name) =>
+      input(getInput(s.name), v)
+    }
+    this
+  }
+
   /////////////////////////////////////////////////////////////////////////////
   // Helper
   /////////////////////////////////////////////////////////////////////////////

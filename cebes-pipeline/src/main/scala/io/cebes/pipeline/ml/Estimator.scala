@@ -46,25 +46,4 @@ trait Estimator extends Stage with LazyLogging {
   def getModel(wait: Duration = Duration(2, TimeUnit.MINUTES))(implicit ec: ExecutionContext): Model = {
     Await.result(output(model).getFuture(ec), wait)
   }
-
-  /**
-    * Helper to copy all the ordinary inputs from this estimator to `dest`
-    * Normally used to copy the input from the estimator to the output model
-    * Return the destination object
-    */
-  final protected def copyOrdinaryInputs(dest: Inputs): Inputs = {
-    _inputs.foreach { slot =>
-      input(slot) match {
-        case ordinaryInput: OrdinaryInput[_] =>
-          if (dest.hasInput(slot.name)) {
-            dest.input(dest.getInput(slot.name), ordinaryInput.copy())
-          } else {
-            logger.warn(s"$toString: destination class ${dest.toString} does not have input name ${slot.name}")
-          }
-        case _ =>
-        // ignore other kinds of input
-      }
-    }
-    dest
-  }
 }

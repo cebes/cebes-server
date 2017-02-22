@@ -21,7 +21,7 @@ import io.cebes.common.HasId
 import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
 import io.cebes.spark.df.expressions.SparkExpressionParser
-import io.cebes.spark.df.schema.SparkSchemaUtils
+import io.cebes.spark.util.SparkSchemaUtils
 import org.apache.spark.sql.DataFrame
 
 /**
