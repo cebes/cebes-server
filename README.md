@@ -56,3 +56,9 @@ to mute them in `cebes-http-server` with the `log4j.properties` and `parquet.log
 files.
 
 It seems impossible to mute them in `cebes-dataframe-spark` though.
+
+## Running Cebes in Docker
+
+    $ sbt clean compile assembly
+    $ docker build -t cebes -f docker/Dockerfile.local .
+    $ docker run -it -p 21000:21000 -p 8080:8080 --name cebes-server cebes sh

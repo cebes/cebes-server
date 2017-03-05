@@ -34,7 +34,7 @@ class JdbcRefreshTokenStorage @Inject()
       .withValueSchema(Seq(
         JdbcPersistenceColumn("user_name", "VARCHAR (200)"),
         JdbcPersistenceColumn("token_hash", "VARCHAR(256)"),
-        JdbcPersistenceColumn("expires", "Long")))
+        JdbcPersistenceColumn("expires", "BIGINT")))
       .withValueToSeq(v => Seq(v.userName, v.tokenHash, v.expires))
       .withSqlToValue {
         case (_, r) => Store(r.getString(1), r.getString(2), r.getLong(3))

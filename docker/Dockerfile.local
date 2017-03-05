@@ -1,0 +1,32 @@
+# All-in-one: running Cebes with Spark in local mode, and mysql
+
+FROM openjdk:8-alpine
+
+ARG SPARK_VERSION=2.1.0
+
+# mysql
+RUN apk add --update curl bash mysql mysql-client && rm -f /var/cache/apk/*
+
+# Spark
+ENV SPARK_FILE_NAME "spark-${SPARK_VERSION}-bin-hadoop2.7"
+
+RUN \
+    mkdir /spark && \
+    curl -o /spark/${SPARK_FILE_NAME}.tgz http://d3kbcqa49mib13.cloudfront.net/${SPARK_FILE_NAME}.tgz && \
+    tar -xzvf /spark/${SPARK_FILE_NAME}.tgz -C /spark && \
+    rm /spark/${SPARK_FILE_NAME}.tgz && \
+    cp -r /spark/${SPARK_FILE_NAME}/. /spark/ && \
+    rm -rf /spark/${SPARK_FILE_NAME} && \
+    mkdir /cebes
+
+# cebes
+ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
+ADD docker/configure_mysql.sh /cebes/
+ADD docker/start_cebes.sh /cebes/
+
+WORKDIR /cebes
+
+EXPOSE 8080
+EXPOSE 21000
+
+ENTRYPOINT ["/cebes/start_cebes.sh"]

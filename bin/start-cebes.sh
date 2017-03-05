@@ -12,17 +12,11 @@ fi
 source "${CEBES_PATH}/bin/env.sh"
 
 # find Cebes jar files
-CEBES_JARS=`find ${CEBES_PATH}/cebes-http-server/target/scala-2.11 -name cebes-http-server-assembly-*.jar`
+CEBES_JAR=`find ${CEBES_PATH}/cebes-http-server/target/scala-2.11 -name cebes-http-server-assembly-*.jar | head -n 1`
 
-if [[ ${#CEBES_JARS[@]} != 1 ]];
-then
-    echo "More than one cebes jar files found:"
-    echo ${CEBES_JARS}
-    exit 1
-fi
-echo "Using cebes http server jar file at ${CEBES_JARS[0]}"
+echo "Using cebes http server jar file at ${CEBES_JAR}"
 
 ${SPARK_HOME}/bin/spark-submit --class "io.cebes.server.Main" \
     --master "local[4]" \
     --conf 'spark.driver.extraJavaOptions=-Dcebes.logs.dir=/tmp/' \
-    ${CEBES_JARS[0]}
+    ${CEBES_JAR}
