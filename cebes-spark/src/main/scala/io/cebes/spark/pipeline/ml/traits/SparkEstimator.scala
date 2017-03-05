@@ -8,27 +8,16 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 26/09/16.
  */
+package io.cebes.spark.pipeline.ml.traits
 
-package io.cebes.common
-
-import java.util.UUID
+import io.cebes.pipeline.ml.Estimator
+import io.cebes.spark.util.CebesSparkUtil
 
 /**
-  * Object comes with an ID
+  * Generic [[Estimator]] trait with helpers specialized for Spark ML models
   */
-trait HasId {
+trait SparkEstimator extends Estimator with CebesSparkUtil {
 
-  val id: UUID
 
-  /** Generate a Random ID */
-  final protected def randomId: UUID = HasId.randomId
-}
-
-object HasId {
-
-  /** Returns a random ID */
-  def randomId: UUID = UUID.randomUUID()
 }

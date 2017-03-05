@@ -15,7 +15,7 @@ package io.cebes.pipeline.models
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
+import scala.util.Try
 
 /**
   * A Pipeline stage, with a name, inputs, outputs
@@ -27,10 +27,12 @@ import scala.reflect.ClassTag
   * but we do it for the sake of runtime "efficiency",
   * although at the price of more code with all kinds of locks.
   */
-trait Stage extends Inputs {
+trait Stage extends Inputs with HasOutputSlots {
 
   /**
     * Implement this to do the real job of transforming inputs into outputs
+    * All the inputs are copied to the `inputs` argument.
+    * Input x can be accessed as `inputs(x)`
     */
   protected def run(inputs: SlotValueMap): SlotValueMap
 
@@ -80,7 +82,7 @@ trait Stage extends Inputs {
   }
 
   /**
-    * Return the actual output at the given index.
+    * Return the output at the given index.
     */
   def output[T](outputSlot: OutputSlot[T]): StageOutput[T] = {
     outputMap(outputSlot).asInstanceOf[StageOutput[T]]
@@ -124,13 +126,14 @@ trait Stage extends Inputs {
 
   /** Whether to re-compute the output map [[cachedOutput]]
     * We will recompute the output if one of the following is true:
-    *  - No output was computed (cachedOutput is empty)
+    *  - No output was computed ([[cachedOutput]] is empty)
     *  - stage is non-deterministic (the [[nonDeterministic]] flag)
     *  - input is changed (the [[isInputChanged]] flag)
     * */
   private def shouldRecompute(): Boolean = {
     cachedOutput.isEmpty || nonDeterministic || isInputChanged
   }
+
   /**
     * Compute the output, check the types and number of output slots
     */
@@ -140,18 +143,15 @@ trait Stage extends Inputs {
       // subclasses don't need the name in their "run()" function
       inps.remove(name)
 
-      val out = run(inps)
+      val out = try {
+        run(inps)
+      } catch {
+        case ex: IllegalArgumentException =>
+          throw new IllegalArgumentException(s"$toString: ${ex.getMessage}", ex)
+      }
       _outputs.foreach { s =>
         if (!out.contains(s)) {
           throw new IllegalArgumentException(s"Stage $toString: output doesn't contain result for slot ${s.name}")
-        }
-        Option(out(s)) match {
-          case Some(v) =>
-            if (!s.messageClass.isAssignableFrom(v.getClass)) {
-              throw new IllegalArgumentException(s"Stage $toString: output slot ${s.name} expects type " +
-                s"${s.messageClass.getSimpleName}, but got value ${v.toString} of type ${v.getClass.getSimpleName}")
-            }
-          case None =>
         }
       }
       out
@@ -161,12 +161,5 @@ trait Stage extends Inputs {
     }.toMap
   }
 
-  /** Create an **output** slot of the given type */
-  final protected def outputSlot[T](name: String, doc: String, defaultValue: Option[T],
-                                    validator: SlotValidator[T] = SlotValidators.default[T])
-                                   (implicit tag: ClassTag[T]): OutputSlot[T] = {
-    OutputSlot[T](name, doc, defaultValue, validator)
-  }
-
-  override def toString: String = s"${getClass.getSimpleName}(name=$getName)"
+  override def toString: String = s"${getClass.getSimpleName}(name=${Try(getName).getOrElse("<unknown>")})"
 }

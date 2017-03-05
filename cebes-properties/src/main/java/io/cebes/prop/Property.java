@@ -49,6 +49,11 @@ public enum Property {
             "maximumSize=100,expireAfterAccess=30m",
             "Spec for the cache used for pipeline storage in cebes-dataframe-spark"),
 
+    // Pipeline related
+    PIPELINE_STAGE_NAMESPACES("CEBES_PIPELINE_STAGE_NAMESPACES", "cebes.pipeline.stage.namespaces",
+            "io.cebes.pipeline.models,io.cebes.spark.pipeline.etl",
+            "a comma-separated list of namespaces containing definition of stages"),
+
     // MYSQL backend
     MYSQL_URL("CEBES_MYSQL_URL", "cebes.mysql.url", "", "URL for MySQL database"),
     MYSQL_DRIVER("CEBES_MYSQL_DRIVER", "cebes.mysql.driver", "com.mysql.cj.jdbc.Driver", "Driver for MySQL database"),

@@ -19,10 +19,28 @@ import scala.reflect.ClassTag
   * A Slot is a "placeholder" for receiving (input) or sending (output) messages in a Pipeline.
   * A Pipeline Component having a Slot[Dataframe] as its input
   * means that it expects the message in that slot to be of type [Dataframe].
+  *
+  * @param name         Name of the slot, normally has to be the same with the variable name
+  * @param doc          (brief) documentation of the slot
+  * @param defaultValue default value, as an [[Option]]
+  * @param validator    [[SlotValidator]] instance to validate the value of the slot.
+  *                     By default everything is validated.
+  * @param optional     if false, complains in run-time when there is neither a value specified for this slot,
+  *                     nor a default value was set.
+  *                     When optional=true, the [[SlotValueMap]] passed into the `run()` function
+  *                     of the stages will not contain this slot if it is not specified. Therefore,
+  *                     the function has to handle the case when an `optional` slot is not presented in the
+  *                     `run()` function.
+  *                     By default, optional=false, meaning it always complains.
+  *                     This is so to encourage developers to specify a sensible default value for the slots,
+  *                     and making sure that once entered the `run()` function in the Stage, everything was already
+  *                     specified. Developers will only need to check the existence of some special slots which
+  *                     they explicitly marked as **optional**.
   */
 abstract class Slot[+T](val name: String, val doc: String,
                         val defaultValue: Option[T],
-                        val validator: SlotValidator[T] = SlotValidators.default[T])(implicit tag: ClassTag[T]) {
+                        val validator: SlotValidator[T] = SlotValidators.default[T],
+                        val optional: Boolean = false)(implicit tag: ClassTag[T]) {
 
   SlotValidators.checkValidSlotName(name)
   if (defaultValue.isDefined) {
@@ -33,31 +51,70 @@ abstract class Slot[+T](val name: String, val doc: String,
     * but implemented with some tricks to overcome scala compiler's constraints.
     */
   def messageClass[U >: T]: Class[U] = tag.runtimeClass.asInstanceOf[Class[U]]
+
+  /** Make sure the type of the given value is suitable to be assigned to this slot,
+    * then call the validator to check if the given value is valid.
+    */
+  def checkInput[U >: T](value: U): Unit = {
+    // it's quite tricky to do the type check here, especially for primitive types
+    // because `tag.runtimeClass` will be the low-level types, while the `value` is normally
+    // in the scala type system. For instance when `value` is `Int` (or `java.lang.Interger`), i.e. non-primitive,
+    // the `tag.runtimeClass` will likely be the primitive type `int`
+    // Therefore the most reliable way to check the type of `value` is to based
+    // on the `defaultValue`, when it is specified of course.
+    defaultValue match {
+      case Some(dv) =>
+        require(dv.getClass.isAssignableFrom(value.getClass),
+          s"Invalid type at slot $name, " +
+            s"expected a ${dv.getClass.getSimpleName}, got ${value.getClass.getSimpleName}")
+      case None =>
+        if (messageClass.isPrimitive || value.getClass.isPrimitive) {
+          require(messageClass.getSimpleName.toLowerCase() == value.getClass.getSimpleName.toLowerCase(),
+            s"Invalid type at slot $name, " +
+              s"expected a ${messageClass.getSimpleName}, got ${value.toString} of type ${value.getClass.getSimpleName}")
+        } else {
+          require(messageClass.isAssignableFrom(value.getClass),
+            s"Invalid type at slot $name, " +
+              s"expected a ${messageClass.getSimpleName}, got ${value.getClass.getSimpleName}")
+        }
+    }
+    validator.check(value, s"slot $name")
+  }
 }
 
 case class InputSlot[+T](override val name: String, override val doc: String,
                          override val defaultValue: Option[T],
-                         override val validator: SlotValidator[T] = SlotValidators.default)
+                         override val validator: SlotValidator[T] = SlotValidators.default,
+                         override val optional: Boolean = false)
                         (implicit tag: ClassTag[T])
-  extends Slot[T](name, doc, defaultValue, validator)
+  extends Slot[T](name, doc, defaultValue, validator, optional)
 
 case class OutputSlot[+T](override val name: String, override val doc: String,
                           override val defaultValue: Option[T],
-                          override val validator: SlotValidator[T] = SlotValidators.default)
+                          override val validator: SlotValidator[T] = SlotValidators.default,
+                          override val optional: Boolean = false)
                          (implicit tag: ClassTag[T])
-  extends Slot[T](name, doc, defaultValue, validator)
+  extends Slot[T](name, doc, defaultValue, validator, optional)
 
 /**
   * A map of slots to the actual values, maps [[Slot]][T] into [[StageInput]][T]
   */
-class SlotMap(private val map: mutable.Map[Slot[Any], StageInput[Any]]) {
+class SlotMap {
 
-  def this() = this(mutable.Map.empty)
+  private val map: mutable.Map[Slot[Any], StageInput[Any]] = mutable.Map.empty
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
+    * If the given value is an [[OrdinaryInput]], also check if
+    * the given value is valid for the given slot
+    * (by calling the [[Slot.checkInput()]] function on the slot)
     */
   def put[T](slot: Slot[T], value: StageInput[T]): this.type = {
+    value match {
+      case OrdinaryInput(v) =>
+        slot.checkInput(v)
+      case _ =>
+    }
     map(slot.asInstanceOf[Slot[T]]) = value
     this
   }
@@ -100,15 +157,23 @@ object SlotMap {
 
 /**
   * Map a [[Slot]][T] into the actual value of type T
+  * This class is not thread-safe
   */
-class SlotValueMap(private val map: mutable.Map[Slot[Any], Any]) {
+class SlotValueMap {
 
-  def this() = this(mutable.Map.empty)
+  private val map: mutable.Map[Slot[Any], Any] = mutable.Map.empty
 
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
+    * The given value is valid for the given slot
+    * (by calling the [[Slot.checkInput()]] function on the slot)
     */
   def put[T](slot: Slot[T], value: T): this.type = {
+    Option(value) match {
+      case Some(v) =>
+        slot.checkInput(v)
+      case _ =>
+    }
     map(slot.asInstanceOf[Slot[T]]) = value
     this
   }
@@ -152,6 +217,9 @@ class SlotValueMap(private val map: mutable.Map[Slot[Any], Any]) {
 
   /** Tests whether the map is empty. */
   def isEmpty: Boolean = map.isEmpty
+
+  /** Applies a function `f` to all elements of this map */
+  def foreach[U](f: ((Slot[_], _)) => U): Unit = map.foreach(f)
 }
 
 object SlotValueMap {
@@ -163,7 +231,11 @@ object SlotValueMap {
 
   /** Construct a [[io.cebes.pipeline.models.SlotValueMap]] given the sequence of Slot and values */
   def apply(vals: Seq[(Slot[Any], Any)]): SlotValueMap = {
-    new SlotValueMap(mutable.Map(vals: _*))
+    val map = empty
+    vals.foreach { case (s, m) =>
+      map.put(s, m)
+    }
+    map
   }
 
   /** Construct a [[io.cebes.pipeline.models.SlotValueMap]] from a single pair of slot -> value */
@@ -188,5 +260,28 @@ object SlotDescriptor {
           case Some(n) => new SlotDescriptor(result.group(1), n)
         }
     }
+  }
+}
+
+/** Helper for creating input slots */
+trait HasInputSlots {
+
+  /** Create an **input** slot of the given type */
+  final protected def inputSlot[T](name: String, doc: String, defaultValue: Option[T],
+                                   validator: SlotValidator[T] = SlotValidators.default[T],
+                                   optional: Boolean = false)
+                                  (implicit tag: ClassTag[T]): InputSlot[T] = {
+    InputSlot[T](name, doc, defaultValue, validator, optional)
+  }
+}
+
+/** Helper for creating output slots */
+trait HasOutputSlots {
+
+  /** Create an **output** slot of the given type */
+  final protected def outputSlot[T](name: String, doc: String, defaultValue: Option[T],
+                                    validator: SlotValidator[T] = SlotValidators.default[T])
+                                   (implicit tag: ClassTag[T]): OutputSlot[T] = {
+    OutputSlot[T](name, doc, defaultValue, validator)
   }
 }

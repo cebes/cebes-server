@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
   * Trait for components that take inputs. This also provides an internal [[SlotMap]] to store
   * input values attached to the instance.
   */
-trait Inputs {
+trait Inputs extends HasInputSlots {
 
   /** Internal slot map for user-supplied values. */
   private val inputSlotMap: SlotMap = SlotMap.empty
@@ -36,7 +36,7 @@ trait Inputs {
     * Returns all slots sorted by their names. The default implementation uses Java reflection to
     * list all public methods that have no arguments and return [[Slot]].
     */
-  private lazy val _inputs: Array[InputSlot[_]] = getSlotMembers[InputSlot[_]]
+  protected lazy val _inputs: Array[InputSlot[_]] = getSlotMembers[InputSlot[_]]
 
   /////////////////////////////////////////////////////////////////////////////
   // Public APIs
@@ -59,27 +59,16 @@ trait Inputs {
   /////////////////////////////////
 
   /** Sets a slot in the embedded slot map. */
-  final def input[T](slot: InputSlot[T], value: StageInput[T]): this.type = {
+  def input[T](slot: InputSlot[T], value: StageInput[T]): this.type = {
     shouldOwn(slot)
-    value match {
-      case OrdinaryInput(v) =>
-        if (slot.messageClass.isPrimitive || v.getClass.isPrimitive) {
-          require(slot.messageClass.getSimpleName.toLowerCase() == v.getClass.getSimpleName.toLowerCase(),
-            s"$toString: Input slot ${slot.name} needs type ${slot.messageClass.getName}, but got value " +
-              s"${v.toString} of type ${v.getClass.getName}")
-        } else {
-          require(slot.messageClass.isAssignableFrom(v.getClass),
-            s"$toString: Input slot ${slot.name} needs type ${slot.messageClass.getName}, but got value " +
-              s"${v.toString} of type ${v.getClass.getName}")
-        }
-        slot.validator.check(v, s"$toString")
-      case _ =>
-    }
 
     inputLock.writeLock().lock()
     try {
       inputSlotMap.put(slot, value)
       hasNewInput = true
+    } catch {
+      case ex: IllegalArgumentException =>
+        throw new IllegalArgumentException(s"$toString: ${ex.getMessage}", ex)
     } finally {
       inputLock.writeLock().unlock()
     }
@@ -88,7 +77,7 @@ trait Inputs {
 
   /**
     * Conveniently set a present value for the given input slot
-    * input(s, v: T) is equivalent to input(s, PresentOrFuture(v))
+    * calling `input(s, v: T)` is equivalent to `input(s, StageInput(v))`
     */
   final def input[T](slot: InputSlot[T], value: T): this.type = {
     input(slot, StageInput(value))
@@ -99,7 +88,9 @@ trait Inputs {
   /////////////////////////////////
 
   /** Get the [[StageInput]] value of the given slot
-    * Throws exception if it is not specified
+    * Throws [[NoSuchElementException]] if it is not specified
+    * Note that this will throw exception whenever the value is not specified,
+    * even when the given slot was declared with `optional=true`.
     */
   final def input[T](slot: InputSlot[T]): StageInput[T] = {
     inputOption(slot) match {
@@ -126,18 +117,10 @@ trait Inputs {
     * See the code example in [[isInputChanged]] for a typical use-case.
     */
   final protected def withAllInputs[R](work: SlotValueMap => R)(implicit ec: ExecutionContext): Future[R] = {
-    val v = _inputs.map(inp => input(inp).getFuture).toSeq
+    // only takes input slots that present or not optional
+    val v = _inputs.filterNot(s => s.optional && inputOption(s).isEmpty).map(s => input(s).getFuture).toSeq
     Future.sequence(v).map { seq =>
       val inputVals = seq.zip(_inputs).map { case (m, s) =>
-        if (s.messageClass.isPrimitive || m.getClass.isPrimitive) {
-          require(s.messageClass.getSimpleName.toLowerCase() == m.getClass.getSimpleName.toLowerCase(),
-            s"Stage $toString: invalid input type at slot ${s.name}, " +
-              s"expected a ${s.messageClass.getSimpleName}, got ${m.getClass.getSimpleName}")
-        } else {
-          require(s.messageClass.isAssignableFrom(m.getClass),
-            s"Stage $toString: invalid input type at slot ${s.name}, " +
-              s"expected a ${s.messageClass.getSimpleName}, got ${m.getClass.getSimpleName}")
-        }
         s -> m
       }
       work(SlotValueMap(inputVals))
@@ -162,7 +145,7 @@ trait Inputs {
     * }}}
     */
   final protected def isInputChanged: Boolean = {
-    hasNewInput || _inputs.map(s => input(s)).exists {
+    hasNewInput || _inputs.flatMap(inputOption(_)).exists {
       case o: StageOutput[_] => o.isNewOutput
       case _ => false
     }
@@ -171,7 +154,7 @@ trait Inputs {
   /** Reset the [[isInputChanged]] flag */
   final protected def inputUnchanged(): Unit = {
     hasNewInput = false
-    _inputs.map(s => input(s)).foreach {
+    _inputs.flatMap(inputOption(_)).foreach {
       case o: StageOutput[_] => o.seen()
       case _ =>
     }
@@ -195,13 +178,11 @@ trait Inputs {
         tag.runtimeClass.asInstanceOf[Class[T]].isAssignableFrom(m.getReturnType) &&
         m.getParameterTypes.isEmpty
     }.sortBy(_.getName)
-      .map(m => m.invoke(this).asInstanceOf[T])
-  }
-
-  /** Create an **input** slot of the given type */
-  final protected def inputSlot[T](name: String, doc: String, defaultValue: Option[T],
-                                   validator: SlotValidator[T] = SlotValidators.default[T])
-                                  (implicit tag: ClassTag[T]): InputSlot[T] = {
-    InputSlot[T](name, doc, defaultValue, validator)
+      .map { m =>
+        val slot = m.invoke(this).asInstanceOf[T]
+        require(slot.name == m.getName, s"${getClass.getSimpleName}: inconsistent slot name: " +
+          s"variable named ${m.getName}, slot named ${slot.name}")
+        slot
+      }
   }
 }

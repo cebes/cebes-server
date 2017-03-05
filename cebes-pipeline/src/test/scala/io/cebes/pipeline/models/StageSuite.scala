@@ -70,8 +70,8 @@ class StageSuite extends FunSuite {
     val ex2 = intercept[IllegalArgumentException] {
       Await.result(stage1.output(stage1.m).getFuture, Duration.Inf)
     }
-    assert(ex2.getMessage === "Stage StageBadOutputType(name=stage1): " +
-      "output slot m expects type String, but got value 100 of type Integer")
+    assert(ex2.getMessage === "StageBadOutputType(name=stage1): requirement failed: " +
+      "Invalid type at slot m, expected a String, got Integer")
   }
 
   test("chaining") {
@@ -90,6 +90,15 @@ class StageSuite extends FunSuite {
     assert(out.isInstanceOf[Array[Float]])
     assert(out === Array(1.0f, 2.0f))
     assert(out eq Await.result(s2.output(s2.arrOut).getFuture, Duration.Inf))
+  }
+
+  test("typo in slot name") {
+    val s = new StageFooTypoSlotName()
+    val ex = intercept[IllegalArgumentException] {
+      s.hasInput("strIn")
+    }
+    assert(ex.getMessage.contains("StageFooTypoSlotName: inconsistent slot name: " +
+      "variable named strIn, slot named strInlala"))
   }
 }
 

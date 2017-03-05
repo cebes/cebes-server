@@ -8,27 +8,12 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 26/09/16.
  */
-
-package io.cebes.common
-
-import java.util.UUID
+package io.cebes.spark.pipeline.features
 
 /**
-  * Object comes with an ID
+  * Created by d066177 on 27/02/2017.
   */
-trait HasId {
+class OneHotEncoderSuite {
 
-  val id: UUID
-
-  /** Generate a Random ID */
-  final protected def randomId: UUID = HasId.randomId
-}
-
-object HasId {
-
-  /** Returns a random ID */
-  def randomId: UUID = UUID.randomUUID()
 }

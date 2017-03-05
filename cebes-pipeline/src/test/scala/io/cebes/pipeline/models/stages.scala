@@ -27,6 +27,17 @@ class StageFooNonDeterministic extends StageFoo {
   override def nonDeterministic: Boolean = true
 }
 
+class StageFooTypoSlotName extends Stage {
+
+  val strIn: InputSlot[String] = inputSlot[String]("strInlala", "The input string", None)
+  val out: OutputSlot[Array[Int]] = outputSlot[Array[Int]]("out", "The output integer", None)
+
+  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+    assert(inputs.size == 1)
+    assert(inputs(strIn).isInstanceOf[String])
+    SlotValueMap(out, Array(2000))
+  }
+}
 
 class StageTwoInputs extends Stage {
 
