@@ -26,7 +26,7 @@ ADD docker/start_cebes.sh /cebes/
 
 WORKDIR /cebes
 
-EXPOSE 8080
+EXPOSE 4040
 EXPOSE 21000
 
 ENTRYPOINT ["/cebes/start_cebes.sh"]

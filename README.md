@@ -61,4 +61,4 @@ It seems impossible to mute them in `cebes-dataframe-spark` though.
 
     $ sbt clean compile assembly
     $ docker build -t cebes -f docker/Dockerfile.local .
-    $ docker run -it -p 21000:21000 -p 8080:8080 --name cebes-server cebes sh
+    $ docker run -it -p 21000:21000 -p 4040:4040 --name cebes-server cebes sh
