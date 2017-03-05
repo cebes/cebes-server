@@ -18,8 +18,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.StorageTypes
 import io.cebes.df.types.storage._
-import org.apache.spark.sql.catalyst.expressions.NamedExpression
-import org.apache.spark.sql.{DataFrame, types, Column => SparkColumn}
+import org.apache.spark.sql.{DataFrame, types}
 
 trait SparkSchemaUtils extends LazyLogging {
 
@@ -52,17 +51,26 @@ trait SparkSchemaUtils extends LazyLogging {
   }
 
   /**
-    * Similar to [[getSchema()]], but take as input a list of spark columns in `newColumns`
+    * Similar to [[getSchema(sparkDf: DataFrame, originalSchema: Schema, newColumnNames: String*)]],
+    * but without the list of new column names.
+    * This function will try its best to preserve the variable type.
+    * If the new storage type is incompatible with the original schema, it will infer the
+    * new storage type and variable type automatically.
     */
-  def getSchema(sparkDf: DataFrame, originalSchema: Schema, newColumns: SparkColumn*): Schema = {
-    val sparkColumnNames = newColumns.map { _.expr match {
-      case namedExpr: NamedExpression =>
-        namedExpr.name
-      case expr =>
-        // this is probably over-simplified
-        expr.prettyName.toLowerCase
-    }}
-    getSchema(sparkDf, originalSchema, sparkColumnNames: _*)
+  def getSchema(sparkDf: DataFrame, originalSchema: Schema): Schema = {
+    Schema(sparkDf.schema.fields.map { f =>
+      originalSchema.get(f.name) match {
+        case None =>
+          new SchemaField(f.name, sparkTypesToCebes(f.dataType))
+        case Some(sf) =>
+          val newStorageType = sparkTypesToCebes(f.dataType)
+          if (newStorageType == sf.storageType && sf.variableType.isValid(newStorageType)) {
+            sf.copy(name = f.name)
+          } else {
+            new SchemaField(f.name, sparkTypesToCebes(f.dataType))
+          }
+      }
+    })
   }
 
   /**

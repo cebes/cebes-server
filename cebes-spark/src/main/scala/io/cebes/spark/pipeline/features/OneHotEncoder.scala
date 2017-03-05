@@ -18,7 +18,12 @@ import io.cebes.spark.df.SparkDataframeFactory
 import org.apache.spark.ml.feature.{OneHotEncoder => SparkOneHotEncoder}
 
 /**
-  * Created by d066177 on 22/02/2017.
+  * Light wrapper around Spark's OneHotEncoder, which transforms a column of category indices
+  * to a column of binary vectors, with at most a single one-value per row indicating the input category index.
+  *
+  * When `OneHotEncoder!.dropLast` is enable (default), an input column of N categories
+  * will create the output column with vectors of size N-1.
+  * This is to avoid the situation when the vector entries sum up to one, making them linearly dependent.
   */
 case class OneHotEncoder @Inject()(dfFactory: SparkDataframeFactory) extends SparkUnaryTransformer {
 

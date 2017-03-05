@@ -27,7 +27,7 @@ import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpre
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.{DataFrame, Column => SparkColumn, functions => sparkFunctions}
+import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 
 /**
   * Dataframe wrapper on top of Spark's DataFrame
@@ -158,13 +158,13 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
 
   override def select(columns: Column*): Dataframe = {
     val sparkCols = parser.toSpark(columns)
-    withSparkDataFrame(sparkDf.select(sparkCols: _*), sparkCols)
+    withSparkDataFrame(sparkDf.select(sparkCols: _*))
   }
 
   override def select(col: String, cols: String*): Dataframe = select((col +: cols).map(this.col): _*)
 
   override def where(column: Column): Dataframe = {
-    withSparkDataFrame(sparkDf.where(parser.toSpark(column)), Seq.empty[SparkColumn])
+    withSparkDataFrame(sparkDf.where(parser.toSpark(column)))
   }
 
   override def col(colName: String): Column = {
@@ -178,7 +178,7 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
 
   override def join(right: Dataframe, joinExprs: Column, joinType: String): Dataframe = {
     val rightDf = getSparkDataframe(right).sparkDf
-    withSparkDataFrame(sparkDf.join(rightDf, parser.toSpark(joinExprs), joinType), Seq.empty[SparkColumn])
+    withSparkDataFrame(sparkDf.join(rightDf, parser.toSpark(joinExprs), joinType))
   }
 
   override def limit(n: Int): Dataframe = {
@@ -237,10 +237,13 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
     dfFactory.df(safeSparkCall(df), schema)
   }
 
-  /** short-hand for returning a SparkDataframe, with proper exception handling */
-  private def withSparkDataFrame(df: => DataFrame, newColumns: Seq[SparkColumn]): Dataframe = {
+  /** short-hand for returning a SparkDataframe, with proper exception handling
+    * Without a given schema, this function tries to infer the schema based on the
+    * column names and the underlying spark column types
+    */
+  private def withSparkDataFrame(df: => DataFrame): Dataframe = {
     val newSparkDf = safeSparkCall(df)
-    dfFactory.df(newSparkDf, getSchema(newSparkDf, schema, newColumns: _*))
+    dfFactory.df(newSparkDf, getSchema(newSparkDf, schema))
   }
 }
 

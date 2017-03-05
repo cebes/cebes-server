@@ -1589,7 +1589,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     val df = getCylinderBands.limit(100)
 
     def pmod(x: Int, y: Int) = {
-      val r = x % y;
+      val r = x % y
       if (r < 0) r + y else r
     }
 
