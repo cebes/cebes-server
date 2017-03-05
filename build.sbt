@@ -1,7 +1,7 @@
 name := "cebes-server"
 
 lazy val commonSettings = Seq(
-  version := "0.3.0-SNAPSHOT",
+  version := "0.3.0",
   organization := "io.cebes",
   scalaVersion := "2.11.8",
   test in assembly := {},
