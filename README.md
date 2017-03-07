@@ -59,6 +59,18 @@ It seems impossible to mute them in `cebes-dataframe-spark` though.
 
 ## Running Cebes in Docker
 
+Cebes can be included in a Docker image with Spark running at local mode. To build the docker image:
+
     $ sbt clean compile assembly
     $ docker build -t cebes -f docker/Dockerfile.local .
-    $ docker run -it -p 21000:21000 -p 4040:4040 --name cebes-server cebes sh
+    
+The docker image can then be run as:
+
+    $ docker run -it -p 21000:21000 -p 4040:4040 --name cebes-server cebes
+    
+To check if the Cebes server is up and running:
+
+    $ curl localhost:21000/version
+      {"api":"v1"}
+
+The Spark UI can be accessed at http://localhost:4040

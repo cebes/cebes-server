@@ -24,6 +24,8 @@ ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
 ADD docker/configure_mysql.sh /cebes/
 ADD docker/start_cebes.sh /cebes/
 
+RUN sh /cebes/configure_mysql.sh && rm /cebes/configure_mysql.sh
+
 WORKDIR /cebes
 
 EXPOSE 4040
