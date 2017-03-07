@@ -1,6 +1,6 @@
 CREATE DATABASE cebes_test_db;
 CREATE DATABASE cebes_store;
-CREATE DATABASE cebes_hive_metastore;
+CREATE DATABASE cebes_hive_metastore CHARACTER SET latin1;
 
 GRANT ALL PRIVILEGES ON cebes_hive_metastore.* TO 'cebes_hive' IDENTIFIED BY 'cebes_hive_pwd';
 GRANT ALL PRIVILEGES ON cebes_test_db.* TO 'cebes_server' IDENTIFIED BY 'cebes_server_pwd';
