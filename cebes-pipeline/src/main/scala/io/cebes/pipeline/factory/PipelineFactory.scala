@@ -11,16 +11,13 @@
  */
 package io.cebes.pipeline.factory
 
-import java.util.UUID
-
 import com.google.inject.Inject
 import io.cebes.common.HasId
+import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.models.{Pipeline, Stage}
-import io.cebes.pipeline.protos.pipeline.PipelineDef
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
 
 class PipelineFactory @Inject()(stageFactory: StageFactory) {
 
@@ -30,17 +27,10 @@ class PipelineFactory @Inject()(stageFactory: StageFactory) {
     * [[Pipeline.run()]] is called.
     */
   def create(proto: PipelineDef)(implicit ec: ExecutionContext): Pipeline = {
-    val id = proto.id.trim match {
-      case "" => HasId.randomId
-      case s => Try(UUID.fromString(s)) match {
-        case Success(existingId) => existingId
-        case Failure(f) =>
-          throw new IllegalArgumentException(s"Invalid pipeline ID: $s", f)
-      }
-    }
+    val id = proto.id.getOrElse(HasId.randomId)
 
     val stageMap = mutable.Map.empty[String, Stage]
-    proto.stage.map { s =>
+    proto.stages.map { s =>
       val stage = stageFactory.create(s)
       if (stageMap.contains(stage.getName)) {
         throw new IllegalArgumentException(s"Duplicated stage name: ${stage.getName}")

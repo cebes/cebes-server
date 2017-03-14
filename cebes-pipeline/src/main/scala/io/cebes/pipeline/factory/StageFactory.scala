@@ -13,8 +13,8 @@
 package io.cebes.pipeline.factory
 
 import com.google.inject.{Inject, Injector}
+import io.cebes.pipeline.json.StageDef
 import io.cebes.pipeline.models.{PipelineMessageSerializer, Stage}
-import io.cebes.pipeline.protos.stage.StageDef
 import io.cebes.prop.{Prop, Property}
 
 import scala.util.{Success, Try}
@@ -32,12 +32,12 @@ class StageFactory @Inject()(private val injector: Injector,
   def create(proto: StageDef): Stage = {
     // find the class
     val cls = stageNamespacesList.map { ns =>
-      Try(Class.forName(s"$ns.${proto.stage}"))
+      Try(Class.forName(s"$ns.${proto.stageClass}"))
     }.collectFirst {
       case Success(cl) if classOf[Stage].isAssignableFrom(cl) => cl
     } match {
       case Some(cl) => cl
-      case None => throw new IllegalArgumentException(s"Stage class not found: ${proto.stage}")
+      case None => throw new IllegalArgumentException(s"Stage class not found: ${proto.stageClass}")
     }
 
     // construct the stage object, set the right name
@@ -51,7 +51,7 @@ class StageFactory @Inject()(private val injector: Injector,
     val stage = injector.getInstance(cls).asInstanceOf[Stage].setName(proto.name)
 
     // set the inputs
-    proto.input.foreach { case (inpName, inpMessage) =>
+    proto.inputs.foreach { case (inpName, inpMessage) =>
       PipelineMessageSerializer.deserialize(inpMessage, stage, inpName)
     }
     stage

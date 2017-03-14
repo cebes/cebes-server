@@ -15,14 +15,13 @@ package io.cebes.pipeline.models
 import java.util.UUID
 
 import io.cebes.common.HasId
-import io.cebes.pipeline.protos.message.PipelineMessageDef
-import io.cebes.pipeline.protos.pipeline.PipelineDef
+import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef}
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-case class Pipeline(id: UUID, stages: Map[String, Stage], proto: PipelineDef) extends HasId {
+case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineDef) extends HasId {
 
   private val runLocker = new AnyRef()
 
