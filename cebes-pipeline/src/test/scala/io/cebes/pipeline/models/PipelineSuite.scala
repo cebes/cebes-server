@@ -15,10 +15,7 @@ import java.util.concurrent.TimeUnit
 
 import io.cebes.pipeline.PipelineTestInjector
 import io.cebes.pipeline.factory.PipelineFactory
-import io.cebes.pipeline.protos.message.{PipelineMessageDef, StageOutputDef}
-import io.cebes.pipeline.protos.pipeline.PipelineDef
-import io.cebes.pipeline.protos.stage.StageDef
-import io.cebes.pipeline.protos.value.{ArrayDef, ScalarDef, ValueDef}
+import io.cebes.pipeline.json.{PipelineDef, StageDef, StageOutputDef, ValueDef}
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.Duration
@@ -42,12 +39,9 @@ class PipelineSuite extends FunSuite {
   }
 
   test("pipeline factory simple cases") {
-    val pipelineDef1 = PipelineDef().withStage(Seq(
-      StageDef().withName("stage1").withStage("StageFoo"),
-      StageDef().withName("stage2").withStage("StageTwoInputs")
-        .addAllInput(Seq(
-          "m" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withStringVal("my input value")))
-        ))
+    val pipelineDef1 = PipelineDef(None, Array(
+      StageDef("stage1", "StageFoo"),
+      StageDef("stage2", "StageTwoInputs", Map("m" -> ValueDef("my input value")))
     ))
     val ppl1 = pipelineFactory.create(pipelineDef1)
     assert(ppl1.stages.size === 2)
@@ -61,32 +55,26 @@ class PipelineSuite extends FunSuite {
     assert(ex1.getMessage === "StageFoo(name=stage1): Input slot strIn is undefined")
 
     val ex2 = intercept[NoSuchElementException] {
-      ppl1.run(Seq("stage1:out", "stage2:arrOut"), Map(
-        "stage1:strIn" -> PipelineMessageDef().withValue(
-          ValueDef().withScalar(ScalarDef().withStringVal("my input value for stage 1")))
-      ))
+      ppl1.run(Seq("stage1:out", "stage2:arrOut"),
+        Map("stage1:strIn" -> ValueDef("my input value for stage 1")))
     }
     assert(ex2.getMessage === "StageTwoInputs(name=stage2): Input slot valIn is undefined")
 
     // only get output of stage1 is ok, although we stage2 isn't fed yet
     val result1 = ppl1.run(Seq("stage1:out"), Map(
-      "stage1:strIn" -> PipelineMessageDef().withValue(
-        ValueDef().withScalar(ScalarDef().withStringVal("my input value for stage 1")))
-    ))
+      "stage1:strIn" -> ValueDef("my input value for stage 1")))
     assert(result1.size === 1)
-    assert(result1("stage1:out").msg.isValue)
-    assert(result1("stage1:out").getValue.value.isArray)
-    assert(result1("stage1:out").getValue.getArray.element.length === 1)
-    assert(result1("stage1:out").getValue.getArray.element.head.value.isScalar)
-    assert(result1("stage1:out").getValue.getArray.element.head.getScalar.value.isInt32Val)
-    assert(result1("stage1:out").getValue.getArray.element.head.getScalar.getInt32Val === 2000)
+    assert(result1("stage1:out").isInstanceOf[ValueDef])
+    val valueDef = result1("stage1:out").asInstanceOf[ValueDef]
+    assert(valueDef.value.isInstanceOf[Array[_]])
+    val outputArr = valueDef.value.asInstanceOf[Array[_]]
+    assert(outputArr.length === 1)
+    assert(outputArr(0).isInstanceOf[Int])
+    assert(outputArr(0).asInstanceOf[Int] === 2000)
 
     // feed the wrong data type
     val ex3 = intercept[IllegalArgumentException] {
-      ppl1.run(Seq("stage1:out"), Map(
-        "stage1:strIn" -> PipelineMessageDef().withValue(
-          ValueDef().withScalar(ScalarDef().withFloatVal(205.4f)))
-      ))
+      ppl1.run(Seq("stage1:out"), Map("stage1:strIn" -> ValueDef(205.4f)))
     }
     assert(ex3.getMessage === "StageFoo(name=stage1): requirement failed: Invalid type at slot strIn, " +
       "expected a String, got Float")
@@ -94,139 +82,83 @@ class PipelineSuite extends FunSuite {
     // feed the output
     val ex4 = intercept[IllegalArgumentException] {
       ppl1.run(Seq("stage1:out"), Map(
-        "stage1:strIn" -> PipelineMessageDef().withValue(
-          ValueDef().withScalar(ScalarDef().withStringVal("my string"))),
-        "stage1:out" -> PipelineMessageDef().withValue(
-          ValueDef().withArray(ArrayDef(Seq(ValueDef().withScalar(ScalarDef().withInt32Val(205))))))
-      ))
+        "stage1:strIn" -> ValueDef("my string"),
+        "stage1:out" -> ValueDef(Array(205))))
     }
-    assert(ex4.getMessage === "Input name out not found in stage StageFoo(name=stage1)")
+    assert(ex4.getMessage === "requirement failed: Input name out not found in stage StageFoo(name=stage1)")
 
     // feed stage1's output into stage2's input
     val result2 = ppl1.run(Seq("stage1:out", "stage2:arrOut"), Map(
-      "stage1:strIn" -> PipelineMessageDef().withValue(
-        ValueDef().withScalar(ScalarDef().withStringVal("my input value for stage 1"))),
-      "stage2:valIn" -> PipelineMessageDef().withStageOutput(
-        StageOutputDef("stage1", "out")
-      )
-    ))
+      "stage1:strIn" -> ValueDef("my input value for stage 1"),
+      "stage2:valIn" -> StageOutputDef("stage1", "out")))
     assert(result2.size === 2)
-    assert(result2("stage1:out").msg.isValue)
-    assert(result2("stage2:arrOut").msg.isValue)
-    assert(result2("stage2:arrOut").toString ===
-      """value {
-        |  array {
-        |    element {
-        |      scalar {
-        |        float_val: 1.0
-        |      }
-        |    }
-        |    element {
-        |      scalar {
-        |        float_val: 2.0
-        |      }
-        |    }
-        |  }
-        |}
-        |""".stripMargin)
+    assert(result2("stage1:out").isInstanceOf[ValueDef])
+    assert(result2("stage2:arrOut").isInstanceOf[ValueDef])
+    val arr = result2("stage2:arrOut").asInstanceOf[ValueDef].value.asInstanceOf[Array[_]]
+    assert(arr.length === 2)
+    assert(arr === Array[Float](1.0f, 2.0f))
   }
 
   test("slightly complicated pipeline") {
-    val pipelineDef1 = PipelineDef().withStage(Seq(
-      StageDef().withName("stage1").withStage("StageFoo").addAllInput(Seq(
-        "strIn" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage3", "m"))
-      )),
-      StageDef().withName("stage2").withStage("StageTwoInputs").addAllInput(Seq(
-        "valIn" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage1", "out")),
-        "m" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage3", "m"))
-      )),
-      StageDef().withName("stage3").withStage("StageBar")
+    val pipelineDef1 = PipelineDef(None, Array(
+      StageDef("stage1", "StageFoo", Map("strIn" -> StageOutputDef("stage3", "m"))),
+      StageDef("stage2", "StageTwoInputs", Map(
+        "valIn" -> StageOutputDef("stage1", "out"),
+        "m" -> StageOutputDef("stage3", "m"))),
+      StageDef("stage3", "StageBar")
     ))
     val ppl1 = pipelineFactory.create(pipelineDef1)
     val ex1 = intercept[NoSuchElementException] {
-      ppl1.run(Seq("stage3:m", "stage2:arrOut"), Map())
+      ppl1.run(Seq("stage3:m", "stage2:arrOut"))
     }
     assert(ex1.getMessage === "StageBar(name=stage3): Input slot strIn is undefined")
 
-    val result1 = ppl1.run(Seq("stage3:m", "stage2:arrOut"), Map(
-      "stage3:strIn" -> PipelineMessageDef().withValue(
-        ValueDef().withScalar(ScalarDef().withStringVal("my input value for stage 3")))
-    ))
+    val result1 = ppl1.run(Seq("stage3:m", "stage2:arrOut"),
+      Map("stage3:strIn" -> ValueDef("my input value for stage 3")))
     assert(result1.size === 2)
   }
 
   test("loopy pipeline") {
-    val pipelineDef1 = PipelineDef().withStage(Seq(
-      StageDef().withName("stage1").withStage("StageFoo").addAllInput(Seq(
-        "strIn" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage3", "m"))
-      )),
-      StageDef().withName("stage2").withStage("StageBar").addAllInput(Seq(
-        "strIn" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage3", "m"))
-      )),
-      StageDef().withName("stage3").withStage("StageBar").addAllInput(Seq(
-        "strIn" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage2", "m"))
-      ))
-    ))
+    val pipelineDef1 = PipelineDef(None, Array(
+      StageDef("stage1", "StageFoo", Map("strIn" -> StageOutputDef("stage3", "m"))),
+      StageDef("stage2", "StageBar", Map("strIn" -> StageOutputDef("stage3", "m"))),
+      StageDef("stage3", "StageBar", Map("strIn" -> StageOutputDef("stage2", "m")))))
     val ppl1 = pipelineFactory.create(pipelineDef1)
 
     val ex = intercept[IllegalArgumentException] {
-      ppl1.run(Seq("stage1:out"), Map())
+      ppl1.run(Seq("stage1:out"))
     }
     assert(ex.getMessage.contains("There is a loop in the pipeline"))
   }
 
   test("wrong input array type") {
-    val pipelineDef1 = PipelineDef().withStage(Seq(
-      StageDef().withName("stage1").withStage("StageTwoInputs").addAllInput(Seq(
-        "m" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withStringVal("my input value"))),
-        "valIn" -> PipelineMessageDef().withValue(
-          ValueDef().withArray(ArrayDef(Seq(ValueDef().withScalar(ScalarDef().withFloatVal(10.3f))))))
-      ))
-    ))
+    val pipelineDef1 = PipelineDef(None, Array(
+      StageDef("stage1", "StageTwoInputs", Map(
+        "m" -> ValueDef("my input value"),
+        "valIn" -> ValueDef(Array(10.3f))))))
     val ex1 = intercept[IllegalArgumentException] {
       pipelineFactory.create(pipelineDef1)
     }
     assert(ex1.getMessage.contains("StageTwoInputs(name=stage1): requirement failed: " +
       "Invalid type at slot valIn, expected a int[], got float[]"))
 
-    val pipelineDef2 = PipelineDef().withStage(Seq(
-      StageDef().withName("stage1").withStage("StageTwoInputs").addAllInput(Seq(
-        "m" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withStringVal("my input value")))
-      ))
-    ))
+    val pipelineDef2 = PipelineDef(None, Array(
+      StageDef("stage1", "StageTwoInputs", Map(
+        "m" -> ValueDef("my input value")))))
 
     val ppl2 = pipelineFactory.create(pipelineDef2)
 
     val ex2 = intercept[IllegalArgumentException] {
-      ppl2.run(Seq("stage1:arrOut"), Map(
-        "stage1:valIn" -> PipelineMessageDef().withValue(
-          ValueDef().withArray(ArrayDef(Seq(ValueDef().withScalar(ScalarDef().withFloatVal(10.3f))))))
-      ))
+      ppl2.run(Seq("stage1:arrOut"), Map("stage1:valIn" -> ValueDef(Array(10.3f))))
     }
     assert(ex2.getMessage.contains("StageTwoInputs(name=stage1): requirement failed: " +
       "Invalid type at slot valIn, expected a int[], got float[]"))
 
-    val result = ppl2.run(Seq("stage1:arrOut"), Map(
-      "stage1:valIn" -> PipelineMessageDef().withValue(
-        ValueDef().withArray(ArrayDef(Seq(ValueDef().withScalar(ScalarDef().withInt32Val(10))))))
-    ))
+    val result = ppl2.run(Seq("stage1:arrOut"), Map("stage1:valIn" -> ValueDef(Array[Int](10))))
+
     assert(result.size === 1)
-    assert(result("stage1:arrOut").toString ===
-      """value {
-        |  array {
-        |    element {
-        |      scalar {
-        |        float_val: 1.0
-        |      }
-        |    }
-        |    element {
-        |      scalar {
-        |        float_val: 2.0
-        |      }
-        |    }
-        |  }
-        |}
-        |""".stripMargin)
+    val arr = result("stage1:arrOut").asInstanceOf[ValueDef].value.asInstanceOf[Array[_]]
+    assert(arr === Array[Float](1.0f, 2.0f))
   }
 
   test("updated in upstream") {

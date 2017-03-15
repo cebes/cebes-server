@@ -14,6 +14,8 @@ package io.cebes.pipeline.json
 
 import java.util.UUID
 
+import io.cebes.df.Column
+
 ////////////////////////////////////////////////////////////////
 // Pipeline message
 ////////////////////////////////////////////////////////////////
@@ -30,7 +32,7 @@ case class SampleMessageDef() extends PipelineMessageDef
 
 case class ModelMessageDef() extends PipelineMessageDef
 
-case class ColumnDef() extends PipelineMessageDef
+case class ColumnDef(col: Column) extends PipelineMessageDef
 
 /**
   * Definition of a Stage
@@ -41,8 +43,8 @@ case class ColumnDef() extends PipelineMessageDef
   * @param inputs     map of inputs to this stage. Each entry is input_slot -> src_stage[:src_slot]
   * @param outputs    map from the output slot name to the message
   */
-case class StageDef(name: String, stageClass: String, inputs: Map[String, PipelineMessageDef],
-                    outputs: Map[String, PipelineMessageDef])
+case class StageDef(name: String, stageClass: String, inputs: Map[String, PipelineMessageDef] = Map.empty,
+                    outputs: Map[String, PipelineMessageDef] = Map.empty)
 
 /**
   * Definition of a Pipeline

@@ -15,7 +15,7 @@ package io.cebes.pipeline.models
 import java.util.UUID
 
 import io.cebes.common.HasId
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef}
+import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, StageOutputDef}
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
@@ -28,7 +28,7 @@ case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineD
   /**
     * Execute the pipeline
     */
-  def run(outs: Seq[String], feeds: Map[String, PipelineMessageDef])
+  def run(outs: Seq[String], feeds: Map[String, PipelineMessageDef] = Map.empty)
          (implicit ec: ExecutionContext): Map[String, PipelineMessageDef] = {
     if (outs.isEmpty) {
       return Map.empty
@@ -47,8 +47,8 @@ case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineD
 
       // set everything in feeds which are not StageOutput
       feedsWithSlot.foreach { case (slot, pipelineMsgDef) =>
-        pipelineMsgDef.msg match {
-          case PipelineMessageDef.Msg.StageOutput(_) =>
+        pipelineMsgDef match {
+          case _: StageOutputDef =>
           case _ =>
             PipelineMessageSerializer.deserialize(pipelineMsgDef, stages(slot.parent), slot.name)
         }
@@ -57,22 +57,22 @@ case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineD
       // now wire the stages, with connections in feeds overwriting connections in the
       // original proto definition
       // Note that wireMap contains the back links: s1 -> s2 meaning s2 provides its output to s1's input
-      val wireMap = proto.stage.flatMap { stageDef =>
-        stageDef.input.map { case (inpSlot, msgDef) =>
-          msgDef.msg match {
-            case PipelineMessageDef.Msg.StageOutput(stageOutputDef) =>
+      val wireMap = pipelineDef.stages.flatMap { stageDef =>
+        stageDef.inputs.flatMap { case (inpSlot, msgDef) =>
+          msgDef match {
+            case stageOutputDef: StageOutputDef =>
               Some(SlotDescriptor(stageDef.name, inpSlot) ->
                 SlotDescriptor(stageOutputDef.stageName, stageOutputDef.outputName))
             case _ => None
           }
-        }.filter(_.isDefined).map(_.get)
-      }.toMap ++ feedsWithSlot.map { case (slot, pipelineMsgDef) =>
-        pipelineMsgDef.msg match {
-          case PipelineMessageDef.Msg.StageOutput(stageOutputDef) =>
+        }
+      }.toMap ++ feedsWithSlot.flatMap { case (slot, pipelineMsgDef) =>
+        pipelineMsgDef match {
+          case stageOutputDef: StageOutputDef =>
             Some(slot -> SlotDescriptor(stageOutputDef.stageName, stageOutputDef.outputName))
           case _ => None
         }
-      }.filter(_.isDefined).map(_.get).toMap
+      }
 
       Pipeline.topoSort(wireMap)
 

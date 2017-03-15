@@ -21,7 +21,7 @@ class PipelineJsonProtocolSuite extends FunSuite {
   test("ValueDef") {
     val value = ValueDef(20.14)
     val s1 = value.toJson.compactPrint
-    val value1 = s1.parseJson.convertTo[PipelineMessageDef]
+    val value1 = s1.parseJson.convertTo[ValueDef]
     assert(value1.isInstanceOf[ValueDef])
     assert(value === value1)
 

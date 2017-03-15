@@ -26,11 +26,11 @@ class PipelineFactory @Inject()(stageFactory: StageFactory) {
     * Note that this will not wire the inputs of stages. That will only be done when
     * [[Pipeline.run()]] is called.
     */
-  def create(proto: PipelineDef)(implicit ec: ExecutionContext): Pipeline = {
-    val id = proto.id.getOrElse(HasId.randomId)
+  def create(pipelineDef: PipelineDef)(implicit ec: ExecutionContext): Pipeline = {
+    val id = pipelineDef.id.getOrElse(HasId.randomId)
 
     val stageMap = mutable.Map.empty[String, Stage]
-    proto.stages.map { s =>
+    pipelineDef.stages.map { s =>
       val stage = stageFactory.create(s)
       if (stageMap.contains(stage.getName)) {
         throw new IllegalArgumentException(s"Duplicated stage name: ${stage.getName}")
@@ -38,6 +38,6 @@ class PipelineFactory @Inject()(stageFactory: StageFactory) {
       stageMap.put(stage.getName, stage)
     }
 
-    Pipeline(id, stageMap.toMap, proto.withId(id.toString))
+    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)))
   }
 }

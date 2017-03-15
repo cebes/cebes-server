@@ -12,11 +12,11 @@
 
 package io.cebes.pipeline.json
 
-import io.cebes.json.GenericJsonProtocol
+import io.cebes.json.CebesCoreJsonProtocol
 import spray.json._
 
 
-trait PipelineJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol {
+trait PipelineJsonProtocol extends DefaultJsonProtocol with CebesCoreJsonProtocol {
 
   implicit object ValueDefFormat extends JsonFormat[ValueDef] {
 
@@ -29,23 +29,17 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol 
   implicit val dataframeMessageDefFormat: RootJsonFormat[DataframeMessageDef] = jsonFormat0(DataframeMessageDef)
   implicit val sampleMessageDefFormat: RootJsonFormat[SampleMessageDef] = jsonFormat0(SampleMessageDef)
   implicit val modelMessageDefFormat: RootJsonFormat[ModelMessageDef] = jsonFormat0(ModelMessageDef)
-  implicit val columnDefFormat: RootJsonFormat[ColumnDef] = jsonFormat0(ColumnDef)
+  implicit val columnDefFormat: RootJsonFormat[ColumnDef] = jsonFormat1(ColumnDef)
 
   implicit object PipelineMessageDefFormat extends JsonFormat[PipelineMessageDef] {
 
     override def write(obj: PipelineMessageDef): JsValue = obj match {
-      case value: ValueDef =>
-        JsArray(JsString(value.getClass.getSimpleName), value.toJson)
-      case stageOutput: StageOutputDef =>
-        JsArray(JsString(stageOutput.getClass.getSimpleName), stageOutput.toJson)
-      case dfMsg: DataframeMessageDef =>
-        JsArray(JsString(dfMsg.getClass.getSimpleName), dfMsg.toJson)
-      case sampleMsg: SampleMessageDef =>
-        JsArray(JsString(sampleMsg.getClass.getSimpleName), sampleMsg.toJson)
-      case modelMsg: ModelMessageDef =>
-        JsArray(JsString(modelMsg.getClass.getSimpleName), modelMsg.toJson)
-      case colDef: ColumnDef =>
-        JsArray(JsString(colDef.getClass.getSimpleName), colDef.toJson)
+      case value: ValueDef => JsArray(JsString("ValueDef"), value.toJson)
+      case stageOutput: StageOutputDef => JsArray(JsString("StageOutputDef"), stageOutput.toJson)
+      case dfMsg: DataframeMessageDef => JsArray(JsString("DataframeMessageDef"), dfMsg.toJson)
+      case sampleMsg: SampleMessageDef => JsArray(JsString("SampleMessageDef"), sampleMsg.toJson)
+      case modelMsg: ModelMessageDef => JsArray(JsString("ModelMessageDef"), modelMsg.toJson)
+      case colDef: ColumnDef => JsArray(JsString("ColumnDef"), colDef.toJson)
       case other => serializationError(s"Couldn't serialize type ${other.getClass.getCanonicalName}")
     }
 
@@ -53,21 +47,17 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol 
       case jsArr: JsArray =>
         require(jsArr.elements.size == 2, "Expected a JsArray of 2 elements")
         jsArr.elements.head match {
-          case JsString(ValueDef.getClass.getSimpleName) => jsArr.elements.last.convertTo[ValueDef]
-          case JsString(StageOutputDef.getClass.getSimpleName) => jsArr.elements.last.convertTo[StageOutputDef]
-          case JsString(DataframeMessageDef.getClass.getSimpleName) =>
-            jsArr.elements.last.convertTo[DataframeMessageDef]
-          case JsString(SampleMessageDef.getClass.getSimpleName) =>
-            jsArr.elements.last.convertTo[SampleMessageDef]
-          case JsString(ModelMessageDef.getClass.getSimpleName) =>
-            jsArr.elements.last.convertTo[ModelMessageDef]
-          case JsString(ColumnDef.getClass.getSimpleName) =>
-            jsArr.elements.last.convertTo[ColumnDef]
+          case JsString("ValueDef") => jsArr.elements.last.convertTo[ValueDef]
+          case JsString("StageOutputDef") => jsArr.elements.last.convertTo[StageOutputDef]
+          case JsString("DataframeMessageDef") => jsArr.elements.last.convertTo[DataframeMessageDef]
+          case JsString("SampleMessageDef") => jsArr.elements.last.convertTo[SampleMessageDef]
+          case JsString("ModelMessageDef") => jsArr.elements.last.convertTo[ModelMessageDef]
+          case JsString("ColumnDef") => jsArr.elements.last.convertTo[ColumnDef]
           case _ =>
             deserializationError(s"Unable to deserialize ${jsArr.compactPrint}")
         }
       case other =>
-        deserializationError(s"Expected a JsObject, got ${other.getClass.getCanonicalName}")
+        deserializationError(s"Expected a JsArray, got ${other.getClass.getCanonicalName}")
     }
   }
 

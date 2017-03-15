@@ -14,13 +14,12 @@ package io.cebes.spark.pipeline.store
 import java.util.UUID
 
 import com.google.inject.{Inject, Singleton}
-import com.trueaccord.scalapb.GeneratedMessage
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.persistence.store.JdbcCachedStore
 import io.cebes.pipeline.factory.PipelineFactory
+import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.json.PipelineJsonProtocol._
 import io.cebes.pipeline.models.Pipeline
-import io.cebes.pipeline.protos.pipeline.PipelineDef
 import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
 import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
@@ -49,9 +48,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
       .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
         JdbcPersistenceColumn("proto", "MEDIUMTEXT")))
       .withValueToSeq { pipeline =>
-        Seq(System.currentTimeMillis(), pipeline.proto.asInstanceOf[GeneratedMessage].toJson.compactPrint)
+        Seq(System.currentTimeMillis(), pipeline.pipelineDef.toJson.compactPrint)
       }.withSqlToValue { (_, entry) =>
-      val proto = entry.getString(2).parseJson.convertTo[GeneratedMessage].asInstanceOf[PipelineDef]
+      val proto = entry.getString(2).parseJson.convertTo[PipelineDef]
       pipelineFactory.create(proto)
     }.withStrToKey(s => UUID.fromString(s))
       .build()

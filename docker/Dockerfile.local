@@ -3,7 +3,20 @@
 FROM openjdk:8-alpine
 
 ARG SPARK_VERSION=2.1.0
+ARG PROXY_SERVER=""
+ARG NO_PROXY=""
 
+ENV http_proxy=$PROXY_SERVER \
+    https_proxy=$PROXY_SERVER \
+    ftp_proxy=$PROXY_SERVER \
+    all_proxy=$PROXY_SERVER \
+    HTTP_PROXY=$PROXY_SERVER \
+    HTTPS_PROXY=$PROXY_SERVER \
+    FTP_PROXY=$PROXY_SERVER \
+    ALL_PROXY=$PROXY_SERVER \
+    no_proxy=${NO_PROXY} \
+    NO_PROXY=${NO_PROXY}
+    
 # mysql
 RUN apk add --update curl bash mysql mysql-client && rm -f /var/cache/apk/*
 
