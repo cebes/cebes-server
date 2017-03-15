@@ -17,37 +17,26 @@ package io.cebes.spark.pipeline.store
 import java.util.UUID
 
 import io.cebes.df.functions
-import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.pipeline.PipelineStore
-import io.cebes.pipeline.protos.message.{ColumnDef, PipelineMessageDef, StageOutputDef}
-import io.cebes.pipeline.protos.pipeline.PipelineDef
-import io.cebes.pipeline.protos.stage.StageDef
-import io.cebes.pipeline.protos.value.{ScalarDef, ValueDef}
+import io.cebes.pipeline.json._
 import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper, TestPropertyHelper}
 import io.cebes.spark.pipeline.etl.{Join, Sample}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
-import spray.json._
 
 class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
   with TestPropertyHelper with TestDataHelper with TestPipelineHelper with ImplicitExecutor {
 
   private def samplePipeline = {
-    val pipelineProto = PipelineDef().withStage(Seq(
-      StageDef().withName("stage1").withStage("Join")
-        .addAllInput(Map(
-          "joinType" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withStringVal("outer"))),
-          "joinExprs" -> PipelineMessageDef().withColumn(ColumnDef().withColumnJson(
-            functions.col("col1").equalTo(functions.col("col2")).toJson.compactPrint))
-        )),
-      StageDef().withName("stage2").withStage("Sample")
-        .addAllInput(Map(
-          "withReplacement" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withBoolVal(false))),
-          "fraction" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withDoubleVal(0.2))),
-          "seed" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withInt64Val(169L))),
-          "inputDf" -> PipelineMessageDef().withStageOutput(StageOutputDef("stage1", "outputDf"))
-        ))
-    ))
+    val pipelineProto = PipelineDef(None, Array(
+      StageDef("stage1", "Join", Map(
+        "joinType" -> ValueDef("outer"),
+        "joinExprs" -> ColumnDef(functions.col("col1").equalTo(functions.col("col2"))))),
+      StageDef("stage2", "Sample", Map(
+        "withReplacement" -> ValueDef(false),
+        "fraction" -> ValueDef(0.2),
+        "seed" -> ValueDef(169L),
+        "inputDf" -> StageOutputDef("stage1", "outputDf")))))
 
     val ppl = pipelineFactory.create(pipelineProto)
     assert(ppl.stages.size === 2)

@@ -12,46 +12,39 @@
 
 package io.cebes.pipeline.json
 
-import com.trueaccord.scalapb.GeneratedMessage
 import io.cebes.pipeline.json.PipelineJsonProtocol._
-import io.cebes.pipeline.protos.message.{PipelineMessageDef, StageOutputDef}
-import io.cebes.pipeline.protos.stage.StageDef
-import io.cebes.pipeline.protos.value.{MapDef, ScalarDef, ValueDef}
 import org.scalatest.FunSuite
 import spray.json._
 
 class PipelineJsonProtocolSuite extends FunSuite {
 
   test("ValueDef") {
-    val value: GeneratedMessage = ValueDef().withScalar(ScalarDef().withDoubleVal(20.14))
+    val value = ValueDef(20.14)
     val s1 = value.toJson.compactPrint
-    val value1 = s1.parseJson.convertTo[GeneratedMessage]
+    val value1 = s1.parseJson.convertTo[ValueDef]
     assert(value1.isInstanceOf[ValueDef])
     assert(value === value1)
 
-    val mapMsg: GeneratedMessage = ValueDef().withMap(MapDef().withEntry(Seq(
-      MapDef.MapEntryDef().withKey(ValueDef().withScalar(ScalarDef().withStringVal("param100"))),
-      MapDef.MapEntryDef().withKey(ValueDef().withScalar(ScalarDef().withDoubleVal(20.14)))
-    )))
+    val mapMsg: PipelineMessageDef = ValueDef(Map("param100" -> 20.14))
     val s2 = mapMsg.toJson.compactPrint
-    val mapMsg1 = s2.parseJson.convertTo[GeneratedMessage]
+    val mapMsg1 = s2.parseJson.convertTo[PipelineMessageDef]
     assert(mapMsg1.isInstanceOf[ValueDef])
     assert(mapMsg === mapMsg1)
   }
 
   test("StageDef") {
-    val stageDef: GeneratedMessage = StageDef().withStage("StageClass").withName("stage1")
-      .withInput(Map(
-        "input0" -> PipelineMessageDef().withStageOutput(StageOutputDef("s1", "out0")),
-        "input1" -> PipelineMessageDef().withStageOutput(StageOutputDef("s2", "out1")),
-        "param1" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withFloatVal(3.14f))),
-        "param3" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withInt64Val(194L)))
-      ))
-      .withOutput(Map(
-        "out0" -> PipelineMessageDef().withValue(ValueDef().withScalar(ScalarDef().withInt32Val(20)))
+    val stageDef = StageDef("stage1", "StageClass",
+      Map(
+        "input0" -> StageOutputDef("s1", "out0"),
+        "input1" -> StageOutputDef("s2", "out1"),
+        "param1" -> ValueDef(3.14f),
+        "param3" -> ValueDef(194L)
+      ),
+      Map(
+        "out0" -> ValueDef(20)
       ))
     val s1 = stageDef.toJson.compactPrint
-    val stageDef1 = s1.parseJson.convertTo[GeneratedMessage]
+    val stageDef1 = s1.parseJson.convertTo[StageDef]
     assert(stageDef1.isInstanceOf[StageDef])
     assert(stageDef === stageDef1)
   }
