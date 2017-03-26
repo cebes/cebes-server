@@ -25,22 +25,10 @@ import scala.reflect.ClassTag
   * @param defaultValue default value, as an [[Option]]
   * @param validator    [[SlotValidator]] instance to validate the value of the slot.
   *                     By default everything is validated.
-  * @param optional     if false, complains in run-time when there is neither a value specified for this slot,
-  *                     nor a default value was set.
-  *                     When optional=true, the [[SlotValueMap]] passed into the `run()` function
-  *                     of the stages will not contain this slot if it is not specified. Therefore,
-  *                     the function has to handle the case when an `optional` slot is not presented in the
-  *                     `run()` function.
-  *                     By default, optional=false, meaning it always complains.
-  *                     This is so to encourage developers to specify a sensible default value for the slots,
-  *                     and making sure that once entered the `run()` function in the Stage, everything was already
-  *                     specified. Developers will only need to check the existence of some special slots which
-  *                     they explicitly marked as **optional**.
   */
 abstract class Slot[+T](val name: String, val doc: String,
                         val defaultValue: Option[T],
-                        val validator: SlotValidator[T] = SlotValidators.default[T],
-                        val optional: Boolean = false)(implicit tag: ClassTag[T]) {
+                        val validator: SlotValidator[T] = SlotValidators.default[T])(implicit tag: ClassTag[T]) {
 
   SlotValidators.checkValidSlotName(name)
   if (defaultValue.isDefined) {
@@ -82,19 +70,61 @@ abstract class Slot[+T](val name: String, val doc: String,
   }
 }
 
+/**
+  * A "placeholder" for receiving input messages in a Pipeline [[Stage]].
+  * A stage having a Slot[Dataframe] as its input
+  * means that it expects the message coming that slot to be of type [Dataframe].
+  *
+  * @param name         Name of the slot, normally has to be the same with the variable name
+  * @param doc          (brief) documentation of the slot
+  * @param defaultValue default value, as an [[Option]]
+  * @param validator    [[SlotValidator]] instance to validate the value of the slot.
+  *                     By default everything is validated.
+  * @param optional     if false, complains in run-time when there is neither a value specified for this slot,
+  *                     nor a default value was set.
+  *                     When optional=true, the [[SlotValueMap]] passed into the `run()` function
+  *                     of the stages will not contain this slot if it is not specified. Therefore,
+  *                     the function has to handle the case when an `optional` slot is not presented in the
+  *                     `run()` function.
+  *                     By default, optional=false, meaning it always complains.
+  *                     This is so to encourage developers to specify a sensible default value for the slots,
+  *                     and making sure that once entered the `run()` function in the Stage, everything was already
+  *                     specified. Developers will only need to check the existence of some special slots which
+  *                     they explicitly marked as **optional**.
+  */
 case class InputSlot[+T](override val name: String, override val doc: String,
                          override val defaultValue: Option[T],
                          override val validator: SlotValidator[T] = SlotValidators.default,
-                         override val optional: Boolean = false)
+                         optional: Boolean = false)
                         (implicit tag: ClassTag[T])
-  extends Slot[T](name, doc, defaultValue, validator, optional)
+  extends Slot[T](name, doc, defaultValue, validator)
 
+/**
+  * A "placeholder" for sending output messages in a Pipeline [[Stage]].
+  * A stage having a OutputSlot[Dataframe]
+  * means that it will give a message of type [Dataframe] at that slot.
+  *
+  * @param name         Name of the slot, normally has to be the same with the variable name
+  * @param doc          (brief) documentation of the slot
+  * @param defaultValue default value, as an [[Option]]
+  * @param validator    [[SlotValidator]] instance to validate the value of the slot.
+  *                     By default everything is validated.
+  * @param stateful     By default output slots are stateless (i.e. `stateful = false`).
+  *                     It is computed once and gets re-computed if the inputs have changed.
+  *                     Setting `stateful = true` allows stage to specify some output slots
+  *                     to be stateful. Those outputs will not be re-computed when the inputs change.
+  *                     They will only be re-computed when users explicitly tell the Pipeline to do so.
+  *                     Results of stateful slots will also be persisted along with the stage.
+  *
+  *                     An example of stateful slot is the Machine Learning model. Once estimated,
+  *                     the model itself will remain stateful.
+  */
 case class OutputSlot[+T](override val name: String, override val doc: String,
                           override val defaultValue: Option[T],
                           override val validator: SlotValidator[T] = SlotValidators.default,
-                          override val optional: Boolean = false)
+                          stateful: Boolean = false)
                          (implicit tag: ClassTag[T])
-  extends Slot[T](name, doc, defaultValue, validator, optional)
+  extends Slot[T](name, doc, defaultValue, validator)
 
 /**
   * A map of slots to the actual values, maps [[Slot]][T] into [[StageInput]][T]
@@ -266,7 +296,10 @@ object SlotDescriptor {
 /** Helper for creating input slots */
 trait HasInputSlots {
 
-  /** Create an **input** slot of the given type */
+  /**
+    * Create an **input** slot of the given type
+    * See [[InputSlot]] for documentation of the parameters
+    */
   final protected def inputSlot[T](name: String, doc: String, defaultValue: Option[T],
                                    validator: SlotValidator[T] = SlotValidators.default[T],
                                    optional: Boolean = false)
@@ -278,10 +311,14 @@ trait HasInputSlots {
 /** Helper for creating output slots */
 trait HasOutputSlots {
 
-  /** Create an **output** slot of the given type */
+  /**
+    * Create an **output** slot of the given type
+    * See [[OutputSlot]] for documentation of parameters
+    */
   final protected def outputSlot[T](name: String, doc: String, defaultValue: Option[T],
-                                    validator: SlotValidator[T] = SlotValidators.default[T])
+                                    validator: SlotValidator[T] = SlotValidators.default[T],
+                                    stateful: Boolean = false)
                                    (implicit tag: ClassTag[T]): OutputSlot[T] = {
-    OutputSlot[T](name, doc, defaultValue, validator)
+    OutputSlot[T](name, doc, defaultValue, validator, stateful)
   }
 }
