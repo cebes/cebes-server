@@ -102,10 +102,9 @@ trait Stage extends Inputs with HasOutputSlots {
   /**
     * Clear the value of the given output slot, if it is already computed
     *
-    * @param outputName name of the output slot to be cleared.
+    * @param outputSlot the output slot to be cleared.
     */
-  def clearOutput[T](outputName: String): this.type = {
-    val outputSlot = getOutput(outputName)
+  def clearOutput[T](outputSlot: OutputSlot[T]): this.type = {
     outputLock.writeLock().lock()
     try {
       cachedOutput.remove(outputSlot)
@@ -158,7 +157,7 @@ trait Stage extends Inputs with HasOutputSlots {
     *  - No output was computed ([[cachedOutput]] is empty)
     *  - input is changed (the [[isInputChanged]] flag)
     * */
-  private def shouldRecompute[T](outputSlot: OutputSlot[T]): Boolean = {
+  private[models] def shouldRecompute[T](outputSlot: OutputSlot[T]): Boolean = {
     if (outputSlot.stateful) {
       // if this is stateful output, only re-compute
       // if it is not already computed (or it was cleared)

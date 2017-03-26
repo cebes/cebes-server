@@ -146,7 +146,10 @@ trait Inputs extends HasInputSlots {
     */
   final protected def isInputChanged: Boolean = {
     hasNewInput || _inputs.flatMap(inputOption(_)).exists {
-      case o: StageOutput[_] => o.isNewOutput
+      case o: StageOutput[_] =>
+        // either this is a new output (newly computed and o.isNewOutput is true)
+        // or it should be recomputed eventually
+        o.isNewOutput || o.stage.shouldRecompute(o.stage.getOutput(o.outputName))
       case _ => false
     }
   }

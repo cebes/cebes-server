@@ -23,6 +23,21 @@ class StageFoo extends Stage {
   }
 }
 
+class StageFooStateful extends Stage {
+
+  val strIn: InputSlot[String] = inputSlot[String]("strIn", "The input string", None)
+  val out: OutputSlot[Array[Int]] = outputSlot[Array[Int]]("out", "The output integer", None, stateful = true)
+
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+    assert(inputs.size == 1)
+    Array(10, 20)
+  }
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    SlotValueMap(Seq.empty)
+  }
+}
+
 class StageFooTypoSlotName extends Stage {
 
   val strIn: InputSlot[String] = inputSlot[String]("strInlala", "The input string", None)
@@ -80,5 +95,38 @@ class StageBadOutputSize extends Stage {
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.isEmpty)
     SlotValueMap(m1, "string 1")
+  }
+}
+
+class StageStatefulOutput extends Stage {
+
+  val valIn: InputSlot[Array[Int]] = inputSlot[Array[Int]]("valIn", "The input integer array", None)
+
+  val arrOutStateful: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOutStateful", "The output array",
+    None, stateful = true)
+  val arrOutStateless: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOutStateless", "The output array",
+    None)
+
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+    assert(stateSlot == arrOutStateful)
+    Array(1.0f, 3.0f)
+  }
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    assert(inputs.size == 1)
+    SlotValueMap(arrOutStateless, Array(1.5f, 3.5f))
+  }
+}
+
+class StageStatefulOutputDumb extends Stage {
+
+  val valIn: InputSlot[Array[Int]] = inputSlot[Array[Int]]("valIn", "The input integer array", None)
+
+  val arrOutStateful: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOutStateful", "The output array",
+    None, stateful = true)
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    assert(inputs.size == 1)
+    SlotValueMap(Seq.empty)
   }
 }
