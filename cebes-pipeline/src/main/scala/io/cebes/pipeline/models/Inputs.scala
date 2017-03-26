@@ -118,7 +118,7 @@ trait Inputs extends HasInputSlots {
     */
   final protected def withAllInputs[R](work: SlotValueMap => R)(implicit ec: ExecutionContext): Future[R] = {
     // only takes input slots that present or not optional
-    val v = _inputs.filterNot(s => s.optional && inputOption(s).isEmpty).map(s => input(s).getFuture).toSeq
+    val v = _inputs.filter(s => !s.optional || inputOption(s).nonEmpty).map(s => input(s).getFuture).toSeq
     Future.sequence(v).map { seq =>
       val inputVals = seq.zip(_inputs).map { case (m, s) =>
         s -> m
@@ -146,7 +146,10 @@ trait Inputs extends HasInputSlots {
     */
   final protected def isInputChanged: Boolean = {
     hasNewInput || _inputs.flatMap(inputOption(_)).exists {
-      case o: StageOutput[_] => o.isNewOutput
+      case o: StageOutput[_] =>
+        // either this is a new output (newly computed and o.isNewOutput is true)
+        // or it should be recomputed eventually
+        o.isNewOutput || o.stage.shouldRecompute(o.stage.getOutput(o.outputName))
       case _ => false
     }
   }
@@ -155,7 +158,7 @@ trait Inputs extends HasInputSlots {
   final protected def inputUnchanged(): Unit = {
     hasNewInput = false
     _inputs.flatMap(inputOption(_)).foreach {
-      case o: StageOutput[_] => o.seen()
+      case o: StageOutput[_] => o.setNewOutput(false)
       case _ =>
     }
   }

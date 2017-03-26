@@ -14,7 +14,7 @@ package io.cebes.pipeline.models
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, ExecutionException}
 
 class StageSuite extends FunSuite {
 
@@ -56,12 +56,14 @@ class StageSuite extends FunSuite {
     val ex2 = intercept[IllegalArgumentException] {
       Await.result(stage1.output(stage1.m1).getFuture, Duration.Inf)
     }
-    assert(ex2.getMessage === "Stage StageBadOutputSize(name=stage1): output doesn't contain result for slot m2")
+    assert(ex2.getMessage === "requirement failed: Stage StageBadOutputSize(name=stage1): " +
+      "output doesn't contain result for slot m2")
 
     val ex3 = intercept[IllegalArgumentException] {
       Await.result(stage1.output(stage1.m2).getFuture, Duration.Inf)
     }
-    assert(ex3.getMessage === "Stage StageBadOutputSize(name=stage1): output doesn't contain result for slot m2")
+    assert(ex3.getMessage === "requirement failed: Stage StageBadOutputSize(name=stage1): " +
+      "output doesn't contain result for slot m2")
   }
 
   test("bad output type") {
@@ -90,6 +92,13 @@ class StageSuite extends FunSuite {
     assert(out.isInstanceOf[Array[Float]])
     assert(out === Array(1.0f, 2.0f))
     assert(out eq Await.result(s2.output(s2.arrOut).getFuture, Duration.Inf))
+
+    // change input of source
+    s1.input(s1.strIn, "second string")
+
+    val out2 = Await.result(s2.output(s2.arrOut).getFuture, Duration.Inf)
+    assert(out2 === Array(1.0f, 2.0f))
+    assert(out2 ne out)
   }
 
   test("typo in slot name") {
@@ -100,5 +109,115 @@ class StageSuite extends FunSuite {
     assert(ex.getMessage.contains("StageFooTypoSlotName: inconsistent slot name: " +
       "variable named strIn, slot named strInlala"))
   }
-}
 
+  test("stateful output without implementation") {
+    val s = new StageStatefulOutputDumb()
+    s.input(s.valIn, Array[Int](10, 20))
+
+    val ex = intercept[ExecutionException] {
+      Await.result(s.output(s.arrOutStateful).getFuture, Duration.Inf)
+    }
+    assert(ex.getCause.isInstanceOf[NotImplementedError])
+    assert(ex.getCause.getMessage.contains("computeStatefulOutputs() not implemented"))
+  }
+
+  test("stateful outputs") {
+    val s = new StageStatefulOutput()
+    s.input(s.valIn, Array[Int](1, 10, 20))
+
+    val o1 = Await.result(s.output(s.arrOutStateless).getFuture, Duration.Inf)
+    assert(o1 === Array(1.5f, 3.5f))
+    assert(o1 eq Await.result(s.output(s.arrOutStateless).getFuture, Duration.Inf))
+
+    val o2 = Await.result(s.output(s.arrOutStateful).getFuture, Duration.Inf)
+    assert(o2 === Array(1.0f, 3.0f))
+    assert(o2 eq Await.result(s.output(s.arrOutStateful).getFuture, Duration.Inf))
+
+    // new output
+    s.input(s.valIn, Array[Int](4, 5))
+
+    // stateless output will change
+    val o3 = Await.result(s.output(s.arrOutStateless).getFuture, Duration.Inf)
+    assert(o3 === Array(1.5f, 3.5f))
+    assert(o3 ne o1)
+
+    // stateful output doesn't change
+    val o4 = Await.result(s.output(s.arrOutStateful).getFuture, Duration.Inf)
+    assert(o4 eq o2)
+
+    // clear stateful output, now it should change
+    s.clearOutput(s.arrOutStateful)
+    val o5 = Await.result(s.output(s.arrOutStateful).getFuture, Duration.Inf)
+    assert(o5 === Array(1.0f, 3.0f))
+    assert(o5 ne o2)
+
+    // stateless output doesn't change, since we only cleared stateful output
+    assert(o3 === Await.result(s.output(s.arrOutStateless).getFuture, Duration.Inf))
+  }
+
+  test("stateful output with chaining") {
+    val s1 = new StageFoo()
+    val s2 = new StageStatefulOutput()
+
+    s1.input(s1.strIn, "my input string")
+    s2.input(s2.valIn, s1.output(s1.out))
+
+    val o1 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o1 === Array(1.0f, 3.0f))
+
+    val o2 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o2 === Array(1.5f, 3.5f))
+
+    // change input of the first stage
+    s1.input(s1.strIn, "second string")
+
+    //val oo = Await.result(s1.output(s1.out).getFuture, Duration.Inf)
+
+    // stateful output doesn't change
+    val o3 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o3 eq o1)
+
+    // stateless output should change
+    val o4 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o4 === Array(1.5f, 3.5f))
+    assert(o4 ne o2)
+  }
+
+  test("stateful output with chaining on stateful output") {
+    val s1 = new StageFooStateful()
+    val s2 = new StageStatefulOutput()
+
+    s1.input(s1.strIn, "my input string")
+    s2.input(s2.valIn, s1.output(s1.out))
+
+    val o1 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o1 === Array(1.0f, 3.0f))
+
+    val o2 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o2 === Array(1.5f, 3.5f))
+
+    // change input of the first stage
+    s1.input(s1.strIn, "second string")
+
+    // stateful output doesn't change
+    val o3 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o3 eq o1)
+
+    // stateless output also doesn't change, because the stateful output doesn't change
+    val o4 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o4 === Array(1.5f, 3.5f))
+    assert(o4 eq o2)
+
+    // clear the stateful output
+    s1.clearOutput(s1.out)
+
+    // stateful output still doesn't change
+    val o5 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o5 eq o1)
+
+    // now the stateless output should change
+    val o6 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o6 === Array(1.5f, 3.5f))
+    assert(o6 ne o2)
+  }
+}

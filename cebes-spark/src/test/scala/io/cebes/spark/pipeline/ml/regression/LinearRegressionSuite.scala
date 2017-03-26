@@ -11,7 +11,6 @@
  */
 package io.cebes.spark.pipeline.ml.regression
 
-import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -22,16 +21,25 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     createOrReplaceCylinderBands()
   }
 
+  /*
   test("Linear regression simple") {
-    /*val lr = CebesSparkTestInjector.instance[LinearRegression]
+    val lr = CebesSparkTestInjector.instance[LinearRegression]
     assert(lr.getName === "linearregression")
     lr.input(lr.featuresCol, "customer")
     lr.input(lr.labelCol, "band_type")
     lr.input(lr.predictionCol, "band_type_predict")
     lr.input(lr.data, getCylinderBands.limit(200))
 
+    //TODO: changing some inputs (e.g. featureCol, labelCol, etc...)
+    // should actually clear the stateful output (i.e. model)
+    // while changing `data` shouldn't change the stateful output
+    // There should be a way to specify which input will effect stateful outputs
+
     val lrModel = lr.getModel()
     assert(lrModel.isInstanceOf[LinearRegressionModel])
-  */
+
+    val dfPredict = Await.result(lr.output(lr.predict).getFuture, Duration.Inf)
+    print(dfPredict.schema)
   }
+  */
 }
