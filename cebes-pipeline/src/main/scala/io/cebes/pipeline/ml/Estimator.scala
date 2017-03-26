@@ -32,8 +32,6 @@ trait Estimator extends Stage with LazyLogging {
   val data: InputSlot[Dataframe] = inputSlot[Dataframe]("data", "The training dataset", None)
   val model: OutputSlot[Model] = outputSlot[Model]("model", "The output model of this estimator", None)
 
-  override def nonDeterministic: Boolean = true
-
   /**
     * Train (if needed) and return the model.
     * Note that other outputs of the [[Estimator]] (if there is any) can still

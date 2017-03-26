@@ -186,6 +186,7 @@ class PipelineSuite extends FunSuite {
     assert(result2 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
   }
 
+  /*
   test("updated in upstream with non-deterministic stage") {
     val s1 = new StageFooNonDeterministic().setName("stage1")
     s1.input(s1.strIn, "input1")
@@ -211,4 +212,5 @@ class PipelineSuite extends FunSuite {
     assert(result2 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
     assert(result2 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
   }
+  */
 }

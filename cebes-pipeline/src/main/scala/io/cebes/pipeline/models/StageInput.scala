@@ -49,14 +49,11 @@ private[pipeline] case class StageOutput[+T](stage: Stage, outputName: String) e
 
   @volatile private var isNew: Boolean = true
 
-  def isNewOutput: Boolean = isNew || stage.nonDeterministic
+  def isNewOutput: Boolean = isNew
 
-  def newOutput(): Unit = {
-    isNew = true
-  }
-
-  def seen(): Unit = {
-    isNew = false
+  def setNewOutput(isNewOut: Boolean): this.type = {
+    isNew = isNewOut
+    this
   }
 
   override def get: T = {

@@ -43,7 +43,7 @@ abstract class Slot[+T](val name: String, val doc: String,
   /** Make sure the type of the given value is suitable to be assigned to this slot,
     * then call the validator to check if the given value is valid.
     */
-  def checkInput[U >: T](value: U): Unit = {
+  def checkValue[U >: T](value: U): Unit = {
     // it's quite tricky to do the type check here, especially for primitive types
     // because `tag.runtimeClass` will be the low-level types, while the `value` is normally
     // in the scala type system. For instance when `value` is `Int` (or `java.lang.Interger`), i.e. non-primitive,
@@ -137,12 +137,12 @@ class SlotMap {
     * Puts a (slot, value) pair (overwrites if the slot exists).
     * If the given value is an [[OrdinaryInput]], also check if
     * the given value is valid for the given slot
-    * (by calling the [[Slot.checkInput()]] function on the slot)
+    * (by calling the [[Slot.checkValue()]] function on the slot)
     */
   def put[T](slot: Slot[T], value: StageInput[T]): this.type = {
     value match {
       case OrdinaryInput(v) =>
-        slot.checkInput(v)
+        slot.checkValue(v)
       case _ =>
     }
     map(slot.asInstanceOf[Slot[T]]) = value
@@ -187,7 +187,9 @@ object SlotMap {
 
 /**
   * Map a [[Slot]][T] into the actual value of type T
-  * This class is not thread-safe
+  * This class is not thread-safe.
+  * It is used mainly to conveniently pass a bunch of slot values
+  * between functions.
   */
 class SlotValueMap {
 
@@ -196,12 +198,12 @@ class SlotValueMap {
   /**
     * Puts a (slot, value) pair (overwrites if the slot exists).
     * The given value is valid for the given slot
-    * (by calling the [[Slot.checkInput()]] function on the slot)
+    * (by calling the [[Slot.checkValue()]] function on the slot)
     */
   def put[T](slot: Slot[T], value: T): this.type = {
     Option(value) match {
       case Some(v) =>
-        slot.checkInput(v)
+        slot.checkValue(v)
       case _ =>
     }
     map(slot.asInstanceOf[Slot[T]]) = value

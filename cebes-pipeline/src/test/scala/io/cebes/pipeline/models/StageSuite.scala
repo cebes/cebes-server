@@ -56,12 +56,14 @@ class StageSuite extends FunSuite {
     val ex2 = intercept[IllegalArgumentException] {
       Await.result(stage1.output(stage1.m1).getFuture, Duration.Inf)
     }
-    assert(ex2.getMessage === "Stage StageBadOutputSize(name=stage1): output doesn't contain result for slot m2")
+    assert(ex2.getMessage === "requirement failed: Stage StageBadOutputSize(name=stage1): " +
+      "output doesn't contain result for slot m2")
 
     val ex3 = intercept[IllegalArgumentException] {
       Await.result(stage1.output(stage1.m2).getFuture, Duration.Inf)
     }
-    assert(ex3.getMessage === "Stage StageBadOutputSize(name=stage1): output doesn't contain result for slot m2")
+    assert(ex3.getMessage === "requirement failed: Stage StageBadOutputSize(name=stage1): " +
+      "output doesn't contain result for slot m2")
   }
 
   test("bad output type") {

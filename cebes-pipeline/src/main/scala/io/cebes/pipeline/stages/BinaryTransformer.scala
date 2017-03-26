@@ -23,7 +23,7 @@ trait BinaryTransformer extends Stage {
   val rightDf: InputSlot[Dataframe] = inputSlot[Dataframe]("rightDf", "Right input to the transformation", None)
   val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "Result of transformation", None)
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     SlotValueMap(outputDf, transform(inputs(leftDf), inputs(rightDf), inputs))
   }
 

@@ -16,15 +16,11 @@ class StageFoo extends Stage {
   val strIn: InputSlot[String] = inputSlot[String]("strIn", "The input string", None)
   val out: OutputSlot[Array[Int]] = outputSlot[Array[Int]]("out", "The output integer", None)
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.size == 1)
     assert(inputs(strIn).isInstanceOf[String])
     SlotValueMap(out, Array(2000))
   }
-}
-
-class StageFooNonDeterministic extends StageFoo {
-  override def nonDeterministic: Boolean = true
 }
 
 class StageFooTypoSlotName extends Stage {
@@ -32,7 +28,7 @@ class StageFooTypoSlotName extends Stage {
   val strIn: InputSlot[String] = inputSlot[String]("strInlala", "The input string", None)
   val out: OutputSlot[Array[Int]] = outputSlot[Array[Int]]("out", "The output integer", None)
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.size == 1)
     assert(inputs(strIn).isInstanceOf[String])
     SlotValueMap(out, Array(2000))
@@ -46,7 +42,7 @@ class StageTwoInputs extends Stage {
 
   val arrOut: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOut", "The output array", None)
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.size == 2)
     assert(inputs(valIn).isInstanceOf[Array[Int]])
     assert(inputs(m).isInstanceOf[String])
@@ -59,7 +55,7 @@ class StageBar extends Stage {
   val strIn: InputSlot[String] = inputSlot[String]("strIn", "The input String", None)
   val m: OutputSlot[String] = outputSlot[String]("m", "string input", Some(""))
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.size == 1)
     assert(inputs(strIn).isInstanceOf[String])
     SlotValueMap(m, "output of StageBar")
@@ -70,7 +66,7 @@ class StageBadOutputType extends Stage {
 
   val m: OutputSlot[String] = outputSlot[String]("m", "string input", Some(""))
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.isEmpty)
     SlotValueMap(m, 100)
   }
@@ -81,7 +77,7 @@ class StageBadOutputSize extends Stage {
   val m1: OutputSlot[String] = outputSlot[String]("m1", "string input", Some(""))
   val m2: OutputSlot[String] = outputSlot[String]("m2", "string input", Some(""))
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.isEmpty)
     SlotValueMap(m1, "string 1")
   }

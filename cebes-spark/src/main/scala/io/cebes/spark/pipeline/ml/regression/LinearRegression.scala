@@ -66,7 +66,7 @@ trait LinearRegressionInputs extends HasFeaturesCol with HasLabelCol with HasPre
 class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with LinearRegressionInputs {
 
-  override protected def run(inputs: SlotValueMap): SlotValueMap = {
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     val sparkEstimator = new SparkLR()
       .setFeaturesCol(inputs(featuresCol))
       .setLabelCol(inputs(labelCol))
