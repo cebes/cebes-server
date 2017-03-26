@@ -30,7 +30,11 @@ import scala.concurrent.{Await, ExecutionContext}
 trait Estimator extends Stage with LazyLogging {
 
   val data: InputSlot[Dataframe] = inputSlot[Dataframe]("data", "The training dataset", None)
-  val model: OutputSlot[Model] = outputSlot[Model]("model", "The output model of this estimator", None)
+  val model: OutputSlot[Model] = outputSlot[Model]("model",
+    "The output model of this estimator", None, stateful = true)
+
+  val predict: OutputSlot[Dataframe] = outputSlot[Dataframe]("predict",
+    "The result dataframe transformed by the model", None)
 
   /**
     * Train (if needed) and return the model.

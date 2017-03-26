@@ -15,7 +15,7 @@ import java.util.UUID
 
 import com.google.inject.Inject
 import io.cebes.common.HasId
-import io.cebes.pipeline.models.{InputSlot, SlotValidators, SlotValueMap}
+import io.cebes.pipeline.models.{InputSlot, OutputSlot, SlotValidators, SlotValueMap}
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits._
 import org.apache.spark.ml.Transformer
@@ -66,7 +66,7 @@ trait LinearRegressionInputs extends HasFeaturesCol with HasLabelCol with HasPre
 class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with LinearRegressionInputs {
 
-  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
     val sparkEstimator = new SparkLR()
       .setFeaturesCol(inputs(featuresCol))
       .setLabelCol(inputs(labelCol))
@@ -83,8 +83,11 @@ class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
     inputs.get(weightCol).foreach(sparkEstimator.setWeightCol)
 
     val df = getSparkDataframe(inputs(data)).sparkDf
-    val lrModel = LinearRegressionModel(HasId.randomId, sparkEstimator.fit(df), dfFactory)
-    SlotValueMap(model, lrModel.copyInputs(inputs))
+    LinearRegressionModel(HasId.randomId, sparkEstimator.fit(df), dfFactory)
+  }
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    SlotValueMap(predict, states(model).transform(inputs(data)))
   }
 }
 
