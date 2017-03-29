@@ -23,7 +23,7 @@ case class Sort() extends UnaryTransformer {
   val sortExprs: InputSlot[Array[Column]] = inputSlot[Array[Column]]("sortExprs",
     "array of sort expressions", Some(Array()))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.sort(inputs(sortExprs): _*)
   }
 }

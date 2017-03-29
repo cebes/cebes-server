@@ -25,7 +25,7 @@ case class FreqItems() extends UnaryTransformer {
   val support: InputSlot[Double] = inputSlot[Double]("support",
     "Minimum support score for a frequent itemset to be included", Some(0.01))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.stat.freqItems(inputs(colNames).toSeq, inputs(support))
   }
 }

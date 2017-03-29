@@ -23,9 +23,9 @@ trait UnaryTransformer extends Stage {
   val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "The output dataframe", None)
 
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
-    SlotValueMap(outputDf, transform(inputs(inputDf), inputs))
+    SlotValueMap(outputDf, transform(inputs(inputDf), inputs, states))
   }
 
   /** Implement this function to do the transformation */
-  protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe
+  protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe
 }

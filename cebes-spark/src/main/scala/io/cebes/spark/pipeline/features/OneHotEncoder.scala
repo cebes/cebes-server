@@ -30,7 +30,7 @@ case class OneHotEncoder @Inject()(dfFactory: SparkDataframeFactory) extends Spa
   val dropLast: InputSlot[Boolean] = inputSlot[Boolean]("dropLast",
     "Whether to drop the last category in the encoded vector (default: true)", Some(true))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     val encoder = new SparkOneHotEncoder()
       .setInputCol(inputs(inputCol))
       .setOutputCol(inputs(outputCol))

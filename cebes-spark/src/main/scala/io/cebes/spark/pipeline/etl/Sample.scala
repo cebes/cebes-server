@@ -26,7 +26,7 @@ case class Sample() extends UnaryTransformer {
     "Fraction of rows to generate", Some(0.5), SlotValidators.greaterOrEqual(0))
   val seed: InputSlot[Long] = inputSlot[Long]("seed", "Seed for sampling", Some(42))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.sample(inputs(withReplacement), inputs(fraction), inputs(seed))
   }
 }

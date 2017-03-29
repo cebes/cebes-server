@@ -24,7 +24,7 @@ case class WithColumn() extends UnaryTransformer {
   val colName: InputSlot[String] = inputSlot[String]("colName", "Name of the new column", None)
   val col: InputSlot[Column] = inputSlot[Column]("col", "Expression for the new column", None)
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.withColumn(inputs(colName), inputs(col))
   }
 }

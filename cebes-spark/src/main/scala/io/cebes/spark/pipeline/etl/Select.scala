@@ -23,7 +23,7 @@ case class Select() extends UnaryTransformer {
   val columns: InputSlot[Array[Column]] = inputSlot[Array[Column]]("columns",
     "List of column expressions to be selected", None)
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.select(inputs(columns): _*)
   }
 }

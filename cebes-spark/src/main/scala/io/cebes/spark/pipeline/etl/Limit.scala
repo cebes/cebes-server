@@ -24,7 +24,7 @@ case class Limit() extends UnaryTransformer {
   val size: InputSlot[Int] = inputSlot[Int]("size", "Maximum number of records to be retained",
     Some(10), SlotValidators.greaterOrEqual(0))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.limit(inputs(size))
   }
 }

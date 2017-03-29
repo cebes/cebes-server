@@ -23,7 +23,7 @@ case class DropDuplicates() extends UnaryTransformer {
   val colNames: InputSlot[Array[String]] = inputSlot[Array[String]]("colNames",
     "List of column names to be considered when dropping duplicated entries", Some(Array()))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.dropDuplicates(inputs(colNames).toSeq)
   }
 }

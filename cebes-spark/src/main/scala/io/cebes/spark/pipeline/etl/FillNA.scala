@@ -24,7 +24,7 @@ case class FillNA() extends UnaryTransformer {
   val doubleValue: InputSlot[String] = inputSlot[String]("doubleValue", "Double value used to replace NAs", None)
   val cols: InputSlot[Array[String]] = inputSlot[Array[String]]("cols", "Column names to consider", Some(Array()))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     (inputs.get(stringValue), inputs.get(doubleValue)) match {
       case (Some(s), None) =>
         df.na.fill(s, inputs(cols))

@@ -24,7 +24,7 @@ case class Drop() extends UnaryTransformer {
   val colNames: InputSlot[Array[String]] = inputSlot[Array[String]]("colNames",
     "List of column names to be dropped", Some(Array()))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.drop(inputs(colNames).toSeq)
   }
 }

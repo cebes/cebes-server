@@ -24,10 +24,10 @@ trait TestPipelineHelper {
 
   lazy val pipelineFactory: PipelineFactory = CebesSparkTestInjector.instance[PipelineFactory]
 
-  private val waitTime = Duration(2, TimeUnit.MINUTES)
+  protected val TEST_WAIT_TIME = Duration(2, TimeUnit.MINUTES)
 
   /** Generic wait function for getting a Pipeline message */
-  protected def result[T](awaitable: => Future[T]): T = Await.result(awaitable, waitTime)
+  protected def result[T](awaitable: => Future[T]): T = Await.result(awaitable, TEST_WAIT_TIME)
 
   /** Specialized wait function for results that are [[Dataframe]] */
   protected def resultDf(waitable: => Future[Dataframe]): Dataframe = {

@@ -21,10 +21,10 @@ import io.cebes.pipeline.stages.UnaryTransformer
   */
 case class DropNA() extends UnaryTransformer {
 
-  val minNonNulls: InputSlot[Int] = inputSlot[Int]("minNonNulls", "Minumum number of non-null values", Some(0))
+  val minNonNulls: InputSlot[Int] = inputSlot[Int]("minNonNulls", "Minimum number of non-null values", Some(0))
   val cols: InputSlot[Array[String]] = inputSlot[Array[String]]("cols", "Array of column names", Some(Array()))
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.na.drop(inputs(minNonNulls), inputs(cols))
   }
 }

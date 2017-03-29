@@ -27,7 +27,7 @@ case class Alias() extends UnaryTransformer {
     input(alias, strAlias)
   }
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.alias(inputs(alias))
   }
 }
