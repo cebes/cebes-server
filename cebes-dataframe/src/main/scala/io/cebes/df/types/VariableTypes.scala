@@ -61,7 +61,7 @@ object VariableTypes {
     Seq(StorageTypes.DateType, StorageTypes.TimestampType, StorageTypes.CalendarIntervalType))
 
   case object ARRAY extends VariableType("Array", false, false,
-    Seq(StorageTypes.BinaryType),
+    Seq(StorageTypes.BinaryType, StorageTypes.VectorType),
     Some(Seq(classOf[storage.ArrayType])))
 
   case object MAP extends VariableType("Map", false, false,
@@ -82,7 +82,7 @@ object VariableTypes {
     */
   def fromStorageType(storageType: StorageType): VariableType = {
     storageType match {
-      case StorageTypes.BinaryType =>
+      case StorageTypes.BinaryType | StorageTypes.VectorType =>
         VariableTypes.ARRAY
       case StorageTypes.TimestampType | StorageTypes.DateType | StorageTypes.CalendarIntervalType =>
         VariableTypes.DATETIME
