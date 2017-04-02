@@ -33,6 +33,8 @@ object StorageTypes {
   val FloatType: storage.FloatType = storage.FloatType
   val DoubleType: storage.DoubleType = storage.DoubleType
 
+  val VectorType: storage.VectorType = storage.VectorType
+
   val atomicTypes = Seq(StringType, BinaryType,
     DateType, TimestampType, CalendarIntervalType,
     BooleanType, ByteType, ShortType, IntegerType,

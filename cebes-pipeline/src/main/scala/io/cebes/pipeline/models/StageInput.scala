@@ -11,7 +11,8 @@
  */
 package io.cebes.pipeline.models
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * Abstraction of inputs to a [[Stage]], of type T
@@ -62,4 +63,9 @@ private[pipeline] case class StageOutput[+T](stage: Stage, outputName: String) e
   }
 
   override def getFuture(implicit ec: ExecutionContext): Future[T] = stage.computeOutput(outputName)
+
+  /**
+    * Wait for and return the result
+    */
+  def getResult(atMost: Duration = Duration.Inf)(implicit ec: ExecutionContext): T = Await.result(getFuture, atMost)
 }

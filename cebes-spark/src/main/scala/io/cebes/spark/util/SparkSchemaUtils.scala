@@ -19,6 +19,7 @@ import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.StorageTypes
 import io.cebes.df.types.storage._
 import org.apache.spark.sql.{DataFrame, types}
+import org.apache.spark.ml.linalg
 
 trait SparkSchemaUtils extends LazyLogging {
 
@@ -99,7 +100,8 @@ trait SparkSchemaUtils extends LazyLogging {
       logger.warn(s"Any metadata in column ${f.name} will lost after the transformation")
       StorageTypes.structField(f.name, sparkTypesToCebes(f.dataType), Metadata.empty)
     })
-    case t => throw new IllegalArgumentException(s"Unrecognized spark type: ${t.simpleString}")
+    case t if t.typeName == "vector" => StorageTypes.VectorType
+    case t => throw new IllegalArgumentException(s"Unrecognized spark type: ${t.toString}")
   }
 
   /**

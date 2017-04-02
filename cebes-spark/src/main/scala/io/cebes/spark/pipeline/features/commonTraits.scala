@@ -25,21 +25,25 @@ trait HasInputCol extends HasInputSlots {
     "Name of the input column", Some("input"))
 }
 
+trait HasInputCols extends HasInputSlots {
+  val inputCols: InputSlot[Array[String]] = inputSlot[Array[String]]("inputCols",
+    "List of input columns", None)
+}
+
 trait HasOutputCol extends HasInputSlots {
 
   val outputCol: InputSlot[String] = inputSlot[String]("outputCol",
     "Name of the output column", Some("output"))
 }
 
-trait SparkUnaryTransformer extends UnaryTransformer with HasInputCol
-  with HasOutputCol with CebesSparkUtil with SparkSchemaUtils {
+trait SparkUnaryTransformer extends UnaryTransformer with CebesSparkUtil with SparkSchemaUtils {
 
   /**
     * Helper to return a [[Dataframe]] after a Spark transformation
     * This will help preserve the schema information, taken from `originalSchema`
     */
-  final protected def fromSparkDf(dfFactory: SparkDataframeFactory, sparkDf: DataFrame,
-                  originalSchema: Schema, newColumnNames: Seq[String]): Dataframe = {
+  final protected def fromSparkDataframe(dfFactory: SparkDataframeFactory, sparkDf: DataFrame,
+                                         originalSchema: Schema, newColumnNames: Seq[String]): Dataframe = {
     dfFactory.df(sparkDf, getSchema(sparkDf, originalSchema, newColumnNames: _*))
   }
 }

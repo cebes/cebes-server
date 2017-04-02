@@ -84,6 +84,10 @@ class DoubleType private() extends StorageType {
 }
 case object DoubleType extends DoubleType
 
+class VectorType private() extends StorageType {
+}
+case object VectorType extends VectorType
+
 /**
   *
   */

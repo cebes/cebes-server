@@ -11,7 +11,10 @@
  */
 package io.cebes.spark.pipeline.ml.regression
 
+import io.cebes.df.types.StorageTypes
+import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
+import io.cebes.spark.pipeline.features.VectorAssembler
 import org.scalatest.FunSuite
 
 class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
@@ -21,25 +24,49 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     createOrReplaceCylinderBands()
   }
 
-  /*
-  test("Linear regression simple") {
+
+  test("Linear regression with vector assembler") {
+    val df = getCylinderBands.limit(200).na.drop()
+    assert(df.numRows > 1)
+
+    val assembler = CebesSparkTestInjector.instance[VectorAssembler]
+    assembler.input(assembler.inputCols, Array("viscosity", "proof_cut"))
+      .input(assembler.outputCol, "features")
+      .input(assembler.inputDf, df)
+
     val lr = CebesSparkTestInjector.instance[LinearRegression]
-    assert(lr.getName === "linearregression")
-    lr.input(lr.featuresCol, "customer")
-    lr.input(lr.labelCol, "band_type")
-    lr.input(lr.predictionCol, "band_type_predict")
-    lr.input(lr.data, getCylinderBands.limit(200))
+    lr.input(lr.featuresCol, "features")
+      .input(lr.labelCol, "band_type")
+      .input(lr.inputDf, assembler.output(assembler.outputDf))
 
-    //TODO: changing some inputs (e.g. featureCol, labelCol, etc...)
-    // should actually clear the stateful output (i.e. model)
-    // while changing `data` shouldn't change the stateful output
-    // There should be a way to specify which input will effect stateful outputs
+    val ex0 = intercept[IllegalArgumentException] {
+      lr.getModel()
+    }
+    assert(ex0.getMessage.contains("Column band_type must be of type NumericType but was actually of type StringType."))
 
+    lr.input(lr.labelCol, "caliper")
+      .input(lr.predictionCol, "caliper_predict")
+
+    // need to clear the model
+    // TODO: this should be fixed, see https://github.com/phvu/cebes-server/issues/88
+    lr.clearOutput(lr.model)
     val lrModel = lr.getModel()
     assert(lrModel.isInstanceOf[LinearRegressionModel])
 
-    val dfPredict = Await.result(lr.output(lr.predict).getFuture, Duration.Inf)
-    print(dfPredict.schema)
+    val dfPredict = lr.output(lr.outputDf).getResult(TEST_WAIT_TIME)
+    assert(dfPredict.numRows === df.numRows)
+    assert(dfPredict.numCols === df.numCols + 2)
+    assert(dfPredict.schema("caliper_predict").storageType === StorageTypes.DoubleType)
+
+    // change input data, but model doesn't change
+    val df2 = getCylinderBands.limit(150).na.drop()
+    assert(df2.numRows > 1)
+    assembler.input(assembler.inputDf, df2)
+
+    val dfPredict2 = lr.output(lr.outputDf).getResult(TEST_WAIT_TIME)
+    assert(dfPredict2.numRows === df2.numRows)
+    assert(dfPredict2.numCols === df2.numCols + 2)
+    assert(dfPredict2.schema("caliper_predict").storageType === StorageTypes.DoubleType)
+    assert(lr.getModel() eq lrModel)
   }
-  */
 }

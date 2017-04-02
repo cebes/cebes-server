@@ -23,7 +23,7 @@ case class WithColumnRenamed() extends UnaryTransformer {
   val existingName: InputSlot[String] = inputSlot[String]("existingName", "Name of the column to be renamed", None)
   val newName: InputSlot[String] = inputSlot[String]("newName", "New name of the column", None)
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.withColumnRenamed(inputs(existingName), inputs(newName))
   }
 }

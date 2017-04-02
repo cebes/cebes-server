@@ -23,7 +23,7 @@ case class CrossTab() extends UnaryTransformer {
   val col1: InputSlot[String] = inputSlot[String]("col1", "Name of the first column", None)
   val col2: InputSlot[String] = inputSlot[String]("col2", "Name of the second column", None)
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.stat.crosstab(inputs(col1), inputs(col2))
   }
 }

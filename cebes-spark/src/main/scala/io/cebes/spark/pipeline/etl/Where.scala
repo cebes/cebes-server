@@ -23,7 +23,7 @@ case class Where() extends UnaryTransformer {
   val condition: InputSlot[Column] = inputSlot[Column]("condition",
     "Condition on which the rows will be selected", None)
 
-  override protected def transform(df: Dataframe, inputs: SlotValueMap): Dataframe = {
+  override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     df.where(inputs(condition))
   }
 }

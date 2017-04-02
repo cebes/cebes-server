@@ -82,12 +82,12 @@ class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
 
     inputs.get(weightCol).foreach(sparkEstimator.setWeightCol)
 
-    val df = getSparkDataframe(inputs(data)).sparkDf
+    val df = getSparkDataframe(inputs(inputDf)).sparkDf
     LinearRegressionModel(HasId.randomId, sparkEstimator.fit(df), dfFactory)
   }
 
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
-    SlotValueMap(predict, states(model).transform(inputs(data)))
+    SlotValueMap(outputDf, states(model).transform(inputs(inputDf)))
   }
 }
 
