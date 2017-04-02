@@ -17,8 +17,8 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.Dataframe
 import io.cebes.pipeline.models._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
 
 /**
   * A special subclass of [[Stage]] that estimates a Machine Learning model.
@@ -29,11 +29,11 @@ import scala.concurrent.{Await, ExecutionContext}
   */
 trait Estimator extends Stage with LazyLogging {
 
-  val data: InputSlot[Dataframe] = inputSlot[Dataframe]("data", "The training dataset", None)
+  val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The training dataset", None)
   val model: OutputSlot[Model] = outputSlot[Model]("model",
     "The output model of this estimator", None, stateful = true)
 
-  val predict: OutputSlot[Dataframe] = outputSlot[Dataframe]("predict",
+  val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf",
     "The result dataframe transformed by the model", None)
 
   /**
@@ -41,11 +41,11 @@ trait Estimator extends Stage with LazyLogging {
     * Note that other outputs of the [[Estimator]] (if there is any) can still
     * be accessed normally after this call, using the [[output()]] function.
     *
-    * @param wait the maximum time allowed for training. If it takes longer to train,
-    *             the function will fail.
+    * @param atMost the maximum time allowed for training. If it takes longer to train,
+    *               the function will fail.
     * @return the trained model
     */
-  def getModel(wait: Duration = Duration(2, TimeUnit.MINUTES))(implicit ec: ExecutionContext): Model = {
-    Await.result(output(model).getFuture(ec), wait)
+  def getModel(atMost: Duration = Duration(2, TimeUnit.MINUTES))(implicit ec: ExecutionContext): Model = {
+    output(model).getResult(atMost)(ec)
   }
 }

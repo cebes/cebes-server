@@ -43,7 +43,7 @@ case class StringIndexer @Inject()(dfFactory: SparkDataframeFactory)
   override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     val indexerModel = new StringIndexerModel(states(model))
       .setInputCol(inputs(inputCol)).setOutputCol(inputs(outputCol))
-    fromSparkDf(dfFactory, indexerModel.transform(getSparkDataframe(inputs(inputDf)).sparkDf),
+    fromSparkDataframe(dfFactory, indexerModel.transform(getSparkDataframe(inputs(inputDf)).sparkDf),
       df.schema, Seq(inputs(outputCol)))
   }
 }

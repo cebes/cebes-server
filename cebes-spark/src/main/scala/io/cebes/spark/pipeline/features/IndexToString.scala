@@ -33,7 +33,7 @@ case class IndexToString @Inject()(dfFactory: SparkDataframeFactory)
       .setInputCol(inputs(inputCol)).setOutputCol(inputs(outputCol))
       .setLabels(inputs(labels))
 
-    fromSparkDf(dfFactory, reverseIndexer.transform(getSparkDataframe(inputs(inputDf)).sparkDf),
+    fromSparkDataframe(dfFactory, reverseIndexer.transform(getSparkDataframe(inputs(inputDf)).sparkDf),
       df.schema, Seq(inputs(outputCol)))
   }
 }

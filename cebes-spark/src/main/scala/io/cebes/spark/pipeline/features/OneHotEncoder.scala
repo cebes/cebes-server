@@ -25,7 +25,8 @@ import org.apache.spark.ml.feature.{OneHotEncoder => SparkOneHotEncoder}
   * will create the output column with vectors of size N-1.
   * This is to avoid the situation when the vector entries sum up to one, making them linearly dependent.
   */
-case class OneHotEncoder @Inject()(dfFactory: SparkDataframeFactory) extends SparkUnaryTransformer {
+case class OneHotEncoder @Inject()(dfFactory: SparkDataframeFactory)
+  extends SparkUnaryTransformer with HasInputCol with HasOutputCol {
 
   val dropLast: InputSlot[Boolean] = inputSlot[Boolean]("dropLast",
     "Whether to drop the last category in the encoded vector (default: true)", Some(true))
@@ -37,6 +38,6 @@ case class OneHotEncoder @Inject()(dfFactory: SparkDataframeFactory) extends Spa
       .setDropLast(inputs(dropLast))
     val sparkDf = encoder.transform(getSparkDataframe(df).sparkDf)
 
-    fromSparkDf(dfFactory, sparkDf, df.schema, Seq(inputs(outputCol)))
+    fromSparkDataframe(dfFactory, sparkDf, df.schema, Seq(inputs(outputCol)))
   }
 }

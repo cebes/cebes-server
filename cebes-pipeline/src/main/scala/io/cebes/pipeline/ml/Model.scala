@@ -69,7 +69,7 @@ trait Model extends HasId with Inputs {
   private def withOrdinaryInputs[R](work: SlotValueMap => R): R = {
     inputLock.readLock().lock()
     try {
-      val inputVals = _inputs.map { slot =>
+      val inputVals = _inputs.filter(s => !s.optional || inputOption(s).nonEmpty).map { slot =>
         val inpValue = input(slot) match {
           case ordinary: OrdinaryInput[_] =>
             ordinary.get
