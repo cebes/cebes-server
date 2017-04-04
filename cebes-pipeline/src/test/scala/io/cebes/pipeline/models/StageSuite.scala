@@ -220,4 +220,77 @@ class StageSuite extends FunSuite {
     assert(o6 === Array(1.5f, 3.5f))
     assert(o6 ne o2)
   }
+
+  test("stateful output with chaining on stateful output (which has stateful input)") {
+    val s1 = new StageFooStatefulInput()
+    val s2 = new StageStatefulOutputWithStatefulInput()
+
+    s1.input(s1.strIn, "my input string")
+    s2.input(s2.valIn, s1.output(s1.out))
+
+    val o1 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o1 === Array(1.0f, 3.0f))
+
+    val o2 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o2 === Array(1.5f, 3.5f))
+
+    // change input of the first stage
+    s1.input(s1.strIn, "second string")
+
+    // stateful output should change
+    val o3 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o3 ne o1)
+
+    // stateless output should change
+    val o4 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o4 === Array(1.5f, 3.5f))
+    assert(o4 ne o2)
+
+    // stateful output stays the same
+    val o3a = s2.output(s2.arrOutStateful).getResult()
+    assert(o3a eq o3)
+
+    // clear the stateful output
+    s1.clearOutput(s1.out)
+
+    // stateful output should change
+    val o5 = Await.result(s2.output(s2.arrOutStateful).getFuture, Duration.Inf)
+    assert(o5 ne o1)
+
+    // now the stateless output should change
+    val o6 = Await.result(s2.output(s2.arrOutStateless).getFuture, Duration.Inf)
+    assert(o6 === Array(1.5f, 3.5f))
+    assert(o6 ne o2)
+  }
+
+  test("stateful input and output complication") {
+    val s = new StageStatefulComplicated()
+
+    s.input(s.inStateful, "stateful in")
+      .input(s.inStateless, "stateless in")
+
+    val o1 = s.output(s.outStateful).getResult()
+    val o2 = s.output(s.outStateless).getResult()
+
+    assert(o1 eq s.output(s.outStateful).getResult())
+    assert(o2 eq s.output(s.outStateless).getResult())
+
+    // change stateless input
+    s.input(s.inStateless, "second stateless in")
+    // stateful output doesn't change, stateless output changes
+    assert(o1 eq s.output(s.outStateful).getResult())
+    val o3 = s.output(s.outStateless).getResult()
+    assert(o2 ne o3)
+    assert(o3 eq s.output(s.outStateless).getResult())
+
+    // change stateful input
+    s.input(s.inStateful, "second stateful in")
+    // both outputs change
+    val o4 = s.output(s.outStateful).getResult()
+    val o5 = s.output(s.outStateless).getResult()
+    assert(o1 ne o4)
+    assert(o3 ne o5)
+    assert(o4 eq s.output(s.outStateful).getResult())
+    assert(o5 eq s.output(s.outStateless).getResult())
+  }
 }

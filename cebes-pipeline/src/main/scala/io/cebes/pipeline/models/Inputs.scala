@@ -14,6 +14,7 @@ package io.cebes.pipeline.models
 import java.lang.reflect.Modifier
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
@@ -29,8 +30,8 @@ trait Inputs extends HasInputSlots {
   /** The read-write lock for [[inputSlotMap]] */
   protected val inputLock: ReadWriteLock = new ReentrantReadWriteLock()
 
-  /** The [[inputSlotMap]] just got updated */
-  @volatile private var hasNewInput: Boolean = true
+  /** The list of input slots that have just got updated */
+  @volatile private var newInputs = mutable.LinkedHashSet[InputSlot[_]]()
 
   /**
     * Returns all slots sorted by their names. The default implementation uses Java reflection to
@@ -65,7 +66,7 @@ trait Inputs extends HasInputSlots {
     inputLock.writeLock().lock()
     try {
       inputSlotMap.put(slot, value)
-      hasNewInput = true
+      newInputs += slot
     } catch {
       case ex: IllegalArgumentException =>
         throw new IllegalArgumentException(s"$toString: ${ex.getMessage}", ex)
@@ -114,7 +115,6 @@ trait Inputs extends HasInputSlots {
     *
     * NOTE: This is reading on the input maps, so callers of this method should acquire
     * the readLock() on [[inputLock]]
-    * See the code example in [[isInputChanged]] for a typical use-case.
     */
   final protected def withAllInputs[R](work: SlotValueMap => R)(implicit ec: ExecutionContext): Future[R] = {
     // only takes input slots that present or not optional
@@ -129,34 +129,23 @@ trait Inputs extends HasInputSlots {
 
   /**
     * Check if some input has been changed, useful for caching the output if the input doesn't change.
-    * Typical usage should be:
-    * {{{
-    * inputLock.readLock().lock()
-    * try {
-    *   if (isInputChanged) {
-    *     withAllInputs { inps =>
-    *       // re-compute the output
-    *     }
-    *     inputUnchanged()
-    *   }
-    * } finally {
-    *   inputLock.readLock().unlock()
-    * }
-    * }}}
+    *
+    * @param statefulOnly whether to only check stateful input slots
     */
-  final protected def isInputChanged: Boolean = {
-    hasNewInput || _inputs.flatMap(inputOption(_)).exists {
-      case o: StageOutput[_] =>
-        // either this is a new output (newly computed and o.isNewOutput is true)
-        // or it should be recomputed eventually
-        o.isNewOutput || o.stage.shouldRecompute(o.stage.getOutput(o.outputName))
-      case _ => false
-    }
+  final protected def isInputChanged(statefulOnly: Boolean): Boolean = {
+    newInputs.exists(!statefulOnly || _.stateful == statefulOnly) ||
+      _inputs.filter(!statefulOnly || _.stateful == statefulOnly).flatMap(inputOption(_)).exists {
+        case o: StageOutput[_] =>
+          // either this is a new output (newly computed and o.isNewOutput is true)
+          // or it should be recomputed eventually
+          o.isNewOutput || o.stage.shouldRecompute(o.stage.getOutput(o.outputName))
+        case _ => false
+      }
   }
 
   /** Reset the [[isInputChanged]] flag */
   final protected def inputUnchanged(): Unit = {
-    hasNewInput = false
+    newInputs.clear()
     _inputs.flatMap(inputOption(_)).foreach {
       case o: StageOutput[_] => o.setNewOutput(false)
       case _ =>

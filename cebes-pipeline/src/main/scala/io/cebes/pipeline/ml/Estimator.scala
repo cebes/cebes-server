@@ -29,7 +29,8 @@ import scala.concurrent.duration.Duration
   */
 trait Estimator extends Stage with LazyLogging {
 
-  val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The training dataset", None)
+  val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The training dataset", None, stateful = false)
+
   val model: OutputSlot[Model] = outputSlot[Model]("model",
     "The output model of this estimator", None, stateful = true)
 

@@ -26,6 +26,9 @@ then
     . "${CEBES_PATH}/bin/env.sh" --test=true
     env | grep "CEBES"
     echo
+else
+    echo "WARNING: ${CEBES_PATH}/bin/env.sh not found!"
+    echo "You might want to run 'cp bin/env.sh.example bin/env.sh' before running the tests"
 fi
 
 
