@@ -47,9 +47,6 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     lr.input(lr.labelCol, "caliper")
       .input(lr.predictionCol, "caliper_predict")
 
-    // need to clear the model
-    // TODO: this should be fixed, see https://github.com/phvu/cebes-server/issues/88
-    lr.clearOutput(lr.model)
     val lrModel = lr.getModel()
     assert(lrModel.isInstanceOf[LinearRegressionModel])
 
@@ -68,5 +65,26 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(dfPredict2.numCols === df2.numCols + 2)
     assert(dfPredict2.schema("caliper_predict").storageType === StorageTypes.DoubleType)
     assert(lr.getModel() eq lrModel)
+
+    // use the resulting model
+    val dfPredict2b = lrModel.transform(assembler.output(assembler.outputDf).getResult(TEST_WAIT_TIME))
+    assert(dfPredict2b.numRows === df2.numRows)
+    assert(dfPredict2b.numCols === df2.numCols + 2)
+    assert(dfPredict2b.schema("caliper_predict").storageType === StorageTypes.DoubleType)
+
+    // change a stateful input, model will be retrained
+    lr.input(lr.predictionCol, "caliper_predict_2")
+    val lrModel2 = lr.getModel()
+    val dfPredict3 = lr.output(lr.outputDf).getResult(TEST_WAIT_TIME)
+    assert(dfPredict3.numRows === df2.numRows)
+    assert(dfPredict3.numCols === df2.numCols + 2)
+    assert(dfPredict3.schema("caliper_predict_2").storageType === StorageTypes.DoubleType)
+    assert(lrModel2 ne lrModel)
+
+    // use the resulting model
+    val dfPredict4 = lrModel2.transform(assembler.output(assembler.outputDf).getResult(TEST_WAIT_TIME))
+    assert(dfPredict4.numRows === df2.numRows)
+    assert(dfPredict4.numCols === df2.numCols + 2)
+    assert(dfPredict4.schema("caliper_predict_2").storageType === StorageTypes.DoubleType)
   }
 }

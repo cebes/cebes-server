@@ -18,7 +18,7 @@ import io.cebes.spark.df.SparkDataframeFactory
 import org.apache.spark.ml.feature.{VectorAssembler => SparkVectorAssember}
 
 /**
-  * A light wrapper of Spark's VectorAssember
+  * A light wrapper of Spark's VectorAssembler
   * A feature transformer that merges multiple columns into a vector column.
   */
 case class VectorAssembler @Inject()(dfFactory: SparkDataframeFactory)
