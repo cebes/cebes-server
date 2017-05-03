@@ -12,12 +12,11 @@
  * Created by phvu on 15/12/2016.
  */
 
-package io.cebes.df.store
+package io.cebes.store
 
 import java.util.UUID
 
 import io.cebes.common.HasId
-import io.cebes.df.Dataframe
 
 /**
   * Storing objects, indexed by a UUID.
@@ -64,9 +63,3 @@ trait CachedStore[T <: HasId] {
       throw new IllegalArgumentException(s"Object ID not found: ${id.toString}")
   }
 }
-
-/**
-  * Storing dataframes, maybe backed by a LoadingCache
-  * Subclasses of this trait should be singleton.
-  */
-trait DataframeStore extends CachedStore[Dataframe]

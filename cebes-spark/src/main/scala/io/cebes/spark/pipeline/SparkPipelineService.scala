@@ -1,4 +1,4 @@
-/* Copyright 2016 The Cebes Authors. All Rights Reserved.
+/* Copyright 2017 The Cebes Authors. All Rights Reserved.
  *
  * Licensed under the Apache License, version 2.0 (the "License").
  * You may not use this work except in compliance with the License,
@@ -9,13 +9,21 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.pipeline
+package io.cebes.spark.pipeline
 
+import com.google.inject.Inject
+import io.cebes.pipeline.PipelineService
+import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef}
 import io.cebes.pipeline.models.Pipeline
-import io.cebes.tag.TagService
+import io.cebes.store.{CachedStore, TagStore}
 
-trait PipelineService extends TagService[Pipeline] {
+/**
+  * Implements [[PipelineService]] on Spark
+  */
+class SparkPipelineService @Inject()(pipelineFactory: PipelineFactory,
+                                     override val cachedStore: CachedStore[Pipeline],
+                                     override val tagStore: TagStore[Pipeline]) extends PipelineService {
 
   /**
     * Create a new pipeline with the given definition.
@@ -23,7 +31,10 @@ trait PipelineService extends TagService[Pipeline] {
     *
     * @param pipelineDef definition of the pipeline
     */
-  def create(pipelineDef: PipelineDef): PipelineDef
+  override def create(pipelineDef: PipelineDef): PipelineDef = {
+    val ppl = pipelineFactory.create(pipelineDef)
+    ppl.pipelineDef
+  }
 
   /**
     * Run the given pipeline with the given inputs, return the results
@@ -34,5 +45,5 @@ trait PipelineService extends TagService[Pipeline] {
     * @return A map containing the results of the pipeline.
     *         Will only contain the results of stages requested in the request.
     */
-  def run(runRequest: PipelineRunDef): Map[String, PipelineMessageDef]
+  override def run(runRequest: PipelineRunDef): Map[String, PipelineMessageDef] = ???
 }

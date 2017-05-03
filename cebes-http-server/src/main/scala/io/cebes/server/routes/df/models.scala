@@ -16,7 +16,7 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
-import io.cebes.common.Tag
+import io.cebes.tag.Tag
 import io.cebes.df.Column
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.types.VariableTypes.VariableType

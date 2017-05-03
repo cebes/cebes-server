@@ -21,7 +21,11 @@ import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineDef) extends HasId {
+/**
+  * Don't initialize Pipeline directly. Use [[io.cebes.pipeline.factory.PipelineFactory]] instead
+  */
+case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage], pipelineDef: PipelineDef)
+  extends HasId {
 
   private val runLocker = new AnyRef()
 

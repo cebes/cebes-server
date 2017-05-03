@@ -1,4 +1,4 @@
-package io.cebes.common
+package io.cebes.tag
 
 import org.scalatest.FunSuite
 

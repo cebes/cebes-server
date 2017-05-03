@@ -14,7 +14,7 @@
 
 package io.cebes.spark
 
-import com.google.inject.{Guice, Injector, Stage}
+import com.google.inject._
 import io.cebes.prop.PropertyModule
 
 import scala.reflect.ClassTag
@@ -26,4 +26,6 @@ object CebesSparkTestInjector {
     new PropertyModule(true))
 
   def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
+
+  def instance[T](typeLiteral: TypeLiteral[T]): T = injector.getInstance(Key.get(typeLiteral))
 }

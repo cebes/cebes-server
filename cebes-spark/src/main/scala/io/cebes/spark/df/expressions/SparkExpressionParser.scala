@@ -15,9 +15,9 @@
 package io.cebes.spark.df.expressions
 
 import com.google.inject.{Inject, Singleton}
-import io.cebes.df.Column
 import io.cebes.df.expressions._
-import io.cebes.df.store.DataframeStore
+import io.cebes.store.CachedStore
+import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
 import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 
@@ -25,7 +25,7 @@ import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
 /**
   * Parser that parses Cebes columns into Spark columns
   */
-@Singleton class SparkExpressionParser @Inject()(private val dfStore: DataframeStore)
+@Singleton class SparkExpressionParser @Inject()(private val dfStore: CachedStore[Dataframe])
   extends AbstractExpressionParser[SparkColumn] with CebesSparkUtil {
 
   /**

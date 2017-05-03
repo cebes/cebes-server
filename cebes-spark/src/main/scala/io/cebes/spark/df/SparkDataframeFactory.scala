@@ -16,7 +16,7 @@ package io.cebes.spark.df
 
 import java.util.UUID
 
-import com.google.inject.{Inject, Singleton}
+import com.google.inject.{Inject, Injector, Singleton}
 import io.cebes.common.HasId
 import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
@@ -27,13 +27,14 @@ import org.apache.spark.sql.DataFrame
 /**
   * Factory for SparkDataframe, to be used in DI framework
   */
-@Singleton class SparkDataframeFactory @Inject()(private val parser: SparkExpressionParser) {
+@Singleton class SparkDataframeFactory @Inject()(private val injector: Injector) {
 
   /**
     * Returns a new instance of [[Dataframe]]
     */
-  def df(sparkDf: DataFrame, schema: Schema, id: UUID): Dataframe =
-    new SparkDataframe(this, parser, sparkDf, schema, id)
+  def df(sparkDf: DataFrame, schema: Schema, id: UUID): Dataframe = {
+    new SparkDataframe(this, injector.getInstance(classOf[SparkExpressionParser]), sparkDf, schema, id)
+  }
 
   /**
     * Returns a new instance of [[Dataframe]], with a random ID

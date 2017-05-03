@@ -17,7 +17,7 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.common.Tag
+import io.cebes.tag.Tag
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample

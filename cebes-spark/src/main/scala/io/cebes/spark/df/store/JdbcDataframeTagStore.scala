@@ -15,14 +15,14 @@
 package io.cebes.spark.df.store
 
 import com.google.inject.{Inject, Singleton}
-import io.cebes.df.store.DataframeTagStore
+import io.cebes.df.Dataframe
 import io.cebes.persistence.jdbc.TableNames
 import io.cebes.persistence.store.JdbcTagStore
 import io.cebes.prop.types.MySqlBackendCredentials
 
 /**
-  * An implementation of [[io.cebes.df.store.DataframeTagStore]] for Spark Dataframes,
+  * An implementation of [[io.cebes.store.TagStore[Dataframe]] for Spark Dataframes,
   * with JDBC persistence backend.
   */
 @Singleton class JdbcDataframeTagStore @Inject()
-(mySqlCreds: MySqlBackendCredentials) extends JdbcTagStore(mySqlCreds, TableNames.DF_TAG_STORE) with DataframeTagStore
+(mySqlCreds: MySqlBackendCredentials) extends JdbcTagStore[Dataframe](mySqlCreds, TableNames.DF_TAG_STORE)

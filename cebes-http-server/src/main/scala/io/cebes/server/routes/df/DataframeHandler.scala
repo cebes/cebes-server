@@ -23,7 +23,7 @@ import akka.http.scaladsl.server.{RequestContext, Route}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.common.Tag
+import io.cebes.tag.Tag
 import io.cebes.df.sample.DataSample
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector

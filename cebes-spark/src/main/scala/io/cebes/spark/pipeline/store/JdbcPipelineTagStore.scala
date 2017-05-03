@@ -14,14 +14,15 @@ package io.cebes.spark.pipeline.store
 import com.google.inject.{Inject, Singleton}
 import io.cebes.persistence.jdbc.TableNames
 import io.cebes.persistence.store.JdbcTagStore
-import io.cebes.pipeline.PipelineTagStore
+import io.cebes.pipeline.models.Pipeline
 import io.cebes.prop.types.MySqlBackendCredentials
+import io.cebes.store.TagStore
 
 
 /**
-  * An implementation of [[PipelineTagStore]] for Pipelines,
+  * An implementation of [[TagStore[Pipeline]]] for Pipelines,
   * with JDBC persistence backend.
   */
 @Singleton class JdbcPipelineTagStore @Inject()
 (mySqlCreds: MySqlBackendCredentials)
-  extends JdbcTagStore(mySqlCreds, TableNames.PIPELINE_TAG_STORE) with PipelineTagStore
+  extends JdbcTagStore[Pipeline](mySqlCreds, TableNames.PIPELINE_TAG_STORE)
