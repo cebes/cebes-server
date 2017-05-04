@@ -11,14 +11,14 @@
  */
 package io.cebes.pipeline.factory
 
-import com.google.inject.Inject
+import com.google.inject.{Inject, Injector}
 import io.cebes.common.HasId
 import io.cebes.pipeline.json.PipelineDef
-import io.cebes.pipeline.models.{Pipeline, Stage}
+import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer, Stage}
 
 import scala.collection.mutable
 
-class PipelineFactory @Inject()(stageFactory: StageFactory) {
+class PipelineFactory @Inject()(private val injector: Injector) {
 
   /**
     * Create the pipeline object from the given definition
@@ -27,6 +27,9 @@ class PipelineFactory @Inject()(stageFactory: StageFactory) {
     */
   def create(pipelineDef: PipelineDef): Pipeline = {
     val id = pipelineDef.id.getOrElse(HasId.randomId)
+
+    val stageFactory = injector.getInstance(classOf[StageFactory])
+    val msgSerializer = injector.getInstance(classOf[PipelineMessageSerializer])
 
     val stageMap = mutable.Map.empty[String, Stage]
     pipelineDef.stages.map { s =>
@@ -37,6 +40,6 @@ class PipelineFactory @Inject()(stageFactory: StageFactory) {
       stageMap.put(stage.getName, stage)
     }
 
-    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)))
+    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)), msgSerializer)
   }
 }

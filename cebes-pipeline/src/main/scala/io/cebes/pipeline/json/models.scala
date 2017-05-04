@@ -26,7 +26,7 @@ case class ValueDef(value: Any) extends PipelineMessageDef
 
 case class StageOutputDef(stageName: String, outputName: String) extends PipelineMessageDef
 
-case class DataframeMessageDef() extends PipelineMessageDef
+case class DataframeMessageDef(dfId: UUID) extends PipelineMessageDef
 
 case class SampleMessageDef() extends PipelineMessageDef
 

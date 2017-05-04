@@ -26,7 +26,7 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol with CebesCoreJsonProtoco
   }
 
   implicit val stageOutputDefFormat: RootJsonFormat[StageOutputDef] = jsonFormat2(StageOutputDef)
-  implicit val dataframeMessageDefFormat: RootJsonFormat[DataframeMessageDef] = jsonFormat0(DataframeMessageDef)
+  implicit val dataframeMessageDefFormat: RootJsonFormat[DataframeMessageDef] = jsonFormat1(DataframeMessageDef)
   implicit val sampleMessageDefFormat: RootJsonFormat[SampleMessageDef] = jsonFormat0(SampleMessageDef)
   implicit val modelMessageDefFormat: RootJsonFormat[ModelMessageDef] = jsonFormat0(ModelMessageDef)
   implicit val columnDefFormat: RootJsonFormat[ColumnDef] = jsonFormat1(ColumnDef)

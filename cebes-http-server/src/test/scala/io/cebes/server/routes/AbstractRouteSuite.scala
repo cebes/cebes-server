@@ -20,6 +20,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
+import io.cebes.pipeline.json.PipelineDef
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.helpers.TestDataHelper
 import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
@@ -137,6 +138,11 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
                                                      jsDfr: JsonFormat[DataframeResponse]): RemoteDataframe = {
     val df = wait(postAsync[E, DataframeResponse](url, entity))
     RemoteDataframe(df.id, df.schema)
+  }
+
+  protected def requestPipeline[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
+                                                           jsDfr: JsonFormat[PipelineDef]): PipelineDef = {
+    wait(postAsync[E, PipelineDef](url, entity))
   }
 
 }

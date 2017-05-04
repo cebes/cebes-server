@@ -11,13 +11,14 @@
  */
 package io.cebes.pipeline.models
 
-import io.cebes.df.Column
-import io.cebes.pipeline.json.{ColumnDef, PipelineMessageDef, StageOutputDef, ValueDef}
+import com.google.inject.Inject
+import io.cebes.df.{Column, DataframeService}
+import io.cebes.pipeline.json._
 
 /**
   * Functions for serializing and deserializing [[PipelineMessageDef]]
   */
-object PipelineMessageSerializer {
+class PipelineMessageSerializer @Inject()(private val dfService: DataframeService) {
 
   /**
     * Serialize the given value into a [[PipelineMessageDef]]
@@ -71,6 +72,9 @@ object PipelineMessageSerializer {
       case v: ValueDef => stage.input(inpSlot, v.value)
       case columnDef: ColumnDef => stage.input(inpSlot, columnDef.col)
       case _: StageOutputDef => // will be connected later
+      case dfMsgDef: DataframeMessageDef =>
+        //val dfService = injector.getInstance(classOf[DataframeService])
+        stage.input(inpSlot, dfService.get(dfMsgDef.dfId.toString))
       case valueDef =>
         throw new UnsupportedOperationException("Unsupported non-scala value for stage parameters: " +
           s"Parameter name ${inpSlot.name} of stage ${stage.toString} " +

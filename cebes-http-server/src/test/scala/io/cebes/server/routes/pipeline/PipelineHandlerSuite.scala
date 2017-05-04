@@ -11,7 +11,16 @@
  */
 package io.cebes.server.routes.pipeline
 
+import java.util.UUID
+
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.df.functions
+import io.cebes.pipeline.json._
+import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
+import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
+import io.cebes.server.routes.pipeline.HttpPipelineJsonProtocol._
+import io.cebes.tag.Tag
 import org.scalatest.BeforeAndAfterAll
 
 /**
@@ -24,5 +33,137 @@ class PipelineHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     createOrReplaceCylinderBands()
   }
 
-  // TODO: 1111 Working here
+  test("create and get pipeline") {
+    val pplDef = PipelineDef(None, Array(StageDef("s1", "Alias", Map("alias" -> ValueDef("new_name")))))
+    val pplResult = requestPipeline("pipeline/create", pplDef)
+    assert(pplResult.id.nonEmpty)
+    assert(pplResult.stages.length === 1)
+    assert(pplResult.stages(0) === pplDef.stages(0))
+
+    // get the created pipeline
+    val pplDefb = requestPipeline("pipeline/get", pplResult.id.get.toString)
+    assert(pplDefb.id.get === pplResult.id.get)
+    assert(pplDefb.stages.length === 1)
+    assert(pplDefb.stages(0) === pplResult.stages(0))
+
+    // cannot get non-exist pipeline
+    val ex0 = intercept[ServerException] {
+      requestPipeline("pipeline/get", UUID.randomUUID().toString)
+    }
+    assert(ex0.message.startsWith("ID not found:"))
+
+    val pplDef2 = PipelineDef(None, Array(StageDef("s1", "Alias", Map("alias_nonexists" -> ValueDef("new_name")))))
+    val ex1 = intercept[ServerException] {
+      requestPipeline("pipeline/create", pplDef2)
+    }
+    assert(ex1.message.contains("Input name alias_nonexists not found in stage Alias(name=s1)"))
+
+    val pplDef3 = PipelineDef(None,
+      Array(StageDef("s1", "Alias_nonexist", Map("alias_nonexists" -> ValueDef("new_name")))))
+    val ex2 = intercept[ServerException] {
+      requestPipeline("pipeline/create", pplDef3)
+    }
+    assert(ex2.message.contains("Stage class not found: Alias_nonexist"))
+  }
+
+  test("create, tag and untag") {
+
+    try {
+      requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+    } catch {
+      case _: ServerException =>
+    }
+
+    // random UUID
+    val ex0 = intercept[ServerException] {
+      requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1"), UUID.randomUUID()))
+    }
+    assert(ex0.getMessage.startsWith("Object ID not found:"))
+
+    // create a pipeline
+    val pplDef = PipelineDef(None, Array(StageDef("s1", "Alias", Map("alias" -> ValueDef("new_name")))))
+    val pplResult = requestPipeline("pipeline/create", pplDef)
+    assert(pplResult.id.nonEmpty)
+    assert(pplResult.stages.length === 1)
+    assert(pplResult.stages(0) === pplDef.stages(0))
+    val pipelineId = pplResult.id.get
+
+    // valid request
+    requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1"), pipelineId))
+
+    // another pipeline
+    val pplResult2 = requestPipeline("pipeline/create", pplDef)
+    assert(pplResult2.id.get !== pplResult.id.get)
+
+    // duplicated tag
+    val ex1 = intercept[ServerException] {
+      requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1"), pplResult2.id.get))
+    }
+    assert(ex1.getMessage.startsWith("Tag tag1:latest already exists"))
+
+    val ex2 = intercept[ServerException] {
+      requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1:latest"), pplResult2.id.get))
+    }
+    assert(ex2.getMessage.startsWith("Tag tag1:latest already exists"))
+
+    // get pipeline by tag
+    val ppl2 = requestPipeline("pipeline/get", "tag1:latest")
+    assert(ppl2.id.get === pplResult.id.get)
+    assert(ppl2.stages(0) === pplResult.stages(0))
+
+    // get all the tags
+    val tags = request[TagsGetRequest, Array[(Tag, UUID)]]("pipeline/tags", TagsGetRequest(None, 10))
+    assert(tags.length === 1)
+    assert(tags(0)._1.toString === "tag1:latest")
+
+    val tags1 = request[TagsGetRequest, Array[(Tag, UUID)]]("pipeline/tags", TagsGetRequest(Some("randomstuff???"), 10))
+    assert(tags1.length === 0)
+
+    // delete tag
+    requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+
+    val tags2 = request[TagsGetRequest, Array[(Tag, UUID)]]("pipeline/tags", TagsGetRequest(None, 10))
+    assert(tags2.length === 0)
+
+    // cannot get the tag again
+    val ex3 = intercept[ServerException](requestPipeline("pipeline/get", "tag1:latest"))
+    assert(ex3.getMessage.startsWith("Tag not found: tag1:latest"))
+
+    // cannot delete non-existed tag
+    val ex4 = intercept[ServerException](requestPipeline("pipeline/tagdelete",
+      TagDeleteRequest(Tag.fromString("tag1:latest"))))
+    assert(ex4.getMessage.startsWith("Tag not found: tag1:latest"))
+
+    // but can get the Dataframe using its ID
+    val ppl3 = requestPipeline("pipeline/get", pipelineId.toString)
+    assert(ppl3 ne ppl2)
+    assert(ppl3.id.get === pipelineId)
+  }
+
+  test("run a simple pipeline") {
+    val pplDef = PipelineDef(None,
+      Array(
+        StageDef("s1", "Where",
+          Map("condition" -> ColumnDef(functions.col("hardener") === 0.0 || functions.col("hardener") === 1.0))),
+        StageDef("s2", "Limit",
+          Map("size" -> ValueDef(200),
+            "inputDf" -> StageOutputDef("s1", "outputDf"))),
+        StageDef("s3", "OneHotEncoder",
+          Map("inputCol" -> ValueDef("hardener"),
+            "outputCol" -> ValueDef("hardener_vec"),
+            "inputDf" -> StageOutputDef("s2", "outputDf")))
+      ))
+
+    val ppl = requestPipeline("pipeline/create", pplDef)
+    assert(ppl.id.nonEmpty)
+
+    val runDef = PipelineRunDef(PipelineDef(ppl.id, Array()),
+      Map("s1:inputDf" -> DataframeMessageDef(getCylinderBands.id)),
+      Array(StageOutputDef("s3", "outputDf")))
+    val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef)
+    assert(runResult.length === 1)
+    assert(runResult(0)._2.isInstanceOf[DataframeMessageDef])
+    val dfResultId = runResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+
+  }
 }

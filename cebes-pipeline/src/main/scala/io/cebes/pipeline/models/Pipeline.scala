@@ -24,7 +24,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 /**
   * Don't initialize Pipeline directly. Use [[io.cebes.pipeline.factory.PipelineFactory]] instead
   */
-case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage], pipelineDef: PipelineDef)
+case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage],
+                                      pipelineDef: PipelineDef,
+                                      private val msgSerializer: PipelineMessageSerializer)
   extends HasId {
 
   private val runLocker = new AnyRef()
@@ -54,7 +56,7 @@ case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage], pipe
         pipelineMsgDef match {
           case _: StageOutputDef =>
           case _ =>
-            PipelineMessageSerializer.deserialize(pipelineMsgDef, stages(slot.parent), slot.name)
+            msgSerializer.deserialize(pipelineMsgDef, stages(slot.parent), slot.name)
         }
       }
 
@@ -95,7 +97,7 @@ case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage], pipe
           case Some(stage) =>
             val outputSlot = stage.getOutput(slot.name)
             stage.output(outputSlot).getFuture.map { out =>
-              desc -> PipelineMessageSerializer.serialize(out, outputSlot)
+              desc -> msgSerializer.serialize(out, outputSlot)
             }
         }
       }).map(_.toMap)
