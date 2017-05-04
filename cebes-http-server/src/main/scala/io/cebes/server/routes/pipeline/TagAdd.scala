@@ -12,26 +12,27 @@
  * Created by phvu on 18/12/2016.
  */
 
-package io.cebes.server.routes.df
+package io.cebes.server.routes.pipeline
 
 import com.google.inject.Inject
-import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.pipeline.PipelineService
+import io.cebes.pipeline.json.PipelineDef
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.{AsyncDataframeOperation, TagDeleteRequest}
+import io.cebes.server.routes.common.{AsyncSerializableOperation, TagAddRequest}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Delete the given tag
+  * Tag the [[PipelineDef]] with the given ID
   */
-class TagDelete @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncDataframeOperation[TagDeleteRequest] {
+class TagAdd @Inject()(pipelineService: PipelineService, override val resultStorage: ResultStorage)
+  extends AsyncSerializableOperation[TagAddRequest, PipelineDef] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: TagDeleteRequest)
-                                (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.untag(requestEntity.tag)
+  override protected def runImpl(requestEntity: TagAddRequest)
+                                (implicit ec: ExecutionContext): Future[PipelineDef] = Future {
+    pipelineService.tag(requestEntity.df, requestEntity.tag).pipelineDef
   }
 }

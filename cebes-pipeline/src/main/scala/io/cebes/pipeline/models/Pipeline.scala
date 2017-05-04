@@ -103,7 +103,6 @@ case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage], pipe
 
     Await.result(result, Duration.Inf)
   }
-
 }
 
 object Pipeline {

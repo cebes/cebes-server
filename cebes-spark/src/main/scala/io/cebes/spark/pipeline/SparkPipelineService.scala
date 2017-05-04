@@ -14,9 +14,11 @@ package io.cebes.spark.pipeline
 import com.google.inject.Inject
 import io.cebes.pipeline.PipelineService
 import io.cebes.pipeline.factory.PipelineFactory
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef}
-import io.cebes.pipeline.models.Pipeline
+import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, StageOutputDef}
+import io.cebes.pipeline.models.{Pipeline, SlotDescriptor}
 import io.cebes.store.{CachedStore, TagStore}
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Implements [[PipelineService]] on Spark
@@ -31,10 +33,7 @@ class SparkPipelineService @Inject()(pipelineFactory: PipelineFactory,
     *
     * @param pipelineDef definition of the pipeline
     */
-  override def create(pipelineDef: PipelineDef): PipelineDef = {
-    val ppl = pipelineFactory.create(pipelineDef)
-    ppl.pipelineDef
-  }
+  override def create(pipelineDef: PipelineDef): PipelineDef = fromPipelineDef(pipelineDef).pipelineDef
 
   /**
     * Run the given pipeline with the given inputs, return the results
@@ -45,5 +44,22 @@ class SparkPipelineService @Inject()(pipelineFactory: PipelineFactory,
     * @return A map containing the results of the pipeline.
     *         Will only contain the results of stages requested in the request.
     */
-  override def run(runRequest: PipelineRunDef): Map[String, PipelineMessageDef] = ???
+  override def run(runRequest: PipelineRunDef)
+                  (implicit ec: ExecutionContext): Map[StageOutputDef, PipelineMessageDef] = {
+    val ppl = runRequest.pipeline.id match {
+      case Some(id) => get(id.toString)
+      case None => fromPipelineDef(runRequest.pipeline)
+    }
+    val result = ppl.run(runRequest.outputs.map(d => s"${d.stageName}:${d.outputName}"), runRequest.feeds)
+    result.map { case (k, v) =>
+      val desc = SlotDescriptor(k)
+      StageOutputDef(desc.parent, desc.parent) -> v
+    }
+  }
+
+  /**
+    * Utility to create a pipeline object and add it to the store.
+    * Return the newly created pipeline
+    */
+  private def fromPipelineDef(pplDef: PipelineDef): Pipeline = cachedStore.add(pipelineFactory.create(pplDef))
 }

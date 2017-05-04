@@ -12,26 +12,29 @@
  * Created by phvu on 18/12/2016.
  */
 
-package io.cebes.server.routes.df
+package io.cebes.server.routes.pipeline
+
+import java.util.UUID
 
 import com.google.inject.Inject
-import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.pipeline.PipelineService
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.{AsyncDataframeOperation, TagDeleteRequest}
+import io.cebes.server.routes.common.{AsyncSerializableOperation, TagsGetRequest}
+import io.cebes.tag.Tag
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Delete the given tag
+  * Get all tags that match the given pattern.
   */
-class TagDelete @Inject()(dfService: DataframeService, override val resultStorage: ResultStorage)
-  extends AsyncDataframeOperation[TagDeleteRequest] {
+class Tags @Inject()(pipelineService: PipelineService, override val resultStorage: ResultStorage)
+  extends AsyncSerializableOperation[TagsGetRequest, Array[(Tag, UUID)]] {
 
   /**
     * Implement this to do the real work
     */
-  override protected def runImpl(requestEntity: TagDeleteRequest)
-                                (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.untag(requestEntity.tag)
+  override protected def runImpl(requestEntity: TagsGetRequest)
+                                (implicit ec: ExecutionContext): Future[Array[(Tag, UUID)]] = Future {
+    pipelineService.getTags(requestEntity.pattern, requestEntity.maxCount).toArray
   }
 }
