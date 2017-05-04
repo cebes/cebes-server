@@ -14,15 +14,17 @@
 
 package io.cebes.server.routes
 
-import akka.actor.{ActorSystem, Scheduler}
+import java.util.concurrent.Executors
+
+import akka.actor.Scheduler
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.ActorMaterializer
 import io.cebes.pipeline.json.PipelineDef
 import io.cebes.server.client.{RemoteDataframe, ServerException}
-import io.cebes.server.helpers.TestDataHelper
+import io.cebes.server.helpers.{CebesHttpServerTestInjector, TestDataHelper}
+import io.cebes.server.http.HttpServer
 import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
 import io.cebes.server.routes.auth.LoginRequest
 import io.cebes.server.util.Retries
@@ -30,24 +32,30 @@ import org.scalatest.FunSuite
 import spray.json.JsonFormat
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
   * Mother of all Route test, with helpers for using akka test-kit,
   * logging in and storing cookies, etc...
   */
-abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
-  with ScalatestRouteTest with Routes {
+abstract class AbstractRouteSuite extends FunSuite with TestDataHelper with ScalatestRouteTest {
 
   //TODO: implement a better way to load the data (e.g. create a HTTP endpoint for testing purpose)
 
-  implicit val actorSystem: ActorSystem = system
-  implicit val actorMaterializer: ActorMaterializer = materializer
-  implicit val actorExecutor: ExecutionContextExecutor = executor
-  implicit val scheduler: Scheduler = actorSystem.scheduler
+  protected val server: HttpServer = CebesHttpServerTestInjector.instance[HttpServer]
+
+  //private val executorService = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors())
+  //protected implicit val testContext: ExecutionContext = ExecutionContext.fromExecutor(executorService)
+  implicit val scheduler: Scheduler = system.scheduler
 
   private val authHeaders = login()
+
+  //override def afterAll(): Unit = {
+  //  super.afterAll()
+  //  executorService.shutdown()
+  //}
+
 
   ////////////////////////////////////////////////////////////////////
   // implement traits
@@ -62,7 +70,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
-    Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> routes ~> check {
+    Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> server.routes ~> check {
       op
     }
 
@@ -110,7 +118,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   private def login() = {
-    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> routes ~> check {
+    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> server.routes ~> check {
       assert(status === StatusCodes.OK)
       val responseCookies = headers.filter(_.name().startsWith("Set-"))
       assert(responseCookies.nonEmpty)
