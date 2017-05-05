@@ -37,17 +37,17 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   private val sparkSession = hasSparkSession.session
 
+  override def cache(df: Dataframe): Dataframe = cachedStore.add(df)
 
-  override def sql(sqlText: String): Dataframe = cachedStore.add {
+  override def sql(sqlText: String): Dataframe = cache {
     dfFactory.df(sparkSession.sql(sqlText))
   }
 
-
-  override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = cachedStore.add {
+  override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = cache {
     cachedStore(dfId).inferVariableTypes(sampleSize)
   }
 
-  override def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe = cachedStore.add {
+  override def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe = cache {
     cachedStore(dfId).withVariableTypes(variableTypes)
   }
 
@@ -58,7 +58,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   }
 
   override def sample(dfId: UUID, withReplacement: Boolean,
-                      fraction: Double, seed: Long): Dataframe = cachedStore.add {
+                      fraction: Double, seed: Long): Dataframe = cache {
     cachedStore(dfId).sample(withReplacement, fraction, seed)
   }
 
@@ -66,23 +66,23 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
   // Data exploration
   ////////////////////////////////////////////////////////////////////////////////////
 
-  override def sort(dfId: UUID, sortExprs: Column*): Dataframe = cachedStore.add {
+  override def sort(dfId: UUID, sortExprs: Column*): Dataframe = cache {
     cachedStore(dfId).sort(sortExprs: _*)
   }
 
-  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe = cachedStore.add {
+  override def drop(dfId: UUID, colNames: Seq[String]): Dataframe = cache {
     cachedStore(dfId).drop(colNames)
   }
 
-  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe = cachedStore.add {
+  override def dropDuplicates(dfId: UUID, colNames: Seq[String]): Dataframe = cache {
     cachedStore(dfId).dropDuplicates(colNames)
   }
 
-  override def dropNA(dfId: UUID, minNonNulls: Int, cols: Seq[String]): Dataframe = cachedStore.add {
+  override def dropNA(dfId: UUID, minNonNulls: Int, cols: Seq[String]): Dataframe = cache {
     cachedStore(dfId).na.drop(minNonNulls, cols)
   }
 
-  override def fillNA(dfId: UUID, value: Either[String, Double], cols: Seq[String]): Dataframe = cachedStore.add {
+  override def fillNA(dfId: UUID, value: Either[String, Double], cols: Seq[String]): Dataframe = cache {
     val df = cachedStore(dfId)
     value match {
       case Right(d) => df.na.fill(d, cols)
@@ -90,11 +90,11 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     }
   }
 
-  override def fillNA(dfId: UUID, valueMap: Map[String, Any]): Dataframe = cachedStore.add {
+  override def fillNA(dfId: UUID, valueMap: Map[String, Any]): Dataframe = cache {
     cachedStore(dfId).na.fill(valueMap)
   }
 
-  override def replace[T](dfId: UUID, cols: Seq[String], replacement: Map[T, T]): Dataframe = cachedStore.add {
+  override def replace[T](dfId: UUID, cols: Seq[String], replacement: Map[T, T]): Dataframe = cache {
     cachedStore(dfId).na.replace[T](cols, replacement)
   }
 
@@ -111,15 +111,15 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     cachedStore(dfId).stat.corr(col1, col2)
   }
 
-  override def crosstab(dfId: UUID, col1: String, col2: String): Dataframe = cachedStore.add {
+  override def crosstab(dfId: UUID, col1: String, col2: String): Dataframe = cache {
     cachedStore(dfId).stat.crosstab(col1, col2)
   }
 
-  override def freqItems(dfId: UUID, cols: Seq[String], support: Double): Dataframe = cachedStore.add {
+  override def freqItems(dfId: UUID, cols: Seq[String], support: Double): Dataframe = cache {
     cachedStore(dfId).stat.freqItems(cols, support)
   }
 
-  override def sampleBy[T](dfId: UUID, col: String, fractions: Map[T, Double], seed: Long): Dataframe = cachedStore.add {
+  override def sampleBy[T](dfId: UUID, col: String, fractions: Map[T, Double], seed: Long): Dataframe = cache {
     cachedStore(dfId).stat.sampleBy(col, fractions, seed)
   }
 
@@ -131,49 +131,49 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     * Returns a new [[Dataframe]] by adding a column or replacing
     * the existing column that has the same name (case-insensitive).
     */
-  override def withColumn(dfId: UUID, colName: String, col: Column): Dataframe = cachedStore.add {
+  override def withColumn(dfId: UUID, colName: String, col: Column): Dataframe = cache {
     cachedStore(dfId).withColumn(colName, col)
   }
 
   /**
     * Returns a new [[Dataframe]] with a column renamed.
     */
-  override def withColumnRenamed(dfId: UUID, existingName: String, newName: String): Dataframe = cachedStore.add {
+  override def withColumnRenamed(dfId: UUID, existingName: String, newName: String): Dataframe = cache {
     cachedStore(dfId).withColumnRenamed(existingName, newName)
   }
 
   /**
     * Selects a set of columns based on expressions.
     */
-  override def select(dfId: UUID, columns: Column*): Dataframe = cachedStore.add {
+  override def select(dfId: UUID, columns: Column*): Dataframe = cache {
     cachedStore(dfId).select(columns: _*)
   }
 
   /**
     * Filters rows using the given condition.
     */
-  override def where(dfId: UUID, column: Column): Dataframe = cachedStore.add {
+  override def where(dfId: UUID, column: Column): Dataframe = cache {
     cachedStore(dfId).where(column)
   }
 
   /**
     * Returns a new Dataframe with an alias set.
     */
-  override def alias(dfId: UUID, alias: String): Dataframe = cachedStore.add {
+  override def alias(dfId: UUID, alias: String): Dataframe = cache {
     cachedStore(dfId).alias(alias)
   }
 
   /**
     * Join with another [[Dataframe]], using the given join expression.
     */
-  override def join(leftDfId: UUID, rightDfId: UUID, joinExprs: Column, joinType: String): Dataframe = cachedStore.add {
+  override def join(leftDfId: UUID, rightDfId: UUID, joinExprs: Column, joinType: String): Dataframe = cache {
     cachedStore(leftDfId).join(cachedStore(rightDfId), joinExprs, joinType)
   }
 
   /**
     * Returns a new [[Dataframe]] by taking the first `n` rows.
     */
-  override def limit(dfId: UUID, n: Int): Dataframe = cachedStore.add {
+  override def limit(dfId: UUID, n: Int): Dataframe = cache {
     cachedStore(dfId).limit(n)
   }
 
@@ -183,7 +183,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def union(dfId: UUID, otherDfId: UUID): Dataframe = cachedStore.add {
+  override def union(dfId: UUID, otherDfId: UUID): Dataframe = cache {
     cachedStore(dfId).union(cachedStore(otherDfId))
   }
 
@@ -195,7 +195,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def intersect(dfId: UUID, otherDfId: UUID): Dataframe = cachedStore.add {
+  override def intersect(dfId: UUID, otherDfId: UUID): Dataframe = cache {
     cachedStore(dfId).intersect(cachedStore(otherDfId))
   }
 
@@ -208,7 +208,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def except(dfId: UUID, otherDfId: UUID): Dataframe = cachedStore.add {
+  override def except(dfId: UUID, otherDfId: UUID): Dataframe = cache {
     cachedStore(dfId).except(cachedStore(otherDfId))
   }
 
@@ -217,7 +217,7 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
     *
     * @group sql-api
     */
-  override def broadcast(dfId: UUID): Dataframe = cachedStore.add {
+  override def broadcast(dfId: UUID): Dataframe = cache {
     cachedStore(dfId).broadcast
   }
 
@@ -227,36 +227,36 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   override def aggregateAgg(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            aggExprs: Seq[Column]): Dataframe = cachedStore.add {
+                            aggExprs: Seq[Column]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).agg(aggExprs.head, aggExprs.tail: _*)
   }
 
   override def aggregateCount(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
-                              pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe = cachedStore.add {
+                              pivotColName: Option[String], pivotValues: Option[Seq[Any]]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).count()
   }
 
   override def aggregateMin(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            minColNames: Seq[String]): Dataframe = cachedStore.add {
+                            minColNames: Seq[String]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).min(minColNames: _*)
   }
 
   override def aggregateMean(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                              pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                             meanColNames: Seq[String]): Dataframe = cachedStore.add {
+                             meanColNames: Seq[String]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).mean(meanColNames: _*)
   }
 
   override def aggregateMax(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            maxColNames: Seq[String]): Dataframe = cachedStore.add {
+                            maxColNames: Seq[String]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).max(maxColNames: _*)
   }
 
   override def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
-                            sumColNames: Seq[String]): Dataframe = cachedStore.add {
+                            sumColNames: Seq[String]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).sum(sumColNames: _*)
   }
 

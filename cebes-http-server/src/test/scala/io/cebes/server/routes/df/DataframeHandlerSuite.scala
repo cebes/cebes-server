@@ -47,13 +47,6 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     sample
   }
 
-  /**
-    * Private helper for counting number of rows in the given dataframe
-    */
-  private def count(df: RemoteDataframe): Long = {
-    request[DataframeRequest, Long]("df/count", DataframeRequest(df.id))
-  }
-
   /////////////////////////////////////////////
   // tests
   /////////////////////////////////////////////

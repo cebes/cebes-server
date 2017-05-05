@@ -14,8 +14,6 @@
 
 package io.cebes.server.routes
 
-import java.util.concurrent.Executors
-
 import akka.actor.Scheduler
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
@@ -27,12 +25,13 @@ import io.cebes.server.helpers.{CebesHttpServerTestInjector, TestDataHelper}
 import io.cebes.server.http.HttpServer
 import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
 import io.cebes.server.routes.auth.LoginRequest
+import io.cebes.server.routes.df.DataframeRequest
 import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 import spray.json.JsonFormat
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
+import scala.concurrent.{Await, Awaitable, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -44,17 +43,9 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper with Scal
   //TODO: implement a better way to load the data (e.g. create a HTTP endpoint for testing purpose)
 
   protected val server: HttpServer = CebesHttpServerTestInjector.instance[HttpServer]
-
-  //private val executorService = Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors())
-  //protected implicit val testContext: ExecutionContext = ExecutionContext.fromExecutor(executorService)
-  implicit val scheduler: Scheduler = system.scheduler
-
   private val authHeaders = login()
 
-  //override def afterAll(): Unit = {
-  //  super.afterAll()
-  //  executorService.shutdown()
-  //}
+  implicit val scheduler: Scheduler = system.scheduler
 
 
   ////////////////////////////////////////////////////////////////////
@@ -146,6 +137,13 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper with Scal
                                                      jsDfr: JsonFormat[DataframeResponse]): RemoteDataframe = {
     val df = wait(postAsync[E, DataframeResponse](url, entity))
     RemoteDataframe(df.id, df.schema)
+  }
+
+  /**
+    * Counting number of rows in the given dataframe
+    */
+  protected def count(df: RemoteDataframe)(implicit emE: ToEntityMarshaller[DataframeRequest]): Long = {
+    request[DataframeRequest, Long]("df/count", DataframeRequest(df.id))
   }
 
   protected def requestPipeline[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],

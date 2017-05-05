@@ -24,6 +24,12 @@ import io.cebes.tag.TagService
 trait DataframeService extends TagService[Dataframe] {
 
   /**
+    * Store the given [[Dataframe]] in the cache
+    * @return the given data frame
+    */
+  def cache(df: Dataframe): Dataframe
+
+  /**
     * Executes a SQL query, returning the result as a [[Dataframe]].
     *
     * @param sqlText the SQL command to run

@@ -27,7 +27,7 @@ class DropSuite extends FunSuite with ImplicitExecutor with TestDataHelper with 
     val s = Drop().setName("drop")
     s.input(s.colNames, Array[String]("cylinder_number", "non_existed_column"))
     s.input(s.inputDf, df)
-    val df2 = resultDf(s.output(s.outputDf).getFuture)
+    val df2 = s.output(s.outputDf).getResult(TEST_WAIT_TIME)
     assert(df2.numCols + 1 === df.numCols)
     assert(df2.numRows === df.numRows)
     assert(df2.schema.get("cylinder_number").isEmpty)

@@ -33,6 +33,10 @@ object StorageTypes {
   val FloatType: storage.FloatType = storage.FloatType
   val DoubleType: storage.DoubleType = storage.DoubleType
 
+  /**
+    * VectorType is not very well-designed, because Spark's VectorUDT
+    * is still not stable yet.
+    */
   val VectorType: storage.VectorType = storage.VectorType
 
   val atomicTypes = Seq(StringType, BinaryType,
@@ -41,9 +45,13 @@ object StorageTypes {
     LongType, FloatType, DoubleType)
 
   def fromString(typeName: String): storage.StorageType = {
-    atomicTypes.find(_.typeName.equalsIgnoreCase(typeName)) match {
-      case Some(tp) => tp
-      case _ => throw new IllegalArgumentException(s"Unrecognized storage type: $typeName")
+    typeName match {
+      case s if s == VectorType.typeName => VectorType
+      case _ =>
+        atomicTypes.find(_.typeName.equalsIgnoreCase(typeName)) match {
+          case Some(tp) => tp
+          case _ => throw new IllegalArgumentException(s"Unrecognized storage type: $typeName")
+        }
     }
   }
 
@@ -55,7 +63,7 @@ object StorageTypes {
     storage.MapType(keyType, valueType)
 
   def structType(fields: Seq[StructField]): storage.StructType =
-      structType(fields.head, fields.tail: _*)
+    structType(fields.head, fields.tail: _*)
 
   def structType(field: StructField, fields: StructField*): storage.StructType =
     storage.StructType(fields.toArray)

@@ -131,24 +131,25 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
   implicit object StorageTypeFormat extends JsonFormat[StorageType] {
 
     def write(obj: StorageType): JsValue = {
-      if (StorageTypes.atomicTypes.contains(obj)) {
-        JsString(obj.typeName)
-      } else {
-        obj match {
-          case t: ArrayType => t.toJson
-          case t: MapType => t.toJson
-          case t: StructType => t.toJson
-          case _ => serializationError(s"Unknown storage type: ${obj.typeName}")
-        }
+      obj match {
+        case StorageTypes.VectorType =>
+          JsString(StorageTypes.VectorType.typeName)
+        case t if StorageTypes.atomicTypes.contains(t) =>
+          JsString(obj.typeName)
+        case t: ArrayType => t.toJson
+        case t: MapType => t.toJson
+        case t: StructType => t.toJson
+        case _ => serializationError(s"Unknown storage type: ${obj.typeName}")
       }
     }
 
     def read(json: JsValue): StorageType = json match {
-      case JsString(x) => Try(StorageTypes.fromString(x)) match {
-        case Success(t) => t
-        case Failure(f) =>
-          deserializationError(s"Failed to deserialize ${json.compactPrint}: ${f.getMessage}", f)
-      }
+      case JsString(x) =>
+        Try(StorageTypes.fromString(x)) match {
+          case Success(t) => t
+          case Failure(f) =>
+            deserializationError(s"Failed to deserialize ${json.compactPrint}: ${f.getMessage}", f)
+        }
       case _ =>
         Try(json.convertTo[ArrayType])
           .orElse(Try(json.convertTo[MapType]))

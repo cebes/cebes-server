@@ -140,8 +140,8 @@ class PipelineHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     assert(ppl3.id.get === pipelineId)
   }
 
-  test("run a simple pipeline") {
-    val pplDef = PipelineDef(None,
+  def simplePipeline: PipelineDef = {
+    PipelineDef(None,
       Array(
         StageDef("s1", "Where",
           Map("condition" -> ColumnDef(functions.col("hardener") === 0.0 || functions.col("hardener") === 1.0))),
@@ -153,17 +153,84 @@ class PipelineHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
             "outputCol" -> ValueDef("hardener_vec"),
             "inputDf" -> StageOutputDef("s2", "outputDf")))
       ))
+  }
+
+  test("run a simple pipeline - successful cases") {
+    val pplDef = simplePipeline
 
     val ppl = requestPipeline("pipeline/create", pplDef)
     assert(ppl.id.nonEmpty)
 
+    val dfIn = getCylinderBands
+
     val runDef = PipelineRunDef(PipelineDef(ppl.id, Array()),
-      Map("s1:inputDf" -> DataframeMessageDef(getCylinderBands.id)),
+      Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s3", "outputDf")))
-    val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef)
-    assert(runResult.length === 1)
-    assert(runResult(0)._2.isInstanceOf[DataframeMessageDef])
-    val dfResultId = runResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+
+    val runDefWithoutPipelineId = PipelineRunDef(simplePipeline,
+      Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
+      Array(StageOutputDef("s3", "outputDf")))
+
+    Seq(runDef, runDefWithoutPipelineId).map { pplRunDef =>
+      val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", pplRunDef)
+      assert(runResult.length === 1)
+      assert(runResult(0)._2.isInstanceOf[DataframeMessageDef])
+
+      val dfResultId = runResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+      val dfResult = requestDf("df/get", dfResultId.toString)
+
+      import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
+
+      assert(count(dfResult) > 0)
+      assert(dfResult.schema.size === dfIn.schema.size + 1)
+      assert(dfResult.schema.contains("hardener_vec"))
+    }
+
+    // get multiple outputs
+    val runDefMultOutputs = PipelineRunDef(simplePipeline,
+      Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
+      Array(StageOutputDef("s3", "outputDf"), StageOutputDef("s2", "outputDf")))
+
+    val runResult2 = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run",
+      runDefMultOutputs)
+    assert(runResult2.length === 2)
+    assert(runResult2.forall(_._2.isInstanceOf[DataframeMessageDef]))
+
+    runResult2.foreach { case (outputDef, resultPipelineDef) =>
+      val dfResultId = resultPipelineDef.asInstanceOf[DataframeMessageDef].dfId
+      val dfResult = requestDf("df/get", dfResultId.toString)
+
+      import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
+      assert(count(dfResult) > 0)
+
+      outputDef.stageName match {
+        case "s2" =>
+          assert(dfResult.schema.size === dfIn.schema.size)
+          assert(!dfResult.schema.contains("hardener_vec"))
+        case "s3" =>
+          assert(dfResult.schema.size === dfIn.schema.size + 1)
+          assert(dfResult.schema.contains("hardener_vec"))
+      }
+    }
+  }
+
+  test("run pipeline - fail cases") {
+    val dfIn = getCylinderBands
+
+    // no input
+    val runDefNoInputs = PipelineRunDef(simplePipeline, Map(), Array(StageOutputDef("s3", "outputDf")))
+    val ex1 = intercept[ServerException] {
+      request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDefNoInputs)
+    }
+    assert(ex1.message.contains("Where(name=s1): Input slot inputDf is undefined"))
+
+    val runDefWrongOutput = PipelineRunDef(simplePipeline,
+      Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
+      Array(StageOutputDef("s3", "wrongOutputName")))
+    val ex2 = intercept[ServerException] {
+      request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDefWrongOutput)
+    }
+    assert(ex2.message.contains("Slot wrongOutputName does not exist"))
 
   }
 }

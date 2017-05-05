@@ -29,7 +29,6 @@ class PipelineFactory @Inject()(private val injector: Injector) {
     val id = pipelineDef.id.getOrElse(HasId.randomId)
 
     val stageFactory = injector.getInstance(classOf[StageFactory])
-    val msgSerializer = injector.getInstance(classOf[PipelineMessageSerializer])
 
     val stageMap = mutable.Map.empty[String, Stage]
     pipelineDef.stages.map { s =>
@@ -40,6 +39,6 @@ class PipelineFactory @Inject()(private val injector: Injector) {
       stageMap.put(stage.getName, stage)
     }
 
-    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)), msgSerializer)
+    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)), injector)
   }
 }

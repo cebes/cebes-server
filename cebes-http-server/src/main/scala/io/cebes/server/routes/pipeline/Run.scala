@@ -16,7 +16,7 @@ package io.cebes.server.routes.pipeline
 
 import com.google.inject.Inject
 import io.cebes.pipeline.PipelineService
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, StageOutputDef}
+import io.cebes.pipeline.json._
 import io.cebes.server.result.ResultStorage
 import io.cebes.server.routes.common.AsyncSerializableOperation
 

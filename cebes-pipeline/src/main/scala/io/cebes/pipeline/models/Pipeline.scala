@@ -14,6 +14,7 @@ package io.cebes.pipeline.models
 
 import java.util.UUID
 
+import com.google.inject.Injector
 import io.cebes.common.HasId
 import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, StageOutputDef}
 
@@ -26,7 +27,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   */
 case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage],
                                       pipelineDef: PipelineDef,
-                                      private val msgSerializer: PipelineMessageSerializer)
+                                      private val injector: Injector)
   extends HasId {
 
   private val runLocker = new AnyRef()
@@ -48,6 +49,8 @@ case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage],
         case Some(_) => slot -> pipelineMsgDef
       }
     }
+
+    val msgSerializer = injector.getInstance(classOf[PipelineMessageSerializer])
 
     val result = runLocker.synchronized {
 

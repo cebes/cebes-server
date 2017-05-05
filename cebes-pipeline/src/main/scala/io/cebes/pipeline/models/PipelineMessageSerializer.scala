@@ -12,24 +12,27 @@
 package io.cebes.pipeline.models
 
 import com.google.inject.Inject
-import io.cebes.df.{Column, DataframeService}
+import io.cebes.df.{Column, Dataframe, DataframeService}
 import io.cebes.pipeline.json._
 
 /**
   * Functions for serializing and deserializing [[PipelineMessageDef]]
   */
-class PipelineMessageSerializer @Inject()(private val dfService: DataframeService) {
+class PipelineMessageSerializer @Inject()(dfService: DataframeService) {
 
   /**
     * Serialize the given value into a [[PipelineMessageDef]]
     */
   def serialize[T](value: T, outputSlot: OutputSlot[T]): PipelineMessageDef = {
-    if (!outputSlot.messageClass.isAssignableFrom(value.getClass)) {
-      throw new IllegalArgumentException(s"Output of type ${outputSlot.messageClass.getSimpleName} " +
-        s"but the value is of type ${value.getClass}")
-    }
+    require(outputSlot.messageClass.isAssignableFrom(value.getClass),
+      s"Output of type ${outputSlot.messageClass.getSimpleName} but the value is of type ${value.getClass}")
+
     value match {
       case col: Column => ColumnDef(col)
+      case df: Dataframe =>
+        // store the result Dataframe into the cache
+        dfService.cache(df)
+        DataframeMessageDef(df.id)
       case other => writeValueDef(other)
     }
   }
@@ -59,7 +62,8 @@ class PipelineMessageSerializer @Inject()(private val dfService: DataframeServic
     *
     * We need the stage and the input name to correctly parse the input message
     */
-  def deserialize(inputMsg: PipelineMessageDef, stage: Stage, inputName: String): Unit = {
+  def deserialize(inputMsg: PipelineMessageDef, stage: Stage,
+                  inputName: String): Unit = {
 
     require(stage.hasInput(inputName), s"Input name $inputName not found in stage ${stage.toString}")
 

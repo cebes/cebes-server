@@ -47,10 +47,12 @@ import spray.json._
         JdbcPersistenceColumn("proto", "MEDIUMTEXT")))
       .withValueToSeq { pipeline =>
         Seq(System.currentTimeMillis(), pipeline.pipelineDef.toJson.compactPrint)
-      }.withSqlToValue { (_, entry) =>
-      val proto = entry.getString(2).parseJson.convertTo[PipelineDef]
-      pipelineFactory.create(proto)
-    }.withStrToKey(s => UUID.fromString(s))
+      }
+      .withSqlToValue { (_, entry) =>
+        val proto = entry.getString(2).parseJson.convertTo[PipelineDef]
+        pipelineFactory.create(proto)
+      }
+      .withStrToKey(s => UUID.fromString(s))
       .build()
 
   /** Check whether the object with the given ID should be persisted or not. */

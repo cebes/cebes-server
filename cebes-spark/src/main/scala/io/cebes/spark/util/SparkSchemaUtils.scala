@@ -19,7 +19,6 @@ import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.StorageTypes
 import io.cebes.df.types.storage._
 import org.apache.spark.sql.{DataFrame, types}
-import org.apache.spark.ml.linalg
 
 trait SparkSchemaUtils extends LazyLogging {
 
