@@ -230,7 +230,7 @@ class PipelineHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val ex2 = intercept[ServerException] {
       request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDefWrongOutput)
     }
-    assert(ex2.message.contains("Slot wrongOutputName does not exist"))
-
+    assert(ex2.message.contains("Invalid slot descriptor s3:wrongOutputName in the output list"))
   }
+
 }

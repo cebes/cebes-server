@@ -92,6 +92,11 @@ trait Stage extends Inputs with HasOutputSlots {
     }
   }
 
+  /** Whether there is an output slot of the given name in this stage */
+  final def hasOutput(slotName: String): Boolean = {
+    _outputs.exists(_.name == slotName)
+  }
+
   /**
     * Return the output at the given index.
     */

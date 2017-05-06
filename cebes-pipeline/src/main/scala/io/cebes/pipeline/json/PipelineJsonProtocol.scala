@@ -63,7 +63,7 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol with CebesCoreJsonProtoco
 
   implicit val stageDefFormat: RootJsonFormat[StageDef] = jsonFormat4(StageDef)
   implicit val pipelineDefFormat: RootJsonFormat[PipelineDef] = jsonFormat2(PipelineDef)
-  implicit val pipelineRunDefFormat: RootJsonFormat[PipelineRunDef] = jsonFormat3(PipelineRunDef)
+  implicit val pipelineRunDefFormat: RootJsonFormat[PipelineRunDef] = jsonFormat4(PipelineRunDef)
 }
 
 object PipelineJsonProtocol extends PipelineJsonProtocol

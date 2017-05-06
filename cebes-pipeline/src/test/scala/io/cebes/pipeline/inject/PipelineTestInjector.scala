@@ -9,7 +9,7 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.pipeline
+package io.cebes.pipeline.inject
 
 import com.google.inject.{Guice, Injector, Stage}
 import io.cebes.prop.PropertyModule
@@ -19,7 +19,9 @@ import scala.reflect.ClassTag
 object PipelineTestInjector {
 
   private lazy val injector: Injector = Guice.createInjector(Stage.PRODUCTION,
-    new PropertyModule(false))
+    new PropertyModule(false),
+    new PipelineTestDependencyModule()
+  )
 
   /**
     * Short-hand for getting an instance from the DI framework

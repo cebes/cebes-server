@@ -14,7 +14,7 @@ package io.cebes.pipeline.factory
 
 import com.google.inject.{Inject, Injector}
 import io.cebes.pipeline.json.StageDef
-import io.cebes.pipeline.models.{PipelineMessageSerializer, Stage}
+import io.cebes.pipeline.models.{PipelineMessageSerializer, SlotDescriptor, Stage}
 import io.cebes.prop.{Prop, Property}
 
 import scala.util.{Success, Try}
@@ -48,8 +48,15 @@ class StageFactory @Inject()(private val injector: Injector,
 
     // set the inputs
     stageDef.inputs.foreach { case (inpName, inpMessage) =>
-      serializer.deserialize(inpMessage, stage, inpName)
+      require(stage.hasInput(inpName), s"Input name $inpName not found in stage ${stage.toString}")
+      serializer.deserialize(inpMessage) match {
+        case _: SlotDescriptor => // will be connected later
+        case v => stage.input(stage.getInput(inpName), v)
+      }
     }
+
+    // TODO: set the outputs
+
     stage
   }
 }

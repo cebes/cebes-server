@@ -14,25 +14,16 @@
 
 package io.cebes.server.routes.storage
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.Materializer
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
+import io.cebes.server.routes.common.OperationHelper
 import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
 
-import scala.concurrent.ExecutionContext
-
-trait StorageHandler extends SecuredSession {
-
-  implicit def actorSystem: ActorSystem
-
-  implicit def actorExecutor: ExecutionContext
-
-  implicit def actorMaterializer: Materializer
+trait StorageHandler extends SecuredSession with OperationHelper {
 
   val storageApi: Route = pathPrefix("storage") {
     myRequiredSession { _ =>

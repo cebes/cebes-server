@@ -11,19 +11,25 @@
  */
 package io.cebes.spark.pipeline
 
+import java.util.concurrent.TimeUnit
+
 import com.google.inject.Inject
+import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.pipeline.PipelineService
 import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, StageOutputDef}
-import io.cebes.pipeline.models.{Pipeline, SlotDescriptor}
+import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer, SlotDescriptor}
 import io.cebes.store.{CachedStore, TagStore}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
 
 /**
   * Implements [[PipelineService]] on Spark
   */
 class SparkPipelineService @Inject()(pipelineFactory: PipelineFactory,
+                                     pplMessageSerializer: PipelineMessageSerializer,
+                                     dfService: DataframeService,
                                      override val cachedStore: CachedStore[Pipeline],
                                      override val tagStore: TagStore[Pipeline]) extends PipelineService {
 
@@ -46,15 +52,34 @@ class SparkPipelineService @Inject()(pipelineFactory: PipelineFactory,
     */
   override def run(runRequest: PipelineRunDef)
                   (implicit ec: ExecutionContext): Map[StageOutputDef, PipelineMessageDef] = {
-    val ppl = runRequest.pipeline.id match {
-      case Some(id) => get(id.toString)
-      case None => fromPipelineDef(runRequest.pipeline)
+
+    val ppl = runRequest.pipeline.id.map(i => get(i.toString))
+      .getOrElse(fromPipelineDef(runRequest.pipeline))
+
+    val outs = runRequest.outputs.map(d => SlotDescriptor(d.stageName, d.outputName)).toSeq
+    val feeds = runRequest.feeds.map { case (k, v) =>
+      SlotDescriptor(k) -> pplMessageSerializer.deserialize(v)
     }
-    val result = ppl.run(runRequest.outputs.map(d => s"${d.stageName}:${d.outputName}"), runRequest.feeds)
-    result.map { case (k, v) =>
-      val desc = SlotDescriptor(k)
-      StageOutputDef(desc.parent, desc.parent) -> v
+
+    val result = ppl.run(outs, feeds).map { result =>
+      result.map { case (slot, v) =>
+
+        // cache the results of the pipeline
+        v match {
+          case df: Dataframe => dfService.cache(df)
+          case _ =>
+        }
+
+        StageOutputDef(slot.parent, slot.parent) -> pplMessageSerializer.serialize(v)
+      }
     }
+
+    val waitTime = if (runRequest.timeout <= 0) {
+      Duration.Inf
+    } else {
+      Duration(runRequest.timeout, TimeUnit.SECONDS)
+    }
+    Await.result(result, waitTime)
   }
 
   /**

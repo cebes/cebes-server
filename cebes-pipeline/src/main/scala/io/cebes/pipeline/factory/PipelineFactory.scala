@@ -11,14 +11,14 @@
  */
 package io.cebes.pipeline.factory
 
-import com.google.inject.{Inject, Injector}
+import com.google.inject.Inject
 import io.cebes.common.HasId
 import io.cebes.pipeline.json.PipelineDef
-import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer, Stage}
+import io.cebes.pipeline.models.{Pipeline, Stage}
 
 import scala.collection.mutable
 
-class PipelineFactory @Inject()(private val injector: Injector) {
+class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
 
   /**
     * Create the pipeline object from the given definition
@@ -28,17 +28,13 @@ class PipelineFactory @Inject()(private val injector: Injector) {
   def create(pipelineDef: PipelineDef): Pipeline = {
     val id = pipelineDef.id.getOrElse(HasId.randomId)
 
-    val stageFactory = injector.getInstance(classOf[StageFactory])
-
     val stageMap = mutable.Map.empty[String, Stage]
     pipelineDef.stages.map { s =>
       val stage = stageFactory.create(s)
-      if (stageMap.contains(stage.getName)) {
-        throw new IllegalArgumentException(s"Duplicated stage name: ${stage.getName}")
-      }
+      require(!stageMap.contains(stage.getName), s"Duplicated stage name: ${stage.getName}")
       stageMap.put(stage.getName, stage)
     }
 
-    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)), injector)
+    Pipeline(id, stageMap.toMap, pipelineDef.copy(id = Some(id)))
   }
 }
