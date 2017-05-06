@@ -19,8 +19,11 @@ import io.cebes.df.Dataframe
   */
 trait BinaryTransformer extends Stage {
 
-  val leftDf: InputSlot[Dataframe] = inputSlot[Dataframe]("leftDf", "Left input to the transformation", None)
-  val rightDf: InputSlot[Dataframe] = inputSlot[Dataframe]("rightDf", "Right input to the transformation", None)
+  val leftDf: InputSlot[Dataframe] = inputSlot[Dataframe]("leftDf", "Left input to the transformation", None,
+    stateful = false)
+  val rightDf: InputSlot[Dataframe] = inputSlot[Dataframe]("rightDf", "Right input to the transformation", None,
+    stateful = false)
+
   val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "Result of transformation", None)
 
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {

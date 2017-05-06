@@ -1,4 +1,4 @@
-/* Copyright 2016 The Cebes Authors. All Rights Reserved.
+/* Copyright 2017 The Cebes Authors. All Rights Reserved.
  *
  * Licensed under the Apache License, version 2.0 (the "License").
  * You may not use this work except in compliance with the License,
@@ -9,11 +9,18 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
+package io.cebes.pipeline.inject
 
-package io.cebes.pipeline
+import java.util.UUID
 
-import io.cebes.df.store.CachedStore
-import io.cebes.pipeline.models.Pipeline
+import io.cebes.df.Dataframe
+import io.cebes.pipeline.models.PipelineMessageSerializer
 
-/** Store of Pipelines object, with cache */
-trait PipelineStore extends CachedStore[Pipeline]
+/**
+  * Simple implementation of [[PipelineMessageSerializer]], that actually do nothing
+  * Only for testing purpose
+  */
+class DummyPipelineMessageSerializer extends PipelineMessageSerializer {
+
+  override protected def getDataframe(dfId: UUID): Dataframe = ???
+}

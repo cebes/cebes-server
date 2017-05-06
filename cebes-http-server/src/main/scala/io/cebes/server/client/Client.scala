@@ -43,9 +43,9 @@ class Client(host: String, port: Int) extends LazyLogging {
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
-  lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](host, port)
+  private lazy val cebesPoolFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]](host, port)
 
-  lazy val cebesQueue = Source.queue[(HttpRequest, Promise[HttpResponse])](10, OverflowStrategy.dropNew)
+  private lazy val cebesQueue = Source.queue[(HttpRequest, Promise[HttpResponse])](10, OverflowStrategy.dropNew)
     .via(cebesPoolFlow).toMat(Sink.foreach({
     case ((Success(resp), p)) => p.success(resp)
     case ((Failure(e), p)) => p.failure(e)

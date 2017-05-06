@@ -20,7 +20,6 @@ import com.google.common.cache.LoadingCache
 import com.google.inject.{Inject, Singleton}
 import io.cebes.df.Dataframe
 import io.cebes.df.schema.Schema
-import io.cebes.df.store.{DataframeStore, DataframeTagStore}
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.persistence.store.JdbcCachedStore
@@ -28,11 +27,12 @@ import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
 import io.cebes.spark.config.HasSparkSession
 import io.cebes.spark.df.{SparkDataframe, SparkDataframeFactory}
+import io.cebes.store.{CachedStore, TagStore}
 import org.apache.spark.sql.SaveMode
 import spray.json._
 
 /**
-  * An implementation of [[DataframeStore]] for Spark,
+  * An implementation of [[CachedStore[Dataframe]]] for Spark,
   * using guava's [[LoadingCache]] with JDBC persistence backend
   */
 @Singleton class SparkDataframeStore @Inject()
@@ -40,7 +40,7 @@ import spray.json._
  mySqlCreds: MySqlBackendCredentials,
  hasSparkSession: HasSparkSession,
  dfFactory: SparkDataframeFactory,
- tagStore: DataframeTagStore) extends JdbcCachedStore[Dataframe](cacheSpec) with DataframeStore {
+ tagStore: TagStore[Dataframe]) extends JdbcCachedStore[Dataframe](cacheSpec) {
 
   private val session = hasSparkSession.session
 
@@ -69,7 +69,7 @@ import spray.json._
 
   /**
     * Check whether the object with the given ID should be persisted or not.
-    * This is the only place where [[DataframeStore]] depends on [[JdbcDataframeTagStore]].
+    * This is the only place where [[SparkDataframeStore]] depends on [[TagStore[Dataframe]]].
     */
   override protected def shouldPersist(id: UUID): Boolean = tagStore.find(id).nonEmpty
 

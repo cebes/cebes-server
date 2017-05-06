@@ -14,7 +14,7 @@ package io.cebes.pipeline.factory
 
 import com.google.inject.{Inject, Injector}
 import io.cebes.pipeline.json.StageDef
-import io.cebes.pipeline.models.{PipelineMessageSerializer, Stage}
+import io.cebes.pipeline.models.{PipelineMessageSerializer, SlotDescriptor, Stage}
 import io.cebes.prop.{Prop, Property}
 
 import scala.util.{Success, Try}
@@ -33,27 +33,30 @@ class StageFactory @Inject()(private val injector: Injector,
     // find the class
     val cls = stageNamespacesList.map { ns =>
       Try(Class.forName(s"$ns.${stageDef.stageClass}"))
-    }.collectFirst {
+    }.collect {
       case Success(cl) if classOf[Stage].isAssignableFrom(cl) => cl
     } match {
-      case Some(cl) => cl
-      case None => throw new IllegalArgumentException(s"Stage class not found: ${stageDef.stageClass}")
+      case Array() => throw new IllegalArgumentException(s"Stage class not found: ${stageDef.stageClass}")
+      case Array(el) => el
+      case arr =>
+        throw new IllegalArgumentException(s"Multiple stage classes found for ${stageDef.stageClass}: " +
+          s"${arr.map(_.getName).mkString(", ")}")
     }
 
-    // construct the stage object, set the right name
-    /* val stage = cls.getConstructors.find { c =>
-      c.getParameterCount == 0
-    } match {
-      case Some(cl) => cl.newInstance().asInstanceOf[Stage].setName(proto.name)
-      case None => throw new IllegalArgumentException(s"Failed to initialize stage class ${cls.getName}")
-    }
-    */
     val stage = injector.getInstance(cls).asInstanceOf[Stage].setName(stageDef.name)
+    val serializer = injector.getInstance(classOf[PipelineMessageSerializer])
 
     // set the inputs
     stageDef.inputs.foreach { case (inpName, inpMessage) =>
-      PipelineMessageSerializer.deserialize(inpMessage, stage, inpName)
+      require(stage.hasInput(inpName), s"Input name $inpName not found in stage ${stage.toString}")
+      serializer.deserialize(inpMessage) match {
+        case _: SlotDescriptor => // will be connected later
+        case v => stage.input(stage.getInput(inpName), v)
+      }
     }
+
+    // TODO: set the outputs
+
     stage
   }
 }

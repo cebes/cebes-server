@@ -60,7 +60,7 @@ trait Stage extends Inputs with HasOutputSlots {
   /////////////////////////////////////////////////////////////////////////////
 
   val name: InputSlot[String] = inputSlot[String]("name", "Name of this stage",
-    Some(getClass.getSimpleName.toLowerCase), SlotValidators.isValidStageName)
+    Some(getClass.getSimpleName.toLowerCase), SlotValidators.isValidStageName, stateful = false)
 
   def getName: String = input(name).get
 
@@ -90,6 +90,11 @@ trait Stage extends Inputs with HasOutputSlots {
     _outputs.find(_.name == slotName).getOrElse {
       throw new NoSuchElementException(s"Slot $slotName does not exist.")
     }
+  }
+
+  /** Whether there is an output slot of the given name in this stage */
+  final def hasOutput(slotName: String): Boolean = {
+    _outputs.exists(_.name == slotName)
   }
 
   /**
@@ -129,6 +134,12 @@ trait Stage extends Inputs with HasOutputSlots {
         try {
           if (shouldRecompute(outputSlot)) {
             doComputeOutput(outputSlot)
+
+            // clear other outputs, so they will be re-computed
+            _outputs.filter(slot => slot.ne(outputSlot) && shouldRecompute(slot)).foreach { slot =>
+              clearOutput(slot)
+            }
+            inputUnchanged()
           }
 
           // Downgrade by acquiring read lock before releasing write lock
@@ -158,15 +169,10 @@ trait Stage extends Inputs with HasOutputSlots {
     *  - input is changed (the [[isInputChanged]] flag)
     * */
   private[models] def shouldRecompute[T](outputSlot: OutputSlot[T]): Boolean = {
-    if (outputSlot.stateful) {
-      // if this is stateful output, only re-compute
-      // if it is not already computed (or it was cleared)
-      !cachedOutput.contains(outputSlot)
-    } else {
-      // if this is stateless, then re-compute if
-      // it is not computed, or input has changed
-      (!cachedOutput.contains(outputSlot)) || isInputChanged
-    }
+    // should recompute if it is not already computed, or:
+    // if outputslot is stateful: only recomputed if stateful inputs changed
+    // otherwise: re-computed if any input changed
+    (!cachedOutput.contains(outputSlot)) || isInputChanged(outputSlot.stateful)
   }
 
   private def doComputeState[T](inputs: SlotValueMap, stateSlot: OutputSlot[T]): T = {
@@ -239,7 +245,6 @@ trait Stage extends Inputs with HasOutputSlots {
       cachedOutput.put(s, fv)
       outputMap(s).setNewOutput(true)
     }
-    inputUnchanged()
   }
 
   override def toString: String = s"${getClass.getSimpleName}(name=${Try(getName).getOrElse("<unknown>")})"

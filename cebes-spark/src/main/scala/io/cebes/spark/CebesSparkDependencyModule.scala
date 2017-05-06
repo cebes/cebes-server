@@ -14,21 +14,29 @@
 
 package io.cebes.spark
 
-import com.google.inject.AbstractModule
-import io.cebes.df.store.{DataframeStore, DataframeTagStore}
-import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
-import io.cebes.spark.config.{HasSparkSession, HasSparkSessionProvider}
-import io.cebes.spark.df.store.{JdbcDataframeTagStore, SparkDataframeStore}
-import io.cebes.spark.pipeline.store.{JdbcPipelineTagStore, SparkPipelineStore}
+import com.google.inject.{AbstractModule, Singleton, TypeLiteral}
+import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer}
+import io.cebes.spark.config._
+import io.cebes.spark.df.SparkDataframeService
+import io.cebes.spark.pipeline.SparkPipelineMessageSerializer
+import io.cebes.store.{CachedStore, TagStore}
 
 
 class CebesSparkDependencyModule extends AbstractModule {
 
   protected def configure(): Unit = {
     bind(classOf[HasSparkSession]).toProvider(classOf[HasSparkSessionProvider])
-    bind(classOf[DataframeStore]).to(classOf[SparkDataframeStore])
-    bind(classOf[DataframeTagStore]).to(classOf[JdbcDataframeTagStore])
-    bind(classOf[PipelineStore]).to(classOf[SparkPipelineStore])
-    bind(classOf[PipelineTagStore]).to(classOf[JdbcPipelineTagStore])
+    bind(new TypeLiteral[CachedStore[Dataframe]]() {})
+      .toProvider(classOf[CachedStoreDataframeProvider]).in(classOf[Singleton])
+    bind(new TypeLiteral[TagStore[Dataframe]]() {})
+      .toProvider(classOf[TagStoreDataframeProvider]).in(classOf[Singleton])
+    bind(new TypeLiteral[CachedStore[Pipeline]]() {})
+      .toProvider(classOf[CachedStorePipelineProvider]).in(classOf[Singleton])
+    bind(new TypeLiteral[TagStore[Pipeline]]() {})
+      .toProvider(classOf[TagStorePipelineProvider]).in(classOf[Singleton])
+
+    bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
+    bind(classOf[PipelineMessageSerializer]).to(classOf[SparkPipelineMessageSerializer])
   }
 }

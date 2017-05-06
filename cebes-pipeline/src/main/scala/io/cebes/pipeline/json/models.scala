@@ -26,7 +26,7 @@ case class ValueDef(value: Any) extends PipelineMessageDef
 
 case class StageOutputDef(stageName: String, outputName: String) extends PipelineMessageDef
 
-case class DataframeMessageDef() extends PipelineMessageDef
+case class DataframeMessageDef(dfId: UUID) extends PipelineMessageDef
 
 case class SampleMessageDef() extends PipelineMessageDef
 
@@ -66,6 +66,8 @@ case class PipelineDef(id: Option[UUID], stages: Array[StageDef])
   *                 "input_slot" indicating which input slot to use from "stage".
   *                 If "input_slot" is default, then the ":default" suffix can be omitted.
   * @param outputs  which output slot to be collected
+  * @param timeout  The time to wait for the pipeline to finish execution, in seconds.
+  *                 Negative values are allowed, indicating Indefinite timeout (wait forever).
   */
 case class PipelineRunDef(pipeline: PipelineDef, feeds: Map[String, PipelineMessageDef],
-                          outputs: Array[StageOutputDef])
+                          outputs: Array[StageOutputDef], timeout: Long = -1)

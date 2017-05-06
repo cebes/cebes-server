@@ -13,19 +13,21 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.TimeUnit
 
-import io.cebes.pipeline.PipelineTestInjector
 import io.cebes.pipeline.factory.PipelineFactory
+import io.cebes.pipeline.inject.PipelineTestInjector
 import io.cebes.pipeline.json.{PipelineDef, StageDef, StageOutputDef, ValueDef}
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, Awaitable, ExecutionContext}
 
 class PipelineSuite extends FunSuite {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   private lazy val pipelineFactory = PipelineTestInjector.instance[PipelineFactory]
+
+  private def wait[T](what: Awaitable[T]): T = Await.result(what, Duration(2, TimeUnit.MINUTES))
 
   test("SlotDescriptor") {
     val slot1 = SlotDescriptor("stage2:out3")
@@ -50,51 +52,50 @@ class PipelineSuite extends FunSuite {
     assert(stage2.input(stage2.m).get === "my input value")
 
     val ex1 = intercept[NoSuchElementException] {
-      ppl1.run(Seq("stage1:out", "stage2:arrOut"), Map())
+      ppl1.run(Seq(SlotDescriptor("stage1", "out"), SlotDescriptor("stage2", "arrOut")), Map())
     }
     assert(ex1.getMessage === "StageFoo(name=stage1): Input slot strIn is undefined")
 
     val ex2 = intercept[NoSuchElementException] {
-      ppl1.run(Seq("stage1:out", "stage2:arrOut"),
-        Map("stage1:strIn" -> ValueDef("my input value for stage 1")))
+      ppl1.run(Seq(SlotDescriptor("stage1", "out"), SlotDescriptor("stage2", "arrOut")),
+        Map(SlotDescriptor("stage1:strIn") -> "my input value for stage 1"))
     }
     assert(ex2.getMessage === "StageTwoInputs(name=stage2): Input slot valIn is undefined")
 
-    // only get output of stage1 is ok, although we stage2 isn't fed yet
-    val result1 = ppl1.run(Seq("stage1:out"), Map(
-      "stage1:strIn" -> ValueDef("my input value for stage 1")))
+    // only get output of stage1 is ok, although stage2 isn't fed yet
+    val result1 = wait(ppl1.run(Seq(SlotDescriptor("stage1", "out")), Map(
+      SlotDescriptor("stage1:strIn") -> "my input value for stage 1")))
     assert(result1.size === 1)
-    assert(result1("stage1:out").isInstanceOf[ValueDef])
-    val valueDef = result1("stage1:out").asInstanceOf[ValueDef]
-    assert(valueDef.value.isInstanceOf[Array[_]])
-    val outputArr = valueDef.value.asInstanceOf[Array[_]]
+    assert(result1(SlotDescriptor("stage1:out")).isInstanceOf[Array[_]])
+    val outputArr = result1(SlotDescriptor("stage1:out")).asInstanceOf[Array[_]]
     assert(outputArr.length === 1)
     assert(outputArr(0).isInstanceOf[Int])
     assert(outputArr(0).asInstanceOf[Int] === 2000)
 
     // feed the wrong data type
     val ex3 = intercept[IllegalArgumentException] {
-      ppl1.run(Seq("stage1:out"), Map("stage1:strIn" -> ValueDef(205.4f)))
+      ppl1.run(Seq(SlotDescriptor("stage1:out")),
+        Map(SlotDescriptor("stage1:strIn") -> 205.4f))
     }
     assert(ex3.getMessage === "StageFoo(name=stage1): requirement failed: Invalid type at slot strIn, " +
       "expected a String, got Float")
 
     // feed the output
     val ex4 = intercept[IllegalArgumentException] {
-      ppl1.run(Seq("stage1:out"), Map(
-        "stage1:strIn" -> ValueDef("my string"),
-        "stage1:out" -> ValueDef(Array(205))))
+      ppl1.run(Seq(SlotDescriptor("stage1:out")), Map(
+        SlotDescriptor("stage1:strIn") -> "my string",
+        SlotDescriptor("stage1:out") -> Array(205)))
     }
-    assert(ex4.getMessage === "requirement failed: Input name out not found in stage StageFoo(name=stage1)")
+    assert(ex4.getMessage === "requirement failed: Invalid slot descriptor stage1:out in feeds")
 
     // feed stage1's output into stage2's input
-    val result2 = ppl1.run(Seq("stage1:out", "stage2:arrOut"), Map(
-      "stage1:strIn" -> ValueDef("my input value for stage 1"),
-      "stage2:valIn" -> StageOutputDef("stage1", "out")))
+    val result2 = wait(ppl1.run(Seq(SlotDescriptor("stage1:out"), SlotDescriptor("stage2:arrOut")), Map(
+      SlotDescriptor("stage1:strIn") -> "my input value for stage 1",
+      SlotDescriptor("stage2:valIn") -> SlotDescriptor("stage1", "out"))))
     assert(result2.size === 2)
-    assert(result2("stage1:out").isInstanceOf[ValueDef])
-    assert(result2("stage2:arrOut").isInstanceOf[ValueDef])
-    val arr = result2("stage2:arrOut").asInstanceOf[ValueDef].value.asInstanceOf[Array[_]]
+    assert(result2(SlotDescriptor("stage1:out")).isInstanceOf[Array[_]])
+    assert(result2(SlotDescriptor("stage2:arrOut")).isInstanceOf[Array[_]])
+    val arr = result2(SlotDescriptor("stage2:arrOut")).asInstanceOf[Array[_]]
     assert(arr.length === 2)
     assert(arr === Array[Float](1.0f, 2.0f))
   }
@@ -109,12 +110,12 @@ class PipelineSuite extends FunSuite {
     ))
     val ppl1 = pipelineFactory.create(pipelineDef1)
     val ex1 = intercept[NoSuchElementException] {
-      ppl1.run(Seq("stage3:m", "stage2:arrOut"))
+      ppl1.run(Seq(SlotDescriptor("stage3:m"), SlotDescriptor("stage2:arrOut")))
     }
     assert(ex1.getMessage === "StageBar(name=stage3): Input slot strIn is undefined")
 
-    val result1 = ppl1.run(Seq("stage3:m", "stage2:arrOut"),
-      Map("stage3:strIn" -> ValueDef("my input value for stage 3")))
+    val result1 = wait(ppl1.run(Seq(SlotDescriptor("stage3:m"), SlotDescriptor("stage2:arrOut")),
+      Map(SlotDescriptor("stage3:strIn") -> "my input value for stage 3")))
     assert(result1.size === 2)
   }
 
@@ -126,7 +127,7 @@ class PipelineSuite extends FunSuite {
     val ppl1 = pipelineFactory.create(pipelineDef1)
 
     val ex = intercept[IllegalArgumentException] {
-      ppl1.run(Seq("stage1:out"))
+      ppl1.run(Seq(SlotDescriptor("stage1:out")))
     }
     assert(ex.getMessage.contains("There is a loop in the pipeline"))
   }
@@ -149,15 +150,16 @@ class PipelineSuite extends FunSuite {
     val ppl2 = pipelineFactory.create(pipelineDef2)
 
     val ex2 = intercept[IllegalArgumentException] {
-      ppl2.run(Seq("stage1:arrOut"), Map("stage1:valIn" -> ValueDef(Array(10.3f))))
+      ppl2.run(Seq(SlotDescriptor("stage1:arrOut")), Map(SlotDescriptor("stage1:valIn") -> Array(10.3f)))
     }
     assert(ex2.getMessage.contains("StageTwoInputs(name=stage1): requirement failed: " +
       "Invalid type at slot valIn, expected a int[], got float[]"))
 
-    val result = ppl2.run(Seq("stage1:arrOut"), Map("stage1:valIn" -> ValueDef(Array[Int](10))))
+    val result = wait(ppl2.run(Seq(SlotDescriptor("stage1:arrOut")),
+      Map(SlotDescriptor("stage1:valIn") -> Array[Int](10))))
 
     assert(result.size === 1)
-    val arr = result("stage1:arrOut").asInstanceOf[ValueDef].value.asInstanceOf[Array[_]]
+    val arr = result(SlotDescriptor("stage1:arrOut")).asInstanceOf[Array[_]]
     assert(arr === Array[Float](1.0f, 2.0f))
   }
 
@@ -185,32 +187,4 @@ class PipelineSuite extends FunSuite {
     assert(result2 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
     assert(result2 eq Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
   }
-
-  /*
-  test("updated in upstream with non-deterministic stage") {
-    val s1 = new StageFooNonDeterministic().setName("stage1")
-    s1.input(s1.strIn, "input1")
-    val s2 = new StageTwoInputs().setName("stage2")
-    s2.input(s2.valIn, s1.output(s1.out)).input(s2.m, "abcd")
-
-    val waitDuration = Duration(10, TimeUnit.SECONDS)
-    val f1 = s1.output(s1.out).getFuture
-    val result1 = Await.result(s2.output(s2.arrOut).getFuture, waitDuration)
-    assert(f1 ne s1.output(s1.out).getFuture)
-    assert(result1 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
-    assert(s1.output(s1.out).getFuture ne s1.output(s1.out).getFuture)
-    assert(Await.result(s2.output(s2.arrOut).getFuture, waitDuration) ne
-      Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
-
-    // change input of stage1
-    s1.input(s1.strIn, "new input")
-    assert(f1 ne s1.output(s1.out).getFuture)
-    assert(s1.output(s1.out).getFuture ne s1.output(s1.out).getFuture)
-
-    val result2 = Await.result(s2.output(s2.arrOut).getFuture, waitDuration)
-    assert(result1 ne result2)
-    assert(result2 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
-    assert(result2 ne Await.result(s2.output(s2.arrOut).getFuture, waitDuration))
-  }
-  */
 }

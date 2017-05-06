@@ -13,8 +13,9 @@ package io.cebes.persistence.store
 
 import java.util.UUID
 
-import io.cebes.common.Tag
-import io.cebes.df.store.TagStore
+import io.cebes.common.HasId
+import io.cebes.tag.Tag
+import io.cebes.store.TagStore
 import io.cebes.persistence.ClosableIterator
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn}
 import io.cebes.prop.types.MySqlBackendCredentials
@@ -25,7 +26,7 @@ import scala.collection.mutable
 /**
   * An implementation of [[TagStore]] with JDBC persistence backend.
   */
-abstract class JdbcTagStore(mySqlCreds: MySqlBackendCredentials, tableName: String) extends TagStore {
+abstract class JdbcTagStore[T <: HasId](mySqlCreds: MySqlBackendCredentials, tableName: String) extends TagStore[T] {
 
   private val jdbcStore = JdbcPersistenceBuilder.newBuilder[Tag, UUID]()
     .withCredentials(mySqlCreds.url, mySqlCreds.userName, mySqlCreds.password,

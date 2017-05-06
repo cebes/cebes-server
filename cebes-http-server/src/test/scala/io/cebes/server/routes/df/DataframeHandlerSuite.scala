@@ -17,7 +17,7 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.common.Tag
+import io.cebes.tag.Tag
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
@@ -25,6 +25,7 @@ import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, functions}
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.routes.AbstractRouteSuite
+import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import org.scalatest.BeforeAndAfterAll
 
@@ -46,13 +47,6 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     sample
   }
 
-  /**
-    * Private helper for counting number of rows in the given dataframe
-    */
-  private def count(df: RemoteDataframe): Long = {
-    request[DataframeRequest, Long]("df/count", DataframeRequest(df.id))
-  }
-
   /////////////////////////////////////////////
   // tests
   /////////////////////////////////////////////
@@ -71,7 +65,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val ex0 = intercept[ServerException] {
       requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1"), UUID.randomUUID()))
     }
-    assert(ex0.getMessage.startsWith("Dataframe ID not found:"))
+    assert(ex0.getMessage.startsWith("Object ID not found:"))
 
     // valid request
     requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1"), df.id))
@@ -113,7 +107,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
   test("df/get fail cases") {
     // invalid UUID
     val ex1 = intercept[ServerException](requestDf("df/get", UUID.randomUUID().toString))
-    assert(ex1.getMessage.startsWith("Dataframe ID not found"))
+    assert(ex1.getMessage.startsWith("ID not found"))
 
     // valid but non-existent tag
     val ex2 = intercept[ServerException](requestDf("df/get", "surreal-tag:surreal-version911"))
@@ -121,7 +115,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
 
       // invalid tag
     val ex3 = intercept[ServerException](requestDf("df/get", "This is invalid tag/abc:version 1"))
-    assert(ex3.getMessage.startsWith("Failed to parse Dataframe Id or Tag"))
+    assert(ex3.getMessage.startsWith("Failed to parse Id or Tag"))
   }
 
   test("tags complicated case") {

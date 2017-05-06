@@ -19,7 +19,7 @@ import io.cebes.pipeline.models._
   */
 trait UnaryTransformer extends Stage {
 
-  val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The input dataframe", None)
+  val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The input dataframe", None, stateful = false)
   val outputDf: OutputSlot[Dataframe] = outputSlot[Dataframe]("outputDf", "The output dataframe", None)
 
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {

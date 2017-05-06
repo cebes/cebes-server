@@ -20,16 +20,18 @@ import akka.http.scaladsl.server.Route
 import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.auth.AuthHandler
 import io.cebes.server.routes.df.DataframeHandler
+import io.cebes.server.routes.pipeline.PipelineHandler
 import io.cebes.server.routes.result.ResultHandler
 import io.cebes.server.routes.storage.StorageHandler
 
-trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler
+trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with PipelineHandler
   with StorageHandler with ResultHandler {
 
   val routes: Route =
     pathPrefix(Routes.API_VERSION) {
       authApi ~
         dataframeApi ~
+        pipelineApi ~
         storageApi ~
         resultApi
     } ~

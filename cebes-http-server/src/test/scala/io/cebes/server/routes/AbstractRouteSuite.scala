@@ -14,39 +14,39 @@
 
 package io.cebes.server.routes
 
-import akka.actor.{ActorSystem, Scheduler}
+import akka.actor.Scheduler
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.ActorMaterializer
+import io.cebes.pipeline.json.PipelineDef
 import io.cebes.server.client.{RemoteDataframe, ServerException}
-import io.cebes.server.helpers.TestDataHelper
+import io.cebes.server.helpers.{CebesHttpServerTestInjector, TestDataHelper}
+import io.cebes.server.http.HttpServer
 import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
 import io.cebes.server.routes.auth.LoginRequest
+import io.cebes.server.routes.df.DataframeRequest
 import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 import spray.json.JsonFormat
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, Awaitable, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
   * Mother of all Route test, with helpers for using akka test-kit,
   * logging in and storing cookies, etc...
   */
-abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
-  with ScalatestRouteTest with Routes {
+abstract class AbstractRouteSuite extends FunSuite with TestDataHelper with ScalatestRouteTest {
 
   //TODO: implement a better way to load the data (e.g. create a HTTP endpoint for testing purpose)
 
-  implicit val actorSystem: ActorSystem = system
-  implicit val actorMaterializer: ActorMaterializer = materializer
-  implicit val actorExecutor: ExecutionContextExecutor = executor
-  implicit val scheduler: Scheduler = actorSystem.scheduler
-
+  protected val server: HttpServer = CebesHttpServerTestInjector.instance[HttpServer]
   private val authHeaders = login()
+
+  implicit val scheduler: Scheduler = system.scheduler
+
 
   ////////////////////////////////////////////////////////////////////
   // implement traits
@@ -61,7 +61,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
-    Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> routes ~> check {
+    Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> server.routes ~> check {
       op
     }
 
@@ -109,7 +109,7 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
   ////////////////////////////////////////////////////////////////////
 
   private def login() = {
-    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> routes ~> check {
+    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> server.routes ~> check {
       assert(status === StatusCodes.OK)
       val responseCookies = headers.filter(_.name().startsWith("Set-"))
       assert(responseCookies.nonEmpty)
@@ -137,6 +137,18 @@ abstract class AbstractRouteSuite extends FunSuite with TestDataHelper
                                                      jsDfr: JsonFormat[DataframeResponse]): RemoteDataframe = {
     val df = wait(postAsync[E, DataframeResponse](url, entity))
     RemoteDataframe(df.id, df.schema)
+  }
+
+  /**
+    * Counting number of rows in the given dataframe
+    */
+  protected def count(df: RemoteDataframe)(implicit emE: ToEntityMarshaller[DataframeRequest]): Long = {
+    request[DataframeRequest, Long]("df/count", DataframeRequest(df.id))
+  }
+
+  protected def requestPipeline[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
+                                                           jsDfr: JsonFormat[PipelineDef]): PipelineDef = {
+    wait(postAsync[E, PipelineDef](url, entity))
   }
 
 }

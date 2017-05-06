@@ -12,14 +12,18 @@
  * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.df.store
+package io.cebes.store
 
 import java.util.UUID
 
-import io.cebes.common.Tag
+import io.cebes.common.HasId
+import io.cebes.tag.Tag
 import io.cebes.persistence.ClosableIterator
 
-trait TagStore {
+/**
+  * The trait doesn't really need the type parameter. We add this to facilitate Dependency Injection.
+  */
+trait TagStore[T <: HasId] {
 
   /**
     * add a new tag for the given ID
@@ -47,5 +51,3 @@ trait TagStore {
     */
   def elements: ClosableIterator[(Tag, UUID)]
 }
-
-trait DataframeTagStore extends TagStore

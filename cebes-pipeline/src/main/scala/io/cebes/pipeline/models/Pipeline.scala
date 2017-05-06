@@ -15,42 +15,57 @@ package io.cebes.pipeline.models
 import java.util.UUID
 
 import io.cebes.common.HasId
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, StageOutputDef}
+import io.cebes.pipeline.json.{PipelineDef, StageOutputDef}
 
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
-case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineDef) extends HasId {
+/**
+  * Don't initialize Pipeline directly. Use [[io.cebes.pipeline.factory.PipelineFactory]] instead
+  */
+case class Pipeline private[pipeline](id: UUID, stages: Map[String, Stage],
+                                      pipelineDef: PipelineDef) extends HasId {
 
   private val runLocker = new AnyRef()
 
   /**
     * Execute the pipeline
     */
-  def run(outs: Seq[String], feeds: Map[String, PipelineMessageDef] = Map.empty)
-         (implicit ec: ExecutionContext): Map[String, PipelineMessageDef] = {
+  def run(outs: Seq[SlotDescriptor], feeds: Map[SlotDescriptor, Any] = Map.empty)
+         (implicit ec: ExecutionContext): Future[Map[SlotDescriptor, Any]] = {
+
     if (outs.isEmpty) {
-      return Map.empty
+      return Future(Map.empty)
     }
 
-    val feedsWithSlot = feeds.map { case (inpDesc, pipelineMsgDef) =>
-      val slot = SlotDescriptor(inpDesc)
-      stages.get(slot.parent) match {
-        case None =>
-          throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in feed $inpDesc")
-        case Some(_) => slot -> pipelineMsgDef
+    // detect invalid slot descriptors in outs and feeds
+    outs.foreach { slot =>
+      require(stages.get(slot.parent).nonEmpty && stages(slot.parent).hasOutput(slot.name),
+        s"Invalid slot descriptor ${slot.parent}:${slot.name} in the output list")
+    }
+    feeds.foreach { case (slot, value) =>
+      require(stages.get(slot.parent).nonEmpty && stages(slot.parent).hasInput(slot.name),
+        s"Invalid slot descriptor ${slot.parent}:${slot.name} in feeds")
+
+      value match {
+        case outputSlot: SlotDescriptor =>
+          require(stages.get(outputSlot.parent).nonEmpty && stages(outputSlot.parent).hasOutput(outputSlot.name),
+            s"Invalid slot descriptor ${outputSlot.parent}:${outputSlot.name} in feeds " +
+              s"${slot.parent}:${slot.name} -> ${outputSlot.parent}:${outputSlot.name}")
+        case _ =>
       }
     }
 
-    val result = runLocker.synchronized {
+    runLocker.synchronized {
 
-      // set everything in feeds which are not StageOutput
-      feedsWithSlot.foreach { case (slot, pipelineMsgDef) =>
-        pipelineMsgDef match {
-          case _: StageOutputDef =>
-          case _ =>
-            PipelineMessageSerializer.deserialize(pipelineMsgDef, stages(slot.parent), slot.name)
+      // set everything in feeds which are not SlotDescriptor
+      feeds.foreach { case (slot, value) =>
+        value match {
+          case _: SlotDescriptor =>
+          case v =>
+            val stage = stages(slot.parent)
+            val inpSlot = stage.getInput(slot.name)
+            stages(slot.parent).input(inpSlot, v)
         }
       }
 
@@ -66,10 +81,10 @@ case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineD
             case _ => None
           }
         }
-      }.toMap ++ feedsWithSlot.flatMap { case (slot, pipelineMsgDef) =>
-        pipelineMsgDef match {
-          case stageOutputDef: StageOutputDef =>
-            Some(slot -> SlotDescriptor(stageOutputDef.stageName, stageOutputDef.outputName))
+      }.toMap ++ feeds.flatMap { case (slot, value) =>
+        value match {
+          case srcSlot: SlotDescriptor =>
+            Some(slot -> SlotDescriptor(srcSlot.parent, srcSlot.name))
           case _ => None
         }
       }
@@ -83,23 +98,16 @@ case class Pipeline(id: UUID, stages: Map[String, Stage], pipelineDef: PipelineD
         destStage.input(destStage.getInput(s1.name), srcStage.output(srcStage.getOutput(s2.name)))
       }
 
-      Future.sequence(outs.map { desc =>
-        val slot = SlotDescriptor(desc)
-        stages.get(slot.parent) match {
-          case None =>
-            throw new IllegalArgumentException(s"Invalid stage name ${slot.parent} in output $desc")
-          case Some(stage) =>
-            val outputSlot = stage.getOutput(slot.name)
-            stage.output(outputSlot).getFuture.map { out =>
-              desc -> PipelineMessageSerializer.serialize(out, outputSlot)
-            }
+      // get the output
+      Future.sequence(outs.map { slot =>
+        val stage = stages(slot.parent)
+        val outputSlot = stage.getOutput(slot.name)
+        stage.output(outputSlot).getFuture.map { out =>
+          slot -> out
         }
       }).map(_.toMap)
     }
-
-    Await.result(result, Duration.Inf)
   }
-
 }
 
 object Pipeline {

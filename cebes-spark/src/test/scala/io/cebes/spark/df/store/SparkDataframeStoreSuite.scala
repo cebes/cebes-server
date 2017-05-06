@@ -16,7 +16,9 @@ package io.cebes.spark.df.store
 
 import java.util.UUID
 
-import io.cebes.df.store.DataframeStore
+import com.google.inject.TypeLiteral
+import io.cebes.df.Dataframe
+import io.cebes.store.CachedStore
 import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{TestDataHelper, TestPropertyHelper}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
@@ -30,7 +32,7 @@ class SparkDataframeStoreSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("add and get") {
-    val dfStore = CebesSparkTestInjector.instance[DataframeStore]
+    val dfStore = CebesSparkTestInjector.instance(new TypeLiteral[CachedStore[Dataframe]](){})
     val df = getCylinderBands
     val dfId = df.id
     dfStore.add(df)
@@ -43,7 +45,7 @@ class SparkDataframeStoreSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("persist and unpersist") {
-    val dfStore = CebesSparkTestInjector.instance[DataframeStore]
+    val dfStore = CebesSparkTestInjector.instance(new TypeLiteral[CachedStore[Dataframe]](){})
     val df = getCylinderBands.limit(100)
     val dfId = df.id
 

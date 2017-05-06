@@ -16,7 +16,7 @@ package io.cebes.spark.storage
 
 import com.google.inject.Inject
 import io.cebes.df.Dataframe
-import io.cebes.df.store.DataframeStore
+import io.cebes.store.CachedStore
 import io.cebes.spark.config.HasSparkSession
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.storage.hdfs.HdfsDataSource
@@ -33,7 +33,7 @@ import io.cebes.storage.{DataFormats, DataSource, StorageService}
   * This class can be instantiated multiple times from the DI framework
   */
 class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
-                                    dfStore: DataframeStore,
+                                    dfStore: CachedStore[Dataframe],
                                     dfFactory: SparkDataframeFactory)
   extends StorageService with CebesSparkUtil {
 

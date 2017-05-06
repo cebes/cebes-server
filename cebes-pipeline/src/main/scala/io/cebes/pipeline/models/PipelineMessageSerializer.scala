@@ -11,24 +11,30 @@
  */
 package io.cebes.pipeline.models
 
-import io.cebes.df.Column
-import io.cebes.pipeline.json.{ColumnDef, PipelineMessageDef, StageOutputDef, ValueDef}
+import java.util.UUID
+
+import io.cebes.df.{Column, Dataframe}
+import io.cebes.pipeline.json._
 
 /**
   * Functions for serializing and deserializing [[PipelineMessageDef]]
   */
-object PipelineMessageSerializer {
+trait PipelineMessageSerializer {
+
+  /**
+    * Get a [[Dataframe]] object given the ID.
+    * This should be implemented by child classes
+    */
+  protected def getDataframe(dfId: UUID): Dataframe
 
   /**
     * Serialize the given value into a [[PipelineMessageDef]]
     */
-  def serialize[T](value: T, outputSlot: OutputSlot[T]): PipelineMessageDef = {
-    if (!outputSlot.messageClass.isAssignableFrom(value.getClass)) {
-      throw new IllegalArgumentException(s"Output of type ${outputSlot.messageClass.getSimpleName} " +
-        s"but the value is of type ${value.getClass}")
-    }
+  def serialize[T](value: T): PipelineMessageDef = {
     value match {
       case col: Column => ColumnDef(col)
+      case df: Dataframe => DataframeMessageDef(df.id)
+      case slot: SlotDescriptor => StageOutputDef(slot.parent, slot.name)
       case other => writeValueDef(other)
     }
   }
@@ -52,29 +58,19 @@ object PipelineMessageSerializer {
   }
 
   /**
-    * Parse the given message `inputMsg` and set the value into the input of name `inputName`
-    * of the given stage.
-    * This function will NOT set the input if the input message is a [[StageOutputDef]].
+    * Parse the given [[PipelineMessageDef]] and return the actual value, which can be
+    * used to feed the pipeline stages
     *
-    * We need the stage and the input name to correctly parse the input message
+    * This function will NOT set the input if the input message is a [[StageOutputDef]].
     */
-  def deserialize(inputMsg: PipelineMessageDef, stage: Stage, inputName: String): Unit = {
-
-    require(stage.hasInput(inputName), s"Input name $inputName not found in stage ${stage.toString}")
-
-    val inpSlot = stage.getInput(inputName)
-
-    // TODO: check if the following input() calls respect the types
-    // e.g. check something like inpSlot.messageClass.isAssignableFrom(classOf[String])
-
-    inputMsg match {
-      case v: ValueDef => stage.input(inpSlot, v.value)
-      case columnDef: ColumnDef => stage.input(inpSlot, columnDef.col)
-      case _: StageOutputDef => // will be connected later
+  def deserialize(pplMsg: PipelineMessageDef): Any = {
+    pplMsg match {
+      case v: ValueDef => v.value
+      case c: ColumnDef => c.col
+      case d: DataframeMessageDef => getDataframe(d.dfId)
+      case s: StageOutputDef => SlotDescriptor(s.stageName, s.outputName)
       case valueDef =>
-        throw new UnsupportedOperationException("Unsupported non-scala value for stage parameters: " +
-          s"Parameter name ${inpSlot.name} of stage ${stage.toString} " +
-          s"with value ${valueDef.toString} of type ${valueDef.getClass.getName}")
+        throw new UnsupportedOperationException(s"Unknown pipeline message of type ${valueDef.getClass.getName}")
     }
   }
 }

@@ -12,7 +12,7 @@
  * Created by phvu on 29/12/2016.
  */
 
-package io.cebes.common
+package io.cebes.tag
 
 import scala.util.matching.Regex
 

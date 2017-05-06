@@ -16,15 +16,13 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
-import io.cebes.common.Tag
 import io.cebes.df.Column
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.server.routes.HttpJsonProtocol
+import io.cebes.server.routes.common.HttpTagJsonProtocol
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import spray.json._
-
-import scala.util.{Failure, Success, Try}
 
 case class DataframeRequest(df: UUID)
 
@@ -62,12 +60,6 @@ case class FreqItemsRequest(df: UUID, colNames: Array[String], support: Double)
 
 case class SampleByRequest(df: UUID, colName: String, fractions: Map[Any, Double], seed: Long)
 
-case class TagAddRequest(tag: Tag, df: UUID)
-
-case class TagDeleteRequest(tag: Tag)
-
-case class TagsGetRequest(pattern: Option[String], maxCount: Int = 100)
-
 /**
   * Perform aggregation on the [[io.cebes.df.Dataframe]] of the given ID.
   * The aggregation can be `groupBy`, `rollup` or `cube`, depending on `aggType`.
@@ -91,7 +83,7 @@ case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationT
                             aggColNames: Array[String])
 
 
-trait HttpDfJsonProtocol extends HttpJsonProtocol {
+trait HttpDfJsonProtocol extends HttpJsonProtocol with HttpTagJsonProtocol {
 
   implicit object SparkPrimitiveExpressionFormat extends JsonFormat[SparkPrimitiveExpression] {
 
@@ -240,24 +232,6 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol {
       case v => Some(v.convertTo[T])
     }
   }
-
-  implicit object TagFormat extends RootJsonFormat[Tag] {
-    override def write(obj: Tag): JsValue = JsString(obj.toString)
-
-    override def read(json: JsValue): Tag = json match {
-      case jsStr: JsString =>
-        Try(Tag.fromString(jsStr.value)) match {
-          case Success(t) => t
-          case Failure(f) => deserializationError(s"Failed to parse tag: ${f.getMessage}", f)
-        }
-      case other =>
-        deserializationError(s"Expected a JsString, got ${other.compactPrint}")
-    }
-  }
-
-  implicit val tagAddRequestFormat = jsonFormat2(TagAddRequest)
-  implicit val tagDeleteRequestFormat = jsonFormat1(TagDeleteRequest)
-  implicit val tagsGetRequestFormat = jsonFormat2(TagsGetRequest)
 }
 
 object HttpDfJsonProtocol extends HttpDfJsonProtocol

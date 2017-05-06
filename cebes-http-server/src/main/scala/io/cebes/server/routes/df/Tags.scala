@@ -17,10 +17,10 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import com.google.inject.Inject
-import io.cebes.common.Tag
+import io.cebes.tag.Tag
 import io.cebes.df.DataframeService
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncSerializableOperation
+import io.cebes.server.routes.common.{AsyncSerializableOperation, TagsGetRequest}
 
 import scala.concurrent.{ExecutionContext, Future}
 

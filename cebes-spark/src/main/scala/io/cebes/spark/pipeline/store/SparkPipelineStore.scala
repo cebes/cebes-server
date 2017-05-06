@@ -20,22 +20,20 @@ import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.json.PipelineJsonProtocol._
 import io.cebes.pipeline.models.Pipeline
-import io.cebes.pipeline.{PipelineStore, PipelineTagStore}
 import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
+import io.cebes.store.{CachedStore, TagStore}
 import spray.json._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 /**
-  * An implementation of [[io.cebes.pipeline.PipelineStore]] for Spark,
+  * An implementation of [[CachedStore[Pipeline]]] for Spark,
   * using guava's LoadingCache with JDBC persistence backend
   */
 @Singleton class SparkPipelineStore @Inject()
 (@Prop(Property.CACHESPEC_PIPELINE_STORE) val cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
  pipelineFactory: PipelineFactory,
- tagStore: PipelineTagStore) extends JdbcCachedStore[Pipeline](cacheSpec) with PipelineStore {
+ tagStore: TagStore[Pipeline]) extends JdbcCachedStore[Pipeline](cacheSpec) {
 
   /**
     * The JDBC persistence that backs the LoadingCache.
@@ -49,10 +47,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
         JdbcPersistenceColumn("proto", "MEDIUMTEXT")))
       .withValueToSeq { pipeline =>
         Seq(System.currentTimeMillis(), pipeline.pipelineDef.toJson.compactPrint)
-      }.withSqlToValue { (_, entry) =>
-      val proto = entry.getString(2).parseJson.convertTo[PipelineDef]
-      pipelineFactory.create(proto)
-    }.withStrToKey(s => UUID.fromString(s))
+      }
+      .withSqlToValue { (_, entry) =>
+        val proto = entry.getString(2).parseJson.convertTo[PipelineDef]
+        pipelineFactory.create(proto)
+      }
+      .withStrToKey(s => UUID.fromString(s))
       .build()
 
   /** Check whether the object with the given ID should be persisted or not. */

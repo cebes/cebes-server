@@ -17,7 +17,7 @@ import com.google.common.cache.{CacheBuilder, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.common.HasId
-import io.cebes.df.store.CachedStore
+import io.cebes.store.CachedStore
 import io.cebes.persistence.cache.CachePersistenceSupporter
 import io.cebes.persistence.jdbc.JdbcPersistence
 

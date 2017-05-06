@@ -19,14 +19,14 @@ import io.cebes.server.routes.HttpJsonProtocol._
 class GeneralRouteSuite extends AbstractRouteSuite {
 
   test("version") {
-    Get("/version") ~> routes ~> check {
+    Get("/version") ~> server.routes ~> check {
       val v = responseAs[VersionResponse]
       assert(v.api === Routes.API_VERSION)
     }
   }
 
   test("index") {
-    Get("/") ~> routes ~> check {
+    Get("/") ~> server.routes ~> check {
       assert(handled)
     }
   }

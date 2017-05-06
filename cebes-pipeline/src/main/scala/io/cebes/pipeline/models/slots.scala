@@ -91,11 +91,16 @@ abstract class Slot[+T](val name: String, val doc: String,
   *                     and making sure that once entered the `run()` function in the Stage, everything was already
   *                     specified. Developers will only need to check the existence of some special slots which
   *                     they explicitly marked as **optional**.
+  * @param stateful     Whether changing this input will automatically clear the states (stateful outputs)
+  *                     of the stage.
+  *                     Default to be true, because most of input slots should be stateful.
+  *                     A standard case for input slot with stateful = false is the input data frame.
   */
 case class InputSlot[+T](override val name: String, override val doc: String,
                          override val defaultValue: Option[T],
                          override val validator: SlotValidator[T] = SlotValidators.default,
-                         optional: Boolean = false)
+                         optional: Boolean = false,
+                         stateful: Boolean = true)
                         (implicit tag: ClassTag[T])
   extends Slot[T](name, doc, defaultValue, validator)
 
@@ -304,9 +309,10 @@ trait HasInputSlots {
     */
   final protected def inputSlot[T](name: String, doc: String, defaultValue: Option[T],
                                    validator: SlotValidator[T] = SlotValidators.default[T],
-                                   optional: Boolean = false)
+                                   optional: Boolean = false,
+                                   stateful: Boolean = true)
                                   (implicit tag: ClassTag[T]): InputSlot[T] = {
-    InputSlot[T](name, doc, defaultValue, validator, optional)
+    InputSlot[T](name, doc, defaultValue, validator, optional, stateful)
   }
 }
 

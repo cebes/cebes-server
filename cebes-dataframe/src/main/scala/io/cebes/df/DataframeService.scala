@@ -16,12 +16,18 @@ package io.cebes.df
 
 import java.util.UUID
 
-import io.cebes.common.Tag
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.tag.TagService
 
 
-trait DataframeService {
+trait DataframeService extends TagService[Dataframe] {
+
+  /**
+    * Store the given [[Dataframe]] in the cache
+    * @return the given data frame
+    */
+  def cache(df: Dataframe): Dataframe
 
   /**
     * Executes a SQL query, returning the result as a [[Dataframe]].
@@ -30,37 +36,6 @@ trait DataframeService {
     * @return a [[Dataframe]] object
     */
   def sql(sqlText: String): Dataframe
-
-  /**
-    * Tag a dataframe. Return that Dataframe.
-    * Raise an exception if the tag already exists.
-    */
-  def tag(dfId: UUID, tag: Tag): Dataframe
-
-  /**
-    * Remove the given tag.
-    * Returns the [[Dataframe]] bearing this tag, if it exists.
-    * Note that after untagging, the [[Dataframe]] is still perfectly accessible.
-    * It might only be unaccessible if it is kicked out of the cache, and it has no other tags.
-    */
-  def untag(tag: Tag): Dataframe
-
-  /**
-    * Get all the tags and corresponding [[Dataframe]] IDs
-    * Optionally submit a regex to filter the tags.
-    * Only return `maxCount` entries if there are more than that.
-    */
-  def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, UUID)]
-
-  /**
-    * Get a [[Dataframe]] from the given identifier.
-    *
-    * @param identifier Can be a UUID (for Dataframe ID) or a tag.
-    * @return a [[Dataframe]] object
-    * @throws NoSuchElementException   if the identifier cannot be found.
-    * @throws IllegalArgumentException if we fail to parse the identifer as a Tag or ID.
-    */
-  def get(identifier: String): Dataframe
 
   /**
     * Automatically infer the variable types, based on some heuristic

@@ -18,8 +18,10 @@ import com.google.inject.AbstractModule
 import io.cebes.auth.AuthService
 import io.cebes.auth.simple.SimpleAuthService
 import io.cebes.df.DataframeService
+import io.cebes.pipeline.PipelineService
 import io.cebes.server.result.{JdbcResultStorage, ResultStorage}
 import io.cebes.spark.df.SparkDataframeService
+import io.cebes.spark.pipeline.SparkPipelineService
 import io.cebes.spark.storage.SparkStorageService
 import io.cebes.storage.{DataWriter, StorageService}
 
@@ -31,6 +33,7 @@ class CebesHttpDependencyModule extends AbstractModule {
   protected override def configure(): Unit = {
     bind(classOf[AuthService]).to(classOf[SimpleAuthService])
     bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
+    bind(classOf[PipelineService]).to(classOf[SparkPipelineService])
     bind(classOf[StorageService]).to(classOf[SparkStorageService])
     bind(classOf[DataWriter]).toProvider(classOf[DataWriterProvider])
     bind(classOf[ResultStorage]).to(classOf[JdbcResultStorage])

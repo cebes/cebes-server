@@ -17,27 +17,24 @@ import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.models.{Pipeline, Stage}
 
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
 
-class PipelineFactory @Inject()(stageFactory: StageFactory) {
+class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
 
   /**
-    * Create the pipeline object from the given protobuf definition
+    * Create the pipeline object from the given definition
     * Note that this will not wire the inputs of stages. That will only be done when
     * [[Pipeline.run()]] is called.
     */
-  def create(pipelineDef: PipelineDef)(implicit ec: ExecutionContext): Pipeline = {
+  def create(pipelineDef: PipelineDef): Pipeline = {
     val id = pipelineDef.id.getOrElse(HasId.randomId)
 
     val stageMap = mutable.Map.empty[String, Stage]
     pipelineDef.stages.map { s =>
       val stage = stageFactory.create(s)
-      if (stageMap.contains(stage.getName)) {
-        throw new IllegalArgumentException(s"Duplicated stage name: ${stage.getName}")
-      }
+      require(!stageMap.contains(stage.getName), s"Duplicated stage name: ${stage.getName}")
       stageMap.put(stage.getName, stage)
     }
 
-    Pipeline(id, stageMap.toMap, pipelineDef.copy(id=Some(id)))
+    Pipeline(id, stageMap.toMap, pipelineDef.copy(id = Some(id)))
   }
 }

@@ -23,9 +23,24 @@ class StageFoo extends Stage {
   }
 }
 
-class StageFooStateful extends Stage {
+class StageFooStatefulInput extends Stage {
 
   val strIn: InputSlot[String] = inputSlot[String]("strIn", "The input string", None)
+  val out: OutputSlot[Array[Int]] = outputSlot[Array[Int]]("out", "The output integer", None, stateful = true)
+
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+    assert(inputs.size == 1)
+    Array(10, 20)
+  }
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    SlotValueMap(Seq.empty)
+  }
+}
+
+class StageFooStateful extends Stage {
+
+  val strIn: InputSlot[String] = inputSlot[String]("strIn", "The input string", None, stateful = false)
   val out: OutputSlot[Array[Int]] = outputSlot[Array[Int]]("out", "The output integer", None, stateful = true)
 
   override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
@@ -98,9 +113,29 @@ class StageBadOutputSize extends Stage {
   }
 }
 
-class StageStatefulOutput extends Stage {
+class StageStatefulOutputWithStatefulInput extends Stage {
 
   val valIn: InputSlot[Array[Int]] = inputSlot[Array[Int]]("valIn", "The input integer array", None)
+
+  val arrOutStateful: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOutStateful", "The output array",
+    None, stateful = true)
+  val arrOutStateless: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOutStateless", "The output array",
+    None)
+
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+    assert(stateSlot == arrOutStateful)
+    Array(1.0f, 3.0f)
+  }
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    assert(inputs.size == 1)
+    SlotValueMap(arrOutStateless, Array(1.5f, 3.5f))
+  }
+}
+
+class StageStatefulOutput extends Stage {
+
+  val valIn: InputSlot[Array[Int]] = inputSlot[Array[Int]]("valIn", "The input integer array", None, stateful = false)
 
   val arrOutStateful: OutputSlot[Array[Float]] = outputSlot[Array[Float]]("arrOutStateful", "The output array",
     None, stateful = true)
@@ -128,5 +163,22 @@ class StageStatefulOutputDumb extends Stage {
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     assert(inputs.size == 1)
     SlotValueMap(Seq.empty)
+  }
+}
+
+class StageStatefulComplicated extends Stage {
+
+  val inStateful: InputSlot[String] = inputSlot[String]("inStateful", "stateful input", None, stateful = true)
+  val inStateless: InputSlot[String] = inputSlot[String]("inStateless", "stateless input", None, stateful = false)
+  val outStateful: OutputSlot[String] = outputSlot[String]("outStateful", "stateful output", None, stateful = true)
+  val outStateless: OutputSlot[String] = outputSlot[String]("outStateless", "stateless output", None, stateful = false)
+
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+    assert(stateSlot eq outStateful)
+    s"${inputs(inStateful)} stateful output"
+  }
+
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    SlotValueMap(outStateless, s"${inputs(inStateful)} ${inputs(inStateless)} stateless output")
   }
 }
