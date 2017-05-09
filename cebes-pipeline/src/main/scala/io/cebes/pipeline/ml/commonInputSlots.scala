@@ -9,7 +9,7 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.spark.pipeline.ml.traits
+package io.cebes.pipeline.ml
 
 import io.cebes.pipeline.models.{HasInputSlots, InputSlot}
 
@@ -29,4 +29,26 @@ trait HasPredictionCol extends HasInputSlots {
 
   val predictionCol: InputSlot[String] = inputSlot[String]("predictionCol",
     "Name of the prediction column", Some("prediction"))
+}
+
+trait HasProbabilityCol extends HasInputSlots {
+
+  val probabilityCol: InputSlot[String] = inputSlot[String]("probabilityCol",
+    "Param for Column name for predicted class conditional probabilities. " +
+      "Note: Not all models output well-calibrated probability estimates. " +
+      "These probabilities should be treated as confidences, not precise probabilities.", Some("probability"),
+    optional = true)
+}
+
+trait HasRawPredictionCol extends HasInputSlots {
+
+  val rawPredictionCol: InputSlot[String] = inputSlot[String]("rawPredictionCol",
+    "Param for raw prediction (a.k.a. confidence) column name", Some("rawPrediction"),
+    optional = true)
+}
+
+trait HasSeed extends HasInputSlots {
+
+  val seed: InputSlot[Long] = inputSlot[Long]("seed",
+    "Param for random seed", Some(42L))
 }

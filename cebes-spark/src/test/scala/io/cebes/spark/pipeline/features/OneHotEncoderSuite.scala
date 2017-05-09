@@ -13,7 +13,6 @@ package io.cebes.spark.pipeline.features
 
 import io.cebes.df.functions
 import io.cebes.df.types.StorageTypes
-import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -29,7 +28,7 @@ class OneHotEncoderSuite extends FunSuite with ImplicitExecutor with TestDataHel
       functions.col("hardener") === 1.0).limit(200)
     assert(df.numRows > 1)
 
-    val encoder = CebesSparkTestInjector.instance[OneHotEncoder]
+    val encoder = getInstance[OneHotEncoder]
     encoder.input(encoder.inputCol, "hardener")
       .input(encoder.outputCol, "hardener_vec")
       .input(encoder.inputDf, df)
@@ -44,11 +43,11 @@ class OneHotEncoderSuite extends FunSuite with ImplicitExecutor with TestDataHel
   test("with string indexer") {
     val df = getCylinderBands.limit(200)
     assert(df.numRows > 1)
-    val indexer = CebesSparkTestInjector.instance[StringIndexer]
+    val indexer = getInstance[StringIndexer]
     indexer.input(indexer.inputCol, "customer")
     .input(indexer.outputCol, "customer_idx")
     .input(indexer.inputDf, df)
-    val encoder = CebesSparkTestInjector.instance[OneHotEncoder]
+    val encoder = getInstance[OneHotEncoder]
     encoder.input(encoder.inputCol, "customer_idx")
       .input(encoder.outputCol, "customer_vec")
       .input(encoder.inputDf, indexer.output(indexer.outputDf))

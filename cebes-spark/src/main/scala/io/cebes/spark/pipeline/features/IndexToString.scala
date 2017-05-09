@@ -21,6 +21,8 @@ import org.apache.spark.ml.feature.{IndexToString => SparkIndexToString}
   * Light wrapper of Spark's IndexToString
   * Maps a column of indices back to a new column of corresponding string values.
   * The index-string mapping is from user-supplied labels.
+  *
+  * @see [[StringIndexer]]
   */
 case class IndexToString @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkUnaryTransformer with HasInputCol with HasOutputCol {
@@ -33,7 +35,6 @@ case class IndexToString @Inject()(dfFactory: SparkDataframeFactory)
       .setInputCol(inputs(inputCol)).setOutputCol(inputs(outputCol))
       .setLabels(inputs(labels))
 
-    fromSparkDataframe(dfFactory, reverseIndexer.transform(getSparkDataframe(inputs(inputDf)).sparkDf),
-      df.schema, Seq(inputs(outputCol)))
+    sparkTransform(reverseIndexer, df, dfFactory, inputs(outputCol))
   }
 }

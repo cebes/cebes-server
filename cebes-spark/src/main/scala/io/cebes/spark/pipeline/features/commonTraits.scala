@@ -12,12 +12,11 @@
 package io.cebes.spark.pipeline.features
 
 import io.cebes.df.Dataframe
-import io.cebes.df.schema.Schema
 import io.cebes.pipeline.models.{HasInputSlots, InputSlot}
 import io.cebes.pipeline.stages.UnaryTransformer
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.ml.Transformer
 
 trait HasInputCol extends HasInputSlots {
 
@@ -42,8 +41,10 @@ trait SparkUnaryTransformer extends UnaryTransformer with CebesSparkUtil with Sp
     * Helper to return a [[Dataframe]] after a Spark transformation
     * This will help preserve the schema information, taken from `originalSchema`
     */
-  final protected def fromSparkDataframe(dfFactory: SparkDataframeFactory, sparkDf: DataFrame,
-                                         originalSchema: Schema, newColumnNames: Seq[String]): Dataframe = {
-    dfFactory.df(sparkDf, getSchema(sparkDf, originalSchema, newColumnNames: _*))
+  final protected def sparkTransform(transformer: Transformer, inputDf: Dataframe,
+                                     dfFactory: SparkDataframeFactory,
+                                     outputCol: String): Dataframe = {
+    val outputSparkDf = transformer.transform(getSparkDataframe(inputDf).sparkDf)
+    dfFactory.df(outputSparkDf, getSchema(outputSparkDf, inputDf.schema, outputCol))
   }
 }

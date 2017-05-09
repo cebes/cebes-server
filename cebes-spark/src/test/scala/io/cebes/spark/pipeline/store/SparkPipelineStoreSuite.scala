@@ -18,12 +18,11 @@ import java.util.UUID
 
 import com.google.inject.TypeLiteral
 import io.cebes.df.functions
-import io.cebes.store.CachedStore
 import io.cebes.pipeline.json._
 import io.cebes.pipeline.models.Pipeline
-import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper, TestPropertyHelper}
 import io.cebes.spark.pipeline.etl.{Join, Sample}
+import io.cebes.store.CachedStore
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
@@ -57,7 +56,7 @@ class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("add and get") {
-    val plStore = CebesSparkTestInjector.instance(new TypeLiteral[CachedStore[Pipeline]](){})
+    val plStore = getInstance(new TypeLiteral[CachedStore[Pipeline]](){})
     val pl = samplePipeline
     val plId = pl.id
     plStore.add(pl)
@@ -70,7 +69,7 @@ class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("persist and unpersist") {
-    val plStore = CebesSparkTestInjector.instance(new TypeLiteral[CachedStore[Pipeline]](){})
+    val plStore = getInstance(new TypeLiteral[CachedStore[Pipeline]](){})
     val pl = samplePipeline
     val plId = pl.id
 

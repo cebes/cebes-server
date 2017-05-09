@@ -15,6 +15,7 @@ import java.util.UUID
 
 import com.google.inject.Inject
 import io.cebes.common.HasId
+import io.cebes.pipeline.ml.{HasFeaturesCol, HasLabelCol, HasPredictionCol}
 import io.cebes.pipeline.models.{InputSlot, OutputSlot, SlotValidators, SlotValueMap}
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits._
@@ -84,10 +85,6 @@ class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
 
     val df = getSparkDataframe(inputs(inputDf)).sparkDf
     LinearRegressionModel(HasId.randomId, sparkEstimator.fit(df), dfFactory)
-  }
-
-  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
-    SlotValueMap(outputDf, states(model).transform(inputs(inputDf)))
   }
 }
 

@@ -12,7 +12,6 @@
 package io.cebes.spark.pipeline.features
 
 import io.cebes.df.types.StorageTypes
-import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -24,7 +23,7 @@ class StringIndexerSuite extends FunSuite with ImplicitExecutor with TestDataHel
   }
 
   test("simple case") {
-    val indexer = CebesSparkTestInjector.instance[StringIndexer]
+    val indexer = getInstance[StringIndexer]
     val df = getCylinderBands.limit(200)
 
     indexer.input(indexer.inputCol, "customer")
@@ -49,7 +48,7 @@ class StringIndexerSuite extends FunSuite with ImplicitExecutor with TestDataHel
   }
 
   test("with indexToString") {
-    val indexer = CebesSparkTestInjector.instance[StringIndexer]
+    val indexer = getInstance[StringIndexer]
     val df = getCylinderBands.limit(200)
 
     indexer.input(indexer.inputCol, "customer")
@@ -63,7 +62,7 @@ class StringIndexerSuite extends FunSuite with ImplicitExecutor with TestDataHel
     assert(result.numRows === df.numRows)
 
     // use ordinal input
-    val indexToString = CebesSparkTestInjector.instance[IndexToString]
+    val indexToString = getInstance[IndexToString]
     indexToString.input(indexToString.inputCol, "customer_indexed")
     .input(indexToString.outputCol, "customer_reversed")
     .input(indexToString.labels, labels)
@@ -77,7 +76,7 @@ class StringIndexerSuite extends FunSuite with ImplicitExecutor with TestDataHel
 
     // connect two stages
     val df2 = getCylinderBands.limit(150)
-    val indexToString2 = CebesSparkTestInjector.instance[IndexToString]
+    val indexToString2 = getInstance[IndexToString]
     indexToString2.input(indexToString2.inputCol, "customer_indexed")
       .input(indexToString2.outputCol, "customer_reversed")
       .input(indexToString2.labels, indexer.output(indexer.model))

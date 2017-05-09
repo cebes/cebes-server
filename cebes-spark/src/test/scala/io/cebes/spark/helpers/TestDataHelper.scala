@@ -14,6 +14,7 @@
 
 package io.cebes.spark.helpers
 
+import com.google.inject.TypeLiteral
 import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.spark.CebesSparkTestInjector
 import io.cebes.spark.df.SparkDataframeService
@@ -21,14 +22,24 @@ import io.cebes.spark.storage.SparkStorageService
 import io.cebes.storage.StorageService
 import io.cebes.util.ResourceUtil
 
+import scala.reflect.ClassTag
+
 /**
   * Helper trait for all the test, containing the services
   */
 trait TestDataHelper {
 
-  protected val sparkStorageService: StorageService = CebesSparkTestInjector.instance[SparkStorageService]
+  /**
+    * Helper function to get an instance of a class from the DI framework
+    */
+  protected def getInstance[T](implicit tag: ClassTag[T]):T = CebesSparkTestInjector.instance[T]
 
-  protected val sparkDataframeService: DataframeService = CebesSparkTestInjector.instance[SparkDataframeService]
+  protected def getInstance[T](typeLiteral: TypeLiteral[T]): T = CebesSparkTestInjector.instance(typeLiteral)
+
+
+  protected val sparkStorageService: StorageService = getInstance[SparkStorageService]
+
+  protected val sparkDataframeService: DataframeService = getInstance[SparkDataframeService]
 
   protected def createOrReplaceHiveTable(tableName: String, schema: String, dataFilePath: String): Dataframe = {
     sparkDataframeService.sql(s"DROP TABLE IF EXISTS $tableName")

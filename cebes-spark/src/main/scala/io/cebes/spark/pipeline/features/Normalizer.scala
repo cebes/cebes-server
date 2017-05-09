@@ -13,22 +13,28 @@ package io.cebes.spark.pipeline.features
 
 import com.google.inject.Inject
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.models.SlotValueMap
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.spark.df.SparkDataframeFactory
-import org.apache.spark.ml.feature.{VectorAssembler => SparkVectorAssember}
+import org.apache.spark.ml.feature.{Normalizer => SparkNormalizer}
 
 /**
-  * A light wrapper of Spark's VectorAssembler
-  * A feature transformer that merges multiple columns into a vector column.
+  * Light wrapper of Spark's Normalizer
+  * Normalize a vector to have unit norm using the given p-norm.
+  *
   */
-case class VectorAssembler @Inject()(dfFactory: SparkDataframeFactory)
-  extends SparkUnaryTransformer with HasInputCols with HasOutputCol {
+case class Normalizer @Inject()(dfFactory: SparkDataframeFactory)
+  extends SparkUnaryTransformer with HasInputCol with HasOutputCol {
 
+  val p: InputSlot[Double] = inputSlot[Double]("p",
+    "Normalization in Lp space, default p=2", Some(2))
+
+  /** Implement this function to do the transformation */
   override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
-    val assembler = new SparkVectorAssember()
-      .setInputCols(inputs(inputCols))
+    val normalizer = new SparkNormalizer()
+      .setInputCol(inputs(inputCol))
       .setOutputCol(inputs(outputCol))
+      .setP(inputs(p))
 
-    sparkTransform(assembler, df, dfFactory, inputs(outputCol))
+    sparkTransform(normalizer, df, dfFactory, inputs(outputCol))
   }
 }
