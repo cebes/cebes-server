@@ -23,6 +23,8 @@ import org.apache.spark.ml.feature.{StringIndexerModel, StringIndexer => SparkSt
   * If the input column is numeric, we cast it to string and index the string values.
   * The indices are in [0, numLabels), ordered by label frequencies.
   * So the most frequent label gets index 0
+  *
+  * @see [[IndexToString]] for the reverse transformation
   */
 case class StringIndexer @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkUnaryTransformer with HasInputCol with HasOutputCol {
@@ -43,7 +45,7 @@ case class StringIndexer @Inject()(dfFactory: SparkDataframeFactory)
   override protected def transform(df: Dataframe, inputs: SlotValueMap, states: SlotValueMap): Dataframe = {
     val indexerModel = new StringIndexerModel(states(model))
       .setInputCol(inputs(inputCol)).setOutputCol(inputs(outputCol))
-    fromSparkDataframe(dfFactory, indexerModel.transform(getSparkDataframe(inputs(inputDf)).sparkDf),
-      df.schema, Seq(inputs(outputCol)))
+
+    sparkTransform(indexerModel, df, dfFactory, inputs(outputCol))
   }
 }

@@ -36,8 +36,7 @@ case class OneHotEncoder @Inject()(dfFactory: SparkDataframeFactory)
       .setInputCol(inputs(inputCol))
       .setOutputCol(inputs(outputCol))
       .setDropLast(inputs(dropLast))
-    val sparkDf = encoder.transform(getSparkDataframe(df).sparkDf)
 
-    fromSparkDataframe(dfFactory, sparkDf, df.schema, Seq(inputs(outputCol)))
+    sparkTransform(encoder, df, dfFactory, inputs(outputCol))
   }
 }

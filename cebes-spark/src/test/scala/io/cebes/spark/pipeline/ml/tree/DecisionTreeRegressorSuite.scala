@@ -9,47 +9,46 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.spark.pipeline.ml.regression
+package io.cebes.spark.pipeline.ml.tree
 
 import io.cebes.df.types.StorageTypes
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import io.cebes.spark.pipeline.features.VectorAssembler
 import org.scalatest.FunSuite
 
-class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
+class DecisionTreeRegressorSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     createOrReplaceCylinderBands()
   }
 
-
-  test("Linear regression with vector assembler") {
+  test("Decision tree regressor with vector assembler") {
     val df = getCylinderBands.limit(200).na.drop()
     assert(df.numRows > 1)
-
+    
     val assembler = getInstance[VectorAssembler]
     assembler.input(assembler.inputCols, Array("viscosity", "proof_cut"))
       .input(assembler.outputCol, "features")
       .input(assembler.inputDf, df)
 
-    val lr = getInstance[LinearRegression]
-    lr.input(lr.featuresCol, "features")
-      .input(lr.labelCol, "band_type")
-      .input(lr.inputDf, assembler.output(assembler.outputDf))
+    val dtr = getInstance[DecisionTreeRegressor]
+    dtr.input(dtr.featuresCol, "features")
+      .input(dtr.labelCol, "band_type")
+      .input(dtr.inputDf, assembler.output(assembler.outputDf))
 
     val ex0 = intercept[IllegalArgumentException] {
-      lr.getModel()
+      dtr.getModel()
     }
     assert(ex0.getMessage.contains("Column band_type must be of type NumericType but was actually of type StringType."))
 
-    lr.input(lr.labelCol, "caliper")
-      .input(lr.predictionCol, "caliper_predict")
+    dtr.input(dtr.labelCol, "caliper")
+      .input(dtr.predictionCol, "caliper_predict")
 
-    val lrModel = lr.getModel()
-    assert(lrModel.isInstanceOf[LinearRegressionModel])
+    val dtcModel = dtr.getModel()
+    assert(dtcModel.isInstanceOf[DecisionTreeRegressorModel])
 
-    val dfPredict = lr.output(lr.outputDf).getResult(TEST_WAIT_TIME)
+    val dfPredict = dtr.output(dtr.outputDf).getResult(TEST_WAIT_TIME)
     assert(dfPredict.numRows === df.numRows)
     assert(dfPredict.numCols === df.numCols + 2)
     assert(dfPredict.schema("caliper_predict").storageType === StorageTypes.DoubleType)
@@ -59,29 +58,29 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(df2.numRows > 1)
     assembler.input(assembler.inputDf, df2)
 
-    val dfPredict2 = lr.output(lr.outputDf).getResult(TEST_WAIT_TIME)
+    val dfPredict2 = dtr.output(dtr.outputDf).getResult(TEST_WAIT_TIME)
     assert(dfPredict2.numRows === df2.numRows)
     assert(dfPredict2.numCols === df2.numCols + 2)
     assert(dfPredict2.schema("caliper_predict").storageType === StorageTypes.DoubleType)
-    assert(lr.getModel() eq lrModel)
+    assert(dtr.getModel() eq dtcModel)
 
     // use the resulting model
-    val dfPredict2b = lrModel.transform(assembler.output(assembler.outputDf).getResult(TEST_WAIT_TIME))
+    val dfPredict2b = dtcModel.transform(assembler.output(assembler.outputDf).getResult(TEST_WAIT_TIME))
     assert(dfPredict2b.numRows === df2.numRows)
     assert(dfPredict2b.numCols === df2.numCols + 2)
     assert(dfPredict2b.schema("caliper_predict").storageType === StorageTypes.DoubleType)
 
     // change a stateful input, model will be retrained
-    lr.input(lr.predictionCol, "caliper_predict_2")
-    val lrModel2 = lr.getModel()
-    val dfPredict3 = lr.output(lr.outputDf).getResult(TEST_WAIT_TIME)
+    dtr.input(dtr.predictionCol, "caliper_predict_2")
+    val dtrModel2 = dtr.getModel()
+    val dfPredict3 = dtr.output(dtr.outputDf).getResult(TEST_WAIT_TIME)
     assert(dfPredict3.numRows === df2.numRows)
     assert(dfPredict3.numCols === df2.numCols + 2)
     assert(dfPredict3.schema("caliper_predict_2").storageType === StorageTypes.DoubleType)
-    assert(lrModel2 ne lrModel)
+    assert(dtrModel2 ne dtcModel)
 
     // use the resulting model
-    val dfPredict4 = lrModel2.transform(assembler.output(assembler.outputDf).getResult(TEST_WAIT_TIME))
+    val dfPredict4 = dtrModel2.transform(assembler.output(assembler.outputDf).getResult(TEST_WAIT_TIME))
     assert(dfPredict4.numRows === df2.numRows)
     assert(dfPredict4.numCols === df2.numCols + 2)
     assert(dfPredict4.schema("caliper_predict_2").storageType === StorageTypes.DoubleType)

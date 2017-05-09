@@ -28,7 +28,7 @@ class SparkExpressionParserSuite extends FunSuite with BeforeAndAfterAll with Te
   }
 
   test("parser with simple spark primitive column") {
-    val parser = CebesSparkTestInjector.instance[SparkExpressionParser]
+    val parser = getInstance[SparkExpressionParser]
     val df = getCylinderBands
 
     val result = parser.parse(SparkPrimitiveExpression(df.id, "timestamp", None))
@@ -43,7 +43,7 @@ class SparkExpressionParserSuite extends FunSuite with BeforeAndAfterAll with Te
   }
 
   test("parser with DF col()") {
-    val parser = CebesSparkTestInjector.instance[SparkExpressionParser]
+    val parser = getInstance[SparkExpressionParser]
     val df = getCylinderBands
 
     val sparkCol = parser.toSpark(df.col("timestamp"))

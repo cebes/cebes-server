@@ -12,6 +12,7 @@
 package io.cebes.spark.pipeline.ml.traits
 
 import io.cebes.pipeline.ml.Estimator
+import io.cebes.pipeline.models.SlotValueMap
 import io.cebes.spark.util.CebesSparkUtil
 
 /**
@@ -19,5 +20,8 @@ import io.cebes.spark.util.CebesSparkUtil
   */
 trait SparkEstimator extends Estimator with CebesSparkUtil {
 
+  override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
+    SlotValueMap(outputDf, states(model).transform(inputs(inputDf)))
+  }
 
 }

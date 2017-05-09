@@ -15,7 +15,7 @@ import io.cebes.df.types.StorageTypes
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
-class VectorAssemblerSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
+class VectorIndexerSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -23,25 +23,25 @@ class VectorAssemblerSuite extends FunSuite with ImplicitExecutor with TestDataH
   }
 
   test("simple case") {
-    val df = getCylinderBands.limit(100)
+    val cols = Array("press", "viscosity", "caliper")
+    val df = getCylinderBands.limit(200).na.drop(cols)
     assert(df.numRows > 1)
 
-    val assember = getInstance[VectorAssembler]
-    assember.input(assember.inputCols, Array("press", "viscosity", "caliper"))
-    .input(assember.outputCol, "features")
-    .input(assember.inputDf, df)
+    val assembler = getInstance[VectorAssembler]
+    assembler.input(assembler.inputCols, cols)
+      .input(assembler.outputCol, "features")
+      .input(assembler.inputDf, df)
 
-    val result = assember.output(assember.outputDf).getResult()
+    val indexer = getInstance[VectorIndexer]
+    indexer.input(indexer.inputCol, "features")
+      .input(indexer.outputCol, "features_indexed")
+      .input(indexer.maxCategories, 10)
+      .input(indexer.inputDf, assembler.output(assembler.outputDf))
+
+    val result = indexer.output(indexer.outputDf).getResult()
     assert(result.numRows === df.numRows)
-    assert(result.numCols === df.numCols + 1)
-    assert(result.columns.last === "features")
+    assert(result.numCols === df.numCols + 2)
+    assert(result.columns.last === "features_indexed")
     assert(result.schema("features").storageType === StorageTypes.VectorType)
-
-    // cannot override output columns
-    assember.input(assember.outputCol, "band_type")
-    val ex = intercept[IllegalArgumentException] {
-      assember.output(assember.outputDf).getResult()
-    }
-    assert(ex.getMessage === "VectorAssembler(name=vectorassembler): Output column band_type already exists.")
   }
 }
