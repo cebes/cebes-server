@@ -15,7 +15,7 @@
 package io.cebes.util
 
 import java.io.{File, IOException}
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Paths, StandardCopyOption}
 
 import com.typesafe.scalalogging.LazyLogging
 
@@ -33,7 +33,8 @@ trait ResourceUtil extends LazyLogging {
         try {
           val inputStream = getClass.getResourceAsStream(resourceName)
           val tmpFile = File.createTempFile("tempfile", ".tmp")
-          Files.copy(inputStream, Paths.get(tmpFile.getPath))
+          Files.copy(inputStream, Paths.get(tmpFile.getPath), StandardCopyOption.REPLACE_EXISTING)
+
           tmpFile
         } catch {
           case ex: IOException =>
