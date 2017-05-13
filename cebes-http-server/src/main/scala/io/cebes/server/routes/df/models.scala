@@ -19,8 +19,7 @@ import java.util.UUID
 import io.cebes.df.Column
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.types.VariableTypes.VariableType
-import io.cebes.server.routes.HttpJsonProtocol
-import io.cebes.server.routes.common.HttpTagJsonProtocol
+import io.cebes.json.CebesCoreJsonProtocol
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import spray.json._
 
@@ -83,7 +82,7 @@ case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationT
                             aggColNames: Array[String])
 
 
-trait HttpDfJsonProtocol extends HttpJsonProtocol with HttpTagJsonProtocol {
+trait HttpDfJsonProtocol extends CebesCoreJsonProtocol {
 
   implicit object SparkPrimitiveExpressionFormat extends JsonFormat[SparkPrimitiveExpression] {
 
@@ -232,6 +231,7 @@ trait HttpDfJsonProtocol extends HttpJsonProtocol with HttpTagJsonProtocol {
       case v => Some(v.convertTo[T])
     }
   }
+
 }
 
 object HttpDfJsonProtocol extends HttpDfJsonProtocol

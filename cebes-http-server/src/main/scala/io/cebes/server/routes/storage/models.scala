@@ -14,8 +14,9 @@
 
 package io.cebes.server.routes.storage
 
-import io.cebes.server.routes.HttpJsonProtocol
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.storage.DataFormats.DataFormat
+import spray.json.DefaultJsonProtocol
 
 case class LocalFsReadRequest(path: String, format: DataFormat)
 
@@ -40,7 +41,7 @@ case class ReadRequest(localFs: Option[LocalFsReadRequest],
 
 case class UploadResponse(path: String, size: Int)
 
-trait HttpStorageJsonProtocol extends HttpJsonProtocol {
+trait HttpStorageJsonProtocol extends DefaultJsonProtocol {
 
   implicit val localFsReadRequestFormat = jsonFormat2(LocalFsReadRequest)
   implicit val s3ReadRequestFormat = jsonFormat6(S3ReadRequest)

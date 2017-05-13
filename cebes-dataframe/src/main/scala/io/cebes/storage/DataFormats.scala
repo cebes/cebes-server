@@ -28,5 +28,5 @@ object DataFormats {
 
   val values = Seq(UNKNOWN, CSV, JSON, PARQUET, ORC, TEXT)
 
-  def fromString(name: String) = values.find(_.name == name)
+  def fromString(name: String): Option[DataFormat] = values.find(_.name == name)
 }

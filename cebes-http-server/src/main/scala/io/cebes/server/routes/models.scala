@@ -17,8 +17,8 @@ package io.cebes.server.routes
 import java.util.UUID
 
 import io.cebes.df.schema.Schema
-import io.cebes.json.CebesCoreJsonProtocol
 import spray.json._
+import io.cebes.json.CebesCoreJsonProtocol._
 
 object RequestStatuses {
 
@@ -41,9 +41,10 @@ object RequestStatuses {
 case class FutureResult(requestId: UUID)
 
 case class SerializableResult(requestId: UUID,
+                              requestUri: String,
+                              requestEntity: Option[JsValue],
                               status: RequestStatuses.RequestStatus,
-                              response: Option[JsValue],
-                              request: Option[JsValue])
+                              response: Option[JsValue])
 
 /** **************************************************************************/
 
@@ -61,7 +62,7 @@ case class VersionResponse(api: String)
 // Contains all common JsonProtocol
 /** **************************************************************************/
 
-trait HttpJsonProtocol extends CebesCoreJsonProtocol {
+trait HttpJsonProtocol extends DefaultJsonProtocol {
 
   implicit object RequestStatusFormat extends JsonFormat[RequestStatuses.RequestStatus] {
     override def write(obj: RequestStatuses.RequestStatus): JsValue = JsString(obj.name)
@@ -77,7 +78,7 @@ trait HttpJsonProtocol extends CebesCoreJsonProtocol {
 
   implicit val futureResultFormat = jsonFormat1(FutureResult)
 
-  implicit val serializableResultFormat = jsonFormat4(SerializableResult)
+  implicit val serializableResultFormat = jsonFormat5(SerializableResult)
 
   implicit val failResponseFormat = jsonFormat2(FailResponse)
   implicit val okResponseFormat = jsonFormat1(OkResponse)

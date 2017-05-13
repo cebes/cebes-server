@@ -12,11 +12,12 @@
 
 package io.cebes.pipeline.json
 
-import io.cebes.json.CebesCoreJsonProtocol
+import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.json.GenericJsonProtocol
 import spray.json._
 
 
-trait PipelineJsonProtocol extends DefaultJsonProtocol with CebesCoreJsonProtocol {
+trait PipelineJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol {
 
   implicit object ValueDefFormat extends JsonFormat[ValueDef] {
 

@@ -17,7 +17,6 @@ package io.cebes.server.routes.df
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.tag.Tag
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
@@ -25,16 +24,14 @@ import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, functions}
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.routes.AbstractRouteSuite
+import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
-import org.scalatest.BeforeAndAfterAll
+import io.cebes.tag.Tag
+import spray.json.DefaultJsonProtocol.{DoubleJsonFormat, LongJsonFormat, arrayFormat, tuple2Format}
 
-class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    createOrReplaceCylinderBands()
-  }
+class DataframeHandlerSuite extends AbstractRouteSuite {
 
   /**
     * Private helper for taking a sample of the given dataframe
@@ -113,7 +110,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
     val ex2 = intercept[ServerException](requestDf("df/get", "surreal-tag:surreal-version911"))
     assert(ex2.getMessage.startsWith("Tag not found"))
 
-      // invalid tag
+    // invalid tag
     val ex3 = intercept[ServerException](requestDf("df/get", "This is invalid tag/abc:version 1"))
     assert(ex3.getMessage.startsWith("Failed to parse Id or Tag"))
   }
@@ -198,7 +195,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
 
     val df1 = requestDf("df/withvariabletypes", WithVariableTypesRequest(df.id,
       Map("timestamp" -> VariableTypes.ORDINAL,
-      "customer" -> VariableTypes.NOMINAL)))
+        "customer" -> VariableTypes.NOMINAL)))
     assert(df1.id !== df.id)
     assert(count(df1) === count(df))
     assert(df1.schema.fieldNames === df.schema.fieldNames)
@@ -403,7 +400,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
 
     // columns with null is fine
     val quantiles2 = request[ApproxQuantileRequest, Array[Double]]("df/approxquantile",
-        ApproxQuantileRequest(df.id, "caliper", Array(0, 0.1, 0.5, 0.9, 1), 0.01))
+      ApproxQuantileRequest(df.id, "caliper", Array(0, 0.1, 0.5, 0.9, 1), 0.01))
     assert(quantiles2.length === 5)
     assert(quantiles2.forall(d => !d.isInfinity && !d.isNaN))
 
@@ -640,15 +637,17 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
   }
 
   test("Intersect") {
-    val df1 = sendSql(s"SELECT * FROM $cylinderBandsTableName WHERE customer LIKE 'BELK'")
-    val df2 = sendSql(s"SELECT * FROM $cylinderBandsTableName WHERE " +
-      s"customer LIKE 'BELK' OR customer LIKE 'AMES'")
+    val df = getCylinderBands
+    val df1 = requestDf("df/where", ColumnsRequest(df.id, Array(new Column(Like(df.col("customer").expr, "BELK")))))
+    val df2 = requestDf("df/where", ColumnsRequest(df.id, Array(new Column(Or(
+      Like(df.col("customer").expr, "BELK"), Like(df.col("customer").expr, "AMES"))))))
+
     assert(count(df1) === 4)
     val df3 = requestDf("df/intersect", DataframeSetRequest(df1.id, df2.id))
     assert(count(df3) === 4)
 
     // self intersect
-    val df4 = sendSql(s"SELECT * FROM $cylinderBandsTableName LIMIT 30")
+    val df4 = requestDf("df/limit", LimitRequest(df.id, 30))
     val df5 = requestDf("df/intersect", DataframeSetRequest(df4.id, df4.id))
     assert(count(df5) === count(df4))
 
@@ -661,16 +660,17 @@ class DataframeHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
   }
 
   test("except") {
+val df = getCylinderBands
+    val df1 = requestDf("df/where", ColumnsRequest(df.id, Array(new Column(Like(df.col("customer").expr, "BELK")))))
+    val df2 = requestDf("df/where", ColumnsRequest(df.id, Array(new Column(Or(
+      Like(df.col("customer").expr, "BELK"), Like(df.col("customer").expr, "AMES"))))))
 
-    val df1 = sendSql(s"SELECT * FROM $cylinderBandsTableName WHERE customer LIKE 'BELK'")
-    val df2 = sendSql(s"SELECT * FROM $cylinderBandsTableName WHERE " +
-      s"customer LIKE 'BELK' OR customer LIKE 'AMES'")
     assert(count(df1) === 4)
     val df3 = requestDf("df/except", DataframeSetRequest(df2.id, df1.id))
     assert(count(df3) === count(df2) - count(df1))
 
     // self except
-    val df4 = sendSql(s"SELECT * FROM $cylinderBandsTableName LIMIT 30")
+    val df4 = requestDf("df/limit", LimitRequest(df.id, 30))
     val df5 = requestDf("df/except", DataframeSetRequest(df4.id, df4.id))
     assert(count(df5) === 0)
 

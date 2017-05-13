@@ -31,18 +31,19 @@ import spray.json._
 (@Prop(Property.CACHESPEC_RESULT_STORE) cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials) extends ResultStorage with LazyLogging {
 
-  case class Store(createdAt: Long, status: String, response: String, request: String)
+  case class Store(createdAt: Long, requestUri: String, requestEntity: String, status: String, response: String)
 
   private lazy val jdbcPersistence = JdbcPersistenceBuilder.newBuilder[UUID, Store]()
     .withCredentials(mySqlCreds.url, mySqlCreds.userName,
       mySqlCreds.password, TableNames.RESULT_STORE, mySqlCreds.driver)
-    .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "LONG"),
+    .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
+      JdbcPersistenceColumn("request_uri", "VARCHAR(255)"),
+      JdbcPersistenceColumn("request_entity", "MEDIUMTEXT"),
       JdbcPersistenceColumn("status", "VARCHAR(50)"),
-      JdbcPersistenceColumn("response", "MEDIUMTEXT"),
-      JdbcPersistenceColumn("request", "MEDIUMTEXT")))
-    .withValueToSeq(s => Seq(s.createdAt, s.status, s.response, s.request))
+      JdbcPersistenceColumn("response", "MEDIUMTEXT")))
+    .withValueToSeq(s => Seq(s.createdAt, s.requestUri, s.requestEntity, s.status, s.response))
     .withSqlToValue {
-      case (_, f) => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4))
+      case (_, f) => Store(f.getLong(1), f.getString(2), f.getString(3), f.getString(4), f.getString(5))
     }
     .withStrToKey(UUID.fromString)
     .build()
@@ -55,9 +56,10 @@ import spray.json._
   override def save(serializableResult: SerializableResult): Unit = {
     cache.put(serializableResult.requestId,
       Store(System.currentTimeMillis,
+        serializableResult.requestUri,
+        serializableResult.requestEntity.map(_.compactPrint).getOrElse(""),
         serializableResult.status.name,
-        serializableResult.response.map(_.compactPrint).getOrElse(""),
-        serializableResult.request.map(_.compactPrint).getOrElse("")
+        serializableResult.response.map(_.compactPrint).getOrElse("")
       ))
   }
 
@@ -70,17 +72,9 @@ import spray.json._
           throw new IllegalArgumentException(s"Invalid job status (${r.status}) " +
             s"for request ID ${requestId.toString}")
       }
-      val response = Option(r.response) match {
-        case None => None
-        case Some("") => None
-        case Some(content) => Some(content.parseJson)
-      }
-      val request = Option(r.request) match {
-        case None => None
-        case Some("") => None
-        case Some(content) => Some(content.parseJson)
-      }
-      Some(SerializableResult(requestId, status, response, request))
+      val response = parseOptionalJsValue(r.response)
+      val requestEntity = parseOptionalJsValue(r.requestEntity)
+      Some(SerializableResult(requestId, r.requestUri, requestEntity, status, response))
     } catch {
       case e@(_: UncheckedExecutionException | _: IllegalArgumentException) =>
         logger.warn(s"Failed to get result for request ID $requestId: ${e.getMessage}")
@@ -94,5 +88,14 @@ import spray.json._
   private[result] def remove(requestId: UUID): Unit = {
     cache.invalidate(requestId)
     jdbcPersistence.remove(requestId)
+  }
+
+  /**
+    * Private helper to parse optional JSON object
+    */
+  private def parseOptionalJsValue(s: String): Option[JsValue] = Option(s) match {
+    case None => None
+    case Some("") => None
+    case Some(content) => Some(content.parseJson)
   }
 }

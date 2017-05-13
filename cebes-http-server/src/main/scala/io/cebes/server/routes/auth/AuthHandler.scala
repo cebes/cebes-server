@@ -22,6 +22,7 @@ import com.softwaremill.session.CsrfOptions._
 import io.cebes.auth.AuthService
 import io.cebes.server.http.{SecuredSession, SessionData}
 import io.cebes.server.inject.CebesHttpServerInjector
+import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.OkResponse
 import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
 

@@ -5,13 +5,13 @@ Cebes - The integrated framework for Data Science at Scale
 
 ## Contents
 
-    * [Building](#building)
-        * [Configure MySql](#configure-mySql)
-        * [Compile and run unittests](#compile-and-run-unittests)
-    * [Running Cebes in Docker](#running-cebes-in-docker)
-    * [Development guide](#development-guide)
-        * [Environment variables and configurations](#environment-variables-and-configurations)
-        * [Logging](#logging)
+* [Building](#building)
+    * [Configure MySql](#configure-mySql)
+    * [Compile and run unittests](#compile-and-run-unittests)
+* [Running Cebes in Docker](#running-cebes-in-docker)
+* [Development guide](#development-guide)
+    * [Environment variables and configurations](#environment-variables-and-configurations)
+    * [Logging](#logging)
     
 ## Building
 
@@ -22,20 +22,20 @@ with mySql, but using other variants is possible.
 
 This will create databases and users with default credentials for Cebes. You only need to do this once.
     
-    $ mysql.server start
-    $ mysql -u root -p < cebes-http-server/script/setup-db.sql
+    mysql.server start
+    mysql -u root -p < cebes-http-server/script/setup-db.sql
     
 Note that the usernames and passwords are default. For production settings, you may want to change them
 to something more secured.
 
 ### Compile and run unittests
 
-    $ cp bin/env.sh.example bin/env.sh
-    $ bin/test-all.sh
+    cp bin/env.sh.example bin/env.sh
+    bin/test-all.sh
 
 Test coverage report can be exported with the `--coverage` option:
     
-    $ bin/test-all.sh --coverage=true   # or bin/test-all.sh -c=true
+    bin/test-all.sh --coverage=true   # or bin/test-all.sh -c=true
     
 There will be some unittests skipped. Those are tests with AWS. 
 If you have an AWS account, you can enable those tests by setting the `CEBES_TEST_AWS_ACCESSKEY`
@@ -47,16 +47,16 @@ The tests will run Spark in local mode.
 
 Cebes can be included in a Docker image with Spark running in local mode. To build the docker image:
 
-    $ sbt clean compile assembly
-    $ docker build -t cebes -f docker/Dockerfile.local .
+    sbt clean compile assembly
+    docker build -t cebes -f docker/Dockerfile.local .
     
 The docker image can then be run as:
 
-    $ docker run -it -p 21000:21000 -p 4040:4040 --name cebes-server cebes
+    docker run -it -p 21000:21000 -p 4040:4040 --name cebes-server cebes
     
 To check if the Cebes server is up and running:
 
-    $ curl localhost:21000/version
+    curl localhost:21000/version
       {"api":"v1"}
 
 The Spark UI can be accessed at http://localhost:4040
