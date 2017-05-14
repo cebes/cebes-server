@@ -21,14 +21,18 @@ import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.cebes.pipeline.json.PipelineDef
 import io.cebes.server.client.{RemoteDataframe, ServerException}
-import io.cebes.server.helpers.{CebesHttpServerTestInjector, TestDataHelper}
+import io.cebes.server.helpers.CebesHttpServerTestInjector
 import io.cebes.server.http.HttpServer
+import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
 import io.cebes.server.routes.auth.LoginRequest
 import io.cebes.server.routes.df.DataframeRequest
+import io.cebes.server.routes.test.HttpTestJsonProtocol._
+import io.cebes.server.routes.test.{LoadDataRequest, LoadDataResponse}
 import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
-import spray.json.JsonFormat
+import spray.json.DefaultJsonProtocol.LongJsonFormat
+import spray.json._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable, Future}
@@ -38,22 +42,17 @@ import scala.util.{Failure, Success, Try}
   * Mother of all Route test, with helpers for using akka test-kit,
   * logging in and storing cookies, etc...
   */
-abstract class AbstractRouteSuite extends FunSuite with TestDataHelper with ScalatestRouteTest {
-
-  //TODO: implement a better way to load the data (e.g. create a HTTP endpoint for testing purpose)
+abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
 
   protected val server: HttpServer = CebesHttpServerTestInjector.instance[HttpServer]
   private val authHeaders = login()
 
   implicit val scheduler: Scheduler = system.scheduler
 
-
-  ////////////////////////////////////////////////////////////////////
-  // implement traits
-  ////////////////////////////////////////////////////////////////////
-
-  override def sendSql(sqlText: String): RemoteDataframe = {
-    requestDf[String]("df/sql", sqlText)
+  lazy val getCylinderBands: RemoteDataframe = {
+    val r = request[LoadDataRequest, LoadDataResponse]("test/loaddata", LoadDataRequest(Array("cylinder_bands")))
+    val df1 = r.dataframes.head
+    RemoteDataframe(df1.id, df1.schema)
   }
 
   ////////////////////////////////////////////////////////////////////

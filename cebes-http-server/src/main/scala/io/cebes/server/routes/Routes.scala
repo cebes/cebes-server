@@ -23,9 +23,10 @@ import io.cebes.server.routes.df.DataframeHandler
 import io.cebes.server.routes.pipeline.PipelineHandler
 import io.cebes.server.routes.result.ResultHandler
 import io.cebes.server.routes.storage.StorageHandler
+import io.cebes.server.routes.test.TestHandler
 
 trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with PipelineHandler
-  with StorageHandler with ResultHandler {
+  with StorageHandler with ResultHandler with TestHandler {
 
   val routes: Route =
     pathPrefix(Routes.API_VERSION) {
@@ -33,7 +34,8 @@ trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with
         dataframeApi ~
         pipelineApi ~
         storageApi ~
-        resultApi
+        resultApi ~
+        testApi
     } ~
       (path("") & get) {
         getFromResource("public/index.html")

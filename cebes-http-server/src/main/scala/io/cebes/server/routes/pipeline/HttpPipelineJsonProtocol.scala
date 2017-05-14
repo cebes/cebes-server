@@ -11,11 +11,9 @@
  */
 package io.cebes.server.routes.pipeline
 
-import io.cebes.pipeline.json.PipelineJsonProtocol
-import io.cebes.server.routes.HttpJsonProtocol
-import io.cebes.server.routes.common.HttpTagJsonProtocol
+import spray.json.DefaultJsonProtocol
 
-trait HttpPipelineJsonProtocol extends HttpJsonProtocol with HttpTagJsonProtocol with PipelineJsonProtocol {
+trait HttpPipelineJsonProtocol extends DefaultJsonProtocol {
 
 }
 

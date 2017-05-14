@@ -13,7 +13,7 @@ package io.cebes.server.routes.common
 
 import java.util.UUID
 
-import io.cebes.json.CebesCoreJsonProtocol
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json._
 
@@ -25,9 +25,9 @@ case class TagDeleteRequest(tag: Tag)
 
 case class TagsGetRequest(pattern: Option[String], maxCount: Int = 100)
 
-trait HttpTagJsonProtocol extends CebesCoreJsonProtocol {
+trait HttpTagJsonProtocol extends DefaultJsonProtocol {
 
-  implicit object TagFormat extends RootJsonFormat[Tag] {
+  implicit object TagFormat extends JsonFormat[Tag] {
     override def write(obj: Tag): JsValue = JsString(obj.toString)
 
     override def read(json: JsValue): Tag = json match {

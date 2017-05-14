@@ -79,24 +79,24 @@ trait AsyncOperation[E, T, R] extends LazyLogging {
     implicit val scheduler = actorSystem.scheduler
     val requestJson = Some(requestEntity.toJson)
     val requestId = java.util.UUID.randomUUID()
+    val requestUri = ctx.request.uri.toString()
 
     resultStorage.saveWithRetry {
-      SerializableResult(requestId, RequestStatuses.SCHEDULED, None, requestJson)
+      SerializableResult(requestId, requestUri, requestJson, RequestStatuses.SCHEDULED, None)
     }.map { _ =>
       runImpl(requestEntity).onComplete {
         case Success(t) =>
-          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatuses.FINISHED,
-            this.transformResult(requestEntity, t).map(_.toJson), requestJson)).onFailure {
+          resultStorage.saveWithRetry(SerializableResult(requestId, requestUri, requestJson,
+            RequestStatuses.FINISHED, this.transformResult(requestEntity, t).map(_.toJson))).onFailure {
             case f => logger.error(s"Failed to save FINISHED result for request $requestId", f)
           }
-
         case Failure(t) =>
           val sw = new StringWriter()
           val pw = new PrintWriter(sw)
           t.printStackTrace(pw)
 
-          resultStorage.saveWithRetry(SerializableResult(requestId, RequestStatuses.FAILED,
-            Some(FailResponse(Option(t.getMessage), Option(sw.toString)).toJson), requestJson)).onFailure {
+          resultStorage.saveWithRetry(SerializableResult(requestId, requestUri, requestJson,
+            RequestStatuses.FAILED, Some(FailResponse(Option(t.getMessage), Option(sw.toString)).toJson))).onFailure {
             case f => logger.error(s"Failed to save FAILED result for request $requestId", f)
           }
       }

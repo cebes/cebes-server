@@ -29,26 +29,25 @@ class JdbcResultStorageSuite extends FunSuite {
     val requestId = UUID.randomUUID()
     assert(jdbcStorage.get(requestId).isEmpty)
 
-    jdbcStorage.save(SerializableResult(requestId, RequestStatuses.SCHEDULED,
-      Some("""{ "some": "JSON source" }""".parseJson),
-      Some("""{ "some": "request" }""".parseJson)))
+    jdbcStorage.save(SerializableResult(requestId, "sampleUri", Some("""{ "some": "request" }""".parseJson),
+      RequestStatuses.SCHEDULED, Some("""{ "some": "JSON source" }""".parseJson)))
     val result = jdbcStorage.get(requestId)
     assert(result.nonEmpty)
     assert(result.get.status === RequestStatuses.SCHEDULED)
     assert(result.get.requestId === requestId)
     assert(result.get.response.nonEmpty)
     assert(result.get.response.get.prettyPrint.length > 0)
-    assert(result.get.request.nonEmpty)
-    assert(result.get.request.get.prettyPrint.length > 0)
+    assert(result.get.requestEntity.nonEmpty)
+    assert(result.get.requestEntity.get.prettyPrint.length > 0)
 
     // replace
-    jdbcStorage.save(SerializableResult(requestId, RequestStatuses.FAILED, None, None))
+    jdbcStorage.save(SerializableResult(requestId, "sampleUri", None, RequestStatuses.FAILED, None))
     val result2 = jdbcStorage.get(requestId)
     assert(result2.nonEmpty)
     assert(result2.get.status === RequestStatuses.FAILED)
     assert(result2.get.requestId === requestId)
     assert(result2.get.response.isEmpty)
-    assert(result2.get.request.isEmpty)
+    assert(result2.get.requestEntity.isEmpty)
 
     jdbcStorage.remove(requestId)
     assert(jdbcStorage.get(requestId).isEmpty)
@@ -60,13 +59,13 @@ class JdbcResultStorageSuite extends FunSuite {
     val requestId = UUID.randomUUID()
     assert(jdbcStorage.get(requestId).isEmpty)
 
-    jdbcStorage.save(SerializableResult(requestId, RequestStatuses.SCHEDULED, None, None))
+    jdbcStorage.save(SerializableResult(requestId, "sampleUri", None, RequestStatuses.SCHEDULED, None))
     val result = jdbcStorage.get(requestId)
     assert(result.nonEmpty)
     assert(result.get.status === RequestStatuses.SCHEDULED)
     assert(result.get.requestId === requestId)
     assert(result.get.response.isEmpty)
-    assert(result.get.request.isEmpty)
+    assert(result.get.requestEntity.isEmpty)
 
     jdbcStorage.remove(requestId)
     assert(jdbcStorage.get(requestId).isEmpty)

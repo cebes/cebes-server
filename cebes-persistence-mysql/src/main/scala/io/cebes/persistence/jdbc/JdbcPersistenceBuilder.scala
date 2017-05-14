@@ -152,6 +152,7 @@ object JdbcPersistenceBuilder extends LazyLogging {
           case _: SQLSyntaxErrorException =>
             val stmtIndexWithSize = connection.prepareStatement(s"CREATE INDEX index_${newTableName}_${col.name} " +
               s"ON $newTableName (${col.name}(40))")
+            logger.warn(s"Trying again with a key length on ${col.name}")
             Try(JdbcUtil.cleanJdbcCall(stmtIndexWithSize)(_.close())(_.executeUpdate()))
         } match {
           case Success(_) =>

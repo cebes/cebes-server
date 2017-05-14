@@ -29,6 +29,6 @@ class Get @Inject()(dfService: DataframeService, override val resultStorage: Res
 
   override protected def runImpl(requestEntity: String)
                                 (implicit ec: ExecutionContext): Future[Dataframe] = Future {
-    dfService.get(requestEntity)
+    dfService.get(requestEntity.stripPrefix("\"").stripSuffix("\""))
   }
 }

@@ -15,23 +15,21 @@ import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.df.functions
+import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.pipeline.json.PipelineJsonProtocol._
 import io.cebes.pipeline.json._
 import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
+import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
-import io.cebes.server.routes.pipeline.HttpPipelineJsonProtocol._
 import io.cebes.tag.Tag
-import org.scalatest.BeforeAndAfterAll
+import spray.json.DefaultJsonProtocol.{arrayFormat, tuple2Format}
 
 /**
   * Test suite for [[PipelineHandler]]
   */
-class PipelineHandlerSuite extends AbstractRouteSuite with BeforeAndAfterAll {
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    createOrReplaceCylinderBands()
-  }
+class PipelineHandlerSuite extends AbstractRouteSuite {
 
   test("create and get pipeline") {
     val pplDef = PipelineDef(None, Array(StageDef("s1", "Alias", Map("alias" -> ValueDef("new_name")))))
