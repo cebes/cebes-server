@@ -27,7 +27,6 @@ import io.cebes.storage.DataFormats
 import io.cebes.storage.DataFormats.DataFormat
 import spray.json._
 
-import scala.annotation.tailrec
 import scala.reflect.runtime.universe
 import scala.util.{Failure, Success, Try}
 
@@ -253,7 +252,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
 
       val params = classSymbol.primaryConstructor.asMethod.paramLists.head
 
-      val jsParams = params.zipWithIndex.map { case (p, idx) =>
+      val jsParams = params.map { p =>
         val v = instanceMirror.reflectField(classSymbol.toType.member(p.name).asTerm).get
         val jsVal = v match {
           case subExpr: Expression => write(subExpr)
@@ -286,7 +285,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
 
           case vv: Any => writeJson(vv)
         }
-        s"param_$idx" -> jsVal
+        p.name.toString -> jsVal
       }.toMap
 
       JsObject(Map("exprType" -> JsString(expr.getClass.getName)) ++ jsParams)
@@ -325,6 +324,7 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
 
             case Some(JsString(className)) =>
 
+              /*
               @tailrec
               def getField(idx: Int, result: Seq[Any]): Seq[Any] = {
                 jsObj.fields.get(s"param_$idx") match {
@@ -333,8 +333,8 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
                     getField(idx + 1, result :+ readExpressionGeneric(js))
                 }
               }
-
               val params = getField(0, Seq.empty[Any])
+              */
 
               val classSymbol: universe.ClassSymbol = runtimeMirror.classSymbol(Class.forName(className))
               val classMirror: universe.ClassMirror = runtimeMirror.reflectClass(classSymbol)
@@ -345,10 +345,12 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
                   "case class with one parameter list. Please provide custom deserialization " +
                   s"logic in readExpression() for $className")
               }
-              if (constructorSymbol.paramLists.head.length != params.length) {
-                deserializationError(s"The constructor of the loaded class (${classSymbol.name}) " +
-                  s"requires ${constructorSymbol.paramLists.head.length} parameters, while we got " +
-                  s"${params.length} from JSON")
+              val params = constructorSymbol.paramLists.head.map { p =>
+                jsObj.fields.get(p.name.toString) match {
+                  case None =>
+                    deserializationError(s"Could not find value for parameter ${p.name.toString} of $className")
+                  case Some(js) => readExpressionGeneric(js)
+                }
               }
               val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
               Try(constructorMirror.apply(params: _*)) match {
