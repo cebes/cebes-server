@@ -324,18 +324,6 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
 
             case Some(JsString(className)) =>
 
-              /*
-              @tailrec
-              def getField(idx: Int, result: Seq[Any]): Seq[Any] = {
-                jsObj.fields.get(s"param_$idx") match {
-                  case None => result
-                  case Some(js) =>
-                    getField(idx + 1, result :+ readExpressionGeneric(js))
-                }
-              }
-              val params = getField(0, Seq.empty[Any])
-              */
-
               val classSymbol: universe.ClassSymbol = runtimeMirror.classSymbol(Class.forName(className))
               val classMirror: universe.ClassMirror = runtimeMirror.reflectClass(classSymbol)
 
