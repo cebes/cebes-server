@@ -21,7 +21,7 @@ import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.models.Pipeline
 import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
-import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.store.{CachedStore, TagStore}
 import spray.json._
 

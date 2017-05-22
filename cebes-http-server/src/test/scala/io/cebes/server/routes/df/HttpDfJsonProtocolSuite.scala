@@ -21,7 +21,7 @@ import io.cebes.df.expressions.{Expression, Literal, Pow}
 import io.cebes.df.{Column, functions}
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
-import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import org.scalatest.FunSuite
 import spray.json._

@@ -21,7 +21,7 @@ import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.json.GenericJsonProtocol
-import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 

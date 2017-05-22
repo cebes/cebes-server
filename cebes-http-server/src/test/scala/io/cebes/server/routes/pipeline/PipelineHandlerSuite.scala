@@ -22,7 +22,7 @@ import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
-import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol._
 

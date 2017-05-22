@@ -9,13 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.spark.df.expressions
+package io.cebes.spark.json
 
 import java.util.UUID
 
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.json.CebesExpressionJsonProtocol
 import io.cebes.pipeline.json.PipelineJsonProtocol
+import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -25,10 +26,8 @@ import spray.json._
   */
 trait CebesSparkJsonProtocol extends PipelineJsonProtocol {
 
-  implicit val sparkPrimitiveExpressionFormat: RootJsonFormat[SparkPrimitiveExpression] =
-    DefaultJsonProtocol.jsonFormat(
-      (dfId: UUID, colName: String) => SparkPrimitiveExpression(dfId, colName, None), "dfId", "colName"
-    )
+  implicit val sparkPrimitiveExpressionFormat: RootJsonFormat[SparkPrimitiveExpression] = jsonFormat(
+      (dfId: UUID, colName: String) => SparkPrimitiveExpression(dfId, colName, None), "dfId", "colName")
 }
 
 object CebesSparkJsonProtocol extends CebesSparkJsonProtocol

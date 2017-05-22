@@ -22,7 +22,7 @@ import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, 
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{OperationHelper, TagAddRequest, TagDeleteRequest, TagsGetRequest}
-import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat, tuple2Format}
 
