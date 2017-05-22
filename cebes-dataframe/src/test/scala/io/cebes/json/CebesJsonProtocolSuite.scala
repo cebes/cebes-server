@@ -24,6 +24,7 @@ import io.cebes.df.types.storage._
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{expressions => exprs}
 import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.json.CebesExpressionDefaultJsonProtocol._
 import org.scalatest.FunSuite
 import spray.json._
 

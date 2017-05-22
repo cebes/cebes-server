@@ -19,8 +19,10 @@ import java.util.UUID
 import io.cebes.df.Column
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.types.VariableTypes.VariableType
-import io.cebes.json.CebesCoreJsonProtocol
-import io.cebes.spark.df.expressions.SparkPrimitiveExpression
+import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.json.GenericJsonProtocol
+import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
+import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 case class DataframeRequest(df: UUID)
@@ -82,25 +84,9 @@ case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationT
                             aggColNames: Array[String])
 
 
-trait HttpDfJsonProtocol extends CebesCoreJsonProtocol {
+trait HttpDfJsonProtocol extends GenericJsonProtocol {
 
-  implicit object SparkPrimitiveExpressionFormat extends JsonFormat[SparkPrimitiveExpression] {
-
-    override def write(obj: SparkPrimitiveExpression): JsValue = {
-      JsObject(Map("dfId" -> obj.dfId.toJson,
-        "colName" -> obj.colName.toJson))
-    }
-
-    override def read(json: JsValue): SparkPrimitiveExpression = json match {
-      case jsObj: JsObject =>
-        SparkPrimitiveExpression(jsObj.fields("dfId").convertTo[UUID],
-          jsObj.fields("colName").convertTo[String], None)
-      case other =>
-        deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
-    }
-  }
-
-  implicit val dataframeRequestFormat = jsonFormat1(DataframeRequest)
+  implicit val dataframeRequestFormat: RootJsonFormat[DataframeRequest] = jsonFormat1(DataframeRequest)
   implicit val withVariableTypesRequestFormat = jsonFormat2(WithVariableTypesRequest)
   implicit val limitRequestFormat = jsonFormat2(LimitRequest)
   implicit val sampleRequestFormat = jsonFormat4(SampleRequest)

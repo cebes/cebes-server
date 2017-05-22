@@ -16,7 +16,8 @@ package io.cebes.server.routes.storage
 
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.storage.DataFormats.DataFormat
-import spray.json.DefaultJsonProtocol
+import spray.json.DefaultJsonProtocol._
+import spray.json.RootJsonFormat
 
 case class LocalFsReadRequest(path: String, format: DataFormat)
 
@@ -41,16 +42,16 @@ case class ReadRequest(localFs: Option[LocalFsReadRequest],
 
 case class UploadResponse(path: String, size: Int)
 
-trait HttpStorageJsonProtocol extends DefaultJsonProtocol {
+trait HttpStorageJsonProtocol {
 
-  implicit val localFsReadRequestFormat = jsonFormat2(LocalFsReadRequest)
-  implicit val s3ReadRequestFormat = jsonFormat6(S3ReadRequest)
-  implicit val hdfsReadRequestFormat = jsonFormat3(HdfsReadRequest)
-  implicit val jdbcReadRequestFormat = jsonFormat5(JdbcReadRequest)
-  implicit val hiveReadRequestFormat = jsonFormat1(HiveReadRequest)
-  implicit val readRequestFormat = jsonFormat5(ReadRequest)
+  implicit val localFsReadRequestFormat: RootJsonFormat[LocalFsReadRequest] = jsonFormat2(LocalFsReadRequest)
+  implicit val s3ReadRequestFormat: RootJsonFormat[S3ReadRequest] = jsonFormat6(S3ReadRequest)
+  implicit val hdfsReadRequestFormat: RootJsonFormat[HdfsReadRequest] = jsonFormat3(HdfsReadRequest)
+  implicit val jdbcReadRequestFormat: RootJsonFormat[JdbcReadRequest] = jsonFormat5(JdbcReadRequest)
+  implicit val hiveReadRequestFormat: RootJsonFormat[HiveReadRequest] = jsonFormat1(HiveReadRequest)
+  implicit val readRequestFormat: RootJsonFormat[ReadRequest] = jsonFormat5(ReadRequest)
 
-  implicit val uploadResponseFormat = jsonFormat2(UploadResponse)
+  implicit val uploadResponseFormat: RootJsonFormat[UploadResponse] = jsonFormat2(UploadResponse)
 
 }
 

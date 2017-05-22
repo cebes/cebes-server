@@ -16,13 +16,15 @@ package io.cebes.server.routes.df
 
 import java.util.UUID
 
-import io.cebes.df.{Column, functions}
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.expressions.{Expression, Literal, Pow}
+import io.cebes.df.{Column, functions}
+import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.server.routes.df.HttpDfJsonProtocol._
+import io.cebes.spark.df.expressions.CebesSparkJsonProtocol._
 import io.cebes.spark.df.expressions.SparkPrimitiveExpression
 import org.scalatest.FunSuite
 import spray.json._
-import io.cebes.server.routes.df.HttpDfJsonProtocol._
 
 class HttpDfJsonProtocolSuite extends FunSuite {
 

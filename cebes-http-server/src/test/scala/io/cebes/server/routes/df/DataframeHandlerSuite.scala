@@ -22,6 +22,7 @@ import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, functions}
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.HttpJsonProtocol._
@@ -660,7 +661,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite {
   }
 
   test("except") {
-val df = getCylinderBands
+    val df = getCylinderBands
     val df1 = requestDf("df/where", ColumnsRequest(df.id, Array(new Column(Like(df.col("customer").expr, "BELK")))))
     val df2 = requestDf("df/where", ColumnsRequest(df.id, Array(new Column(Or(
       Like(df.col("customer").expr, "BELK"), Like(df.col("customer").expr, "AMES"))))))

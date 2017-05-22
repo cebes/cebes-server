@@ -14,13 +14,14 @@
 
 package io.cebes.server.routes.auth
 
-import spray.json.DefaultJsonProtocol
+import spray.json.DefaultJsonProtocol._
+import spray.json.RootJsonFormat
 
 case class LoginRequest(userName: String, passwordHash: String)
 
-trait HttpAuthJsonProtocol extends DefaultJsonProtocol {
+trait HttpAuthJsonProtocol {
 
-  implicit val loginRequestFormat = jsonFormat2(LoginRequest)
+  implicit val loginRequestFormat: RootJsonFormat[LoginRequest] = jsonFormat2(LoginRequest)
 }
 
 object HttpAuthJsonProtocol extends HttpAuthJsonProtocol

@@ -13,11 +13,11 @@
 package io.cebes.pipeline.json
 
 import io.cebes.json.CebesCoreJsonProtocol._
-import io.cebes.json.GenericJsonProtocol
+import io.cebes.json.CebesExpressionJsonProtocol
+import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-
-trait PipelineJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol {
+trait PipelineJsonProtocol extends CebesExpressionJsonProtocol {
 
   implicit object ValueDefFormat extends JsonFormat[ValueDef] {
 
@@ -67,4 +67,4 @@ trait PipelineJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol 
   implicit val pipelineRunDefFormat: RootJsonFormat[PipelineRunDef] = jsonFormat4(PipelineRunDef)
 }
 
-object PipelineJsonProtocol extends PipelineJsonProtocol
+private[json] object PipelineDefaultJsonProtocol extends PipelineJsonProtocol

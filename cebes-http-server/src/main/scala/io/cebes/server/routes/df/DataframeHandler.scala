@@ -21,12 +21,13 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.sample.DataSample
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{OperationHelper, TagAddRequest, TagDeleteRequest, TagsGetRequest}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import io.cebes.tag.Tag
-import spray.json.DefaultJsonProtocol.{DoubleJsonFormat, LongJsonFormat, StringJsonFormat, arrayFormat, tuple2Format}
+import spray.json.DefaultJsonProtocol._
 
 /**
   * Handle all requests related to dataframe

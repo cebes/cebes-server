@@ -12,7 +12,7 @@
 
 package io.cebes.pipeline.json
 
-import io.cebes.pipeline.json.PipelineJsonProtocol._
+import io.cebes.pipeline.json.PipelineDefaultJsonProtocol._
 import org.scalatest.FunSuite
 import spray.json._
 
