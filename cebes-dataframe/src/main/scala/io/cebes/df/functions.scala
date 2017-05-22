@@ -343,7 +343,7 @@ object functions {
     *
     * @group agg_funcs
     */
-  def groupingId(cols: Column*): Column = withExpr(GroupingID(cols.map(_.expr): _*))
+  def groupingId(cols: Column*): Column = withExpr(GroupingID(cols.map(_.expr)))
 
   /**
     * Aggregate function: returns the level of grouping, equals to

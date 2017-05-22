@@ -15,6 +15,7 @@ import java.util.UUID
 
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.tag.Tag
+import spray.json.DefaultJsonProtocol._
 import spray.json._
 
 import scala.util.{Failure, Success, Try}
@@ -25,7 +26,7 @@ case class TagDeleteRequest(tag: Tag)
 
 case class TagsGetRequest(pattern: Option[String], maxCount: Int = 100)
 
-trait HttpTagJsonProtocol extends DefaultJsonProtocol {
+trait HttpTagJsonProtocol {
 
   implicit object TagFormat extends JsonFormat[Tag] {
     override def write(obj: Tag): JsValue = JsString(obj.toString)

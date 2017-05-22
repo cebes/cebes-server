@@ -26,10 +26,6 @@ lazy val cebesDataframe = project.in(file("cebes-dataframe")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*)
 
-lazy val cebesDataframeJson = project.in(file("cebes-dataframe-json")).
-  disablePlugins(AssemblyPlugin).
-  settings(commonSettings: _*).
-  dependsOn(cebesDataframe)
 lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
@@ -37,12 +33,12 @@ lazy val cebesPersistenceMysql = project.in(file("cebes-persistence-mysql")).
 
 lazy val cebesPipeline = project.in(file("cebes-pipeline")).
   settings(commonSettings: _*).
-  dependsOn(cebesDataframe, cebesProperties, cebesDataframeJson)
+  dependsOn(cebesDataframe, cebesProperties)
 
 lazy val cebesSpark = project.in(file("cebes-spark")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
-  dependsOn(cebesDataframeJson, cebesPersistenceMysql, cebesPipeline)
+  dependsOn(cebesDataframe, cebesPersistenceMysql, cebesPipeline)
 
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
@@ -50,7 +46,7 @@ lazy val cebesHttpServer = project.in(file("cebes-http-server")).
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).
-  aggregate(cebesProperties, cebesAuth, cebesDataframe, cebesDataframeJson,
+  aggregate(cebesProperties, cebesAuth, cebesDataframe,
     cebesPersistenceMysql, cebesPipeline, cebesSpark, cebesHttpServer)
 
 scalastyleConfig := baseDirectory.value / "build" / "scalastyle-config.xml"

@@ -38,9 +38,7 @@ case class First(child: Expression, ignoreNulls: Boolean) extends UnaryExpressio
 
 case class Grouping(child: Expression) extends UnaryExpression
 
-case class GroupingID(exprs: Expression*) extends Expression {
-  override def children: Seq[Expression] = exprs
-}
+case class GroupingID(children: Seq[Expression]) extends Expression
 
 case class Kurtosis(child: Expression) extends UnaryExpression
 

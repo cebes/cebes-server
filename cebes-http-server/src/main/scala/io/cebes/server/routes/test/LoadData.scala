@@ -34,15 +34,22 @@ class LoadData @Inject()(dfService: DataframeService, override val resultStorage
                       (implicit ec: ExecutionContext): Future[LoadDataResponse] = Future {
     LoadDataResponse(requestEntity.datasets.map {
       case "cylinder_bands" =>
-        val df = loadCylinderBands()
+        val df = LoadData.loadCylinderBands(dfService)
         DataframeResponse(df.id, df.schema.copy())
       case ds => throw new IllegalArgumentException(s"Invalid dataset name: $ds")
     })
   }
 
-  private def loadCylinderBands(): Dataframe = {
+
+}
+
+object LoadData {
+
+  private val objectLocker = new Object()
+
+  private def loadCylinderBands(dfService: DataframeService): Dataframe = {
     val resourceFile = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
-    loadTable("test_cylinder_bands",
+    loadTable(dfService, "test_cylinder_bands",
       "timestamp LONG, cylinder_number STRING, " +
         "customer STRING, job_number INT, grain_screened STRING, ink_color STRING, " +
         "proof_on_ctd_ink STRING, blade_mfg STRING, cylinder_division STRING, paper_type STRING, " +
@@ -55,14 +62,22 @@ class LoadData @Inject()(dfService: DataframeService, override val resultStorage
         "chrome_content FLOAT, band_type STRING", resourceFile.toString)
   }
 
-  private def loadTable(tableName: String, schema: String, dataFilePath: String): Dataframe = {
-    Try(dfService.sql(s"SELECT * FROM $tableName")).orElse {
-      dfService.sql(s"CREATE TABLE $tableName ($schema) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','")
-      dfService.sql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
-      Try(dfService.sql(s"SELECT * FROM $tableName"))
-    } match {
-      case Success(df) => df
-      case Failure(f) => throw new IllegalArgumentException(s"Failed to load table $tableName from $dataFilePath", f)
+  private def loadTable(dfService: DataframeService, tableName: String,
+                        schema: String, dataFilePath: String): Dataframe = {
+    // shouldn't lock on a "singleton" object, but we have no other way to make this thread-safe...
+    objectLocker.synchronized {
+      Try {
+        val df = dfService.sql(s"SELECT * FROM $tableName")
+        require(df.numRows > 10)
+        df
+      }.orElse {
+        dfService.sql(s"CREATE TABLE IF NOT EXISTS $tableName ($schema) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','")
+        dfService.sql(s"LOAD DATA LOCAL INPATH '$dataFilePath' INTO TABLE $tableName")
+        Try(dfService.sql(s"SELECT * FROM $tableName"))
+      } match {
+        case Success(df) => df
+        case Failure(f) => throw new IllegalArgumentException(s"Failed to load table $tableName from $dataFilePath", f)
+      }
     }
   }
 }

@@ -16,15 +16,15 @@ import java.util.UUID
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.df.functions
 import io.cebes.json.CebesCoreJsonProtocol._
-import io.cebes.pipeline.json.PipelineJsonProtocol._
 import io.cebes.pipeline.json._
 import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
-import spray.json.DefaultJsonProtocol.{arrayFormat, tuple2Format}
+import spray.json.DefaultJsonProtocol._
 
 /**
   * Test suite for [[PipelineHandler]]

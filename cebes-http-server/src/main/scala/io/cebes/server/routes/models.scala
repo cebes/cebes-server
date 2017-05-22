@@ -17,8 +17,9 @@ package io.cebes.server.routes
 import java.util.UUID
 
 import io.cebes.df.schema.Schema
-import spray.json._
 import io.cebes.json.CebesCoreJsonProtocol._
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 object RequestStatuses {
 
@@ -62,7 +63,7 @@ case class VersionResponse(api: String)
 // Contains all common JsonProtocol
 /** **************************************************************************/
 
-trait HttpJsonProtocol extends DefaultJsonProtocol {
+trait HttpJsonProtocol {
 
   implicit object RequestStatusFormat extends JsonFormat[RequestStatuses.RequestStatus] {
     override def write(obj: RequestStatuses.RequestStatus): JsValue = JsString(obj.name)
@@ -76,14 +77,14 @@ trait HttpJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val futureResultFormat = jsonFormat1(FutureResult)
+  implicit val futureResultFormat: RootJsonFormat[FutureResult] = jsonFormat1(FutureResult)
 
-  implicit val serializableResultFormat = jsonFormat5(SerializableResult)
+  implicit val serializableResultFormat: RootJsonFormat[SerializableResult] = jsonFormat5(SerializableResult)
 
-  implicit val failResponseFormat = jsonFormat2(FailResponse)
-  implicit val okResponseFormat = jsonFormat1(OkResponse)
-  implicit val dataframeResponseFormat = jsonFormat2(DataframeResponse)
-  implicit val versionResponseFormat = jsonFormat1(VersionResponse)
+  implicit val failResponseFormat: RootJsonFormat[FailResponse] = jsonFormat2(FailResponse)
+  implicit val okResponseFormat: RootJsonFormat[OkResponse] = jsonFormat1(OkResponse)
+  implicit val dataframeResponseFormat: RootJsonFormat[DataframeResponse] = jsonFormat2(DataframeResponse)
+  implicit val versionResponseFormat: RootJsonFormat[VersionResponse] = jsonFormat1(VersionResponse)
 }
 
 object HttpJsonProtocol extends HttpJsonProtocol

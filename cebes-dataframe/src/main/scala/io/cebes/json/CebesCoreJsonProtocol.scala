@@ -25,16 +25,15 @@ import io.cebes.df.types.storage._
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.storage.DataFormats
 import io.cebes.storage.DataFormats.DataFormat
+import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.annotation.tailrec
-import scala.reflect.runtime.universe
 import scala.util.{Failure, Success, Try}
 
 /**
   * All JSON protocols for all JSON-serializable classes in cebes-dataframe
   */
-trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol {
+trait CebesCoreJsonProtocol extends GenericJsonProtocol {
 
   implicit object UUIDFormat extends JsonFormat[UUID] {
 
@@ -161,10 +160,10 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
     }
   }
 
-  implicit val arrayTypeFormat = jsonFormat1(ArrayType)
-  implicit val mapTypeFormat = jsonFormat2(MapType)
-  implicit val structFieldFormat = jsonFormat3(StructField)
-  implicit val structTypeFormat = jsonFormat1(StructType)
+  implicit val arrayTypeFormat: RootJsonFormat[ArrayType] = jsonFormat1(ArrayType)
+  implicit val mapTypeFormat: RootJsonFormat[MapType] = jsonFormat2(MapType)
+  implicit val structFieldFormat: RootJsonFormat[StructField] = jsonFormat3(StructField)
+  implicit val structTypeFormat: RootJsonFormat[StructType] = jsonFormat1(StructType)
 
   /////////////////////////////////////////////////////////////////////////////
   // Variable types
@@ -188,8 +187,8 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
   // Schema
   /////////////////////////////////////////////////////////////////////////////
 
-  implicit val schemaFieldFormat = jsonFormat3(SchemaField)
-  implicit val schemaFormat = jsonFormat1(Schema)
+  implicit val schemaFieldFormat: RootJsonFormat[SchemaField] = jsonFormat3(SchemaField)
+  implicit val schemaFormat: RootJsonFormat[Schema] = jsonFormat1(Schema)
 
   /////////////////////////////////////////////////////////////////////////////
   // DataSample
@@ -232,169 +231,6 @@ trait CebesCoreJsonProtocol extends DefaultJsonProtocol with GenericJsonProtocol
       }
     }
   }
-
-  /////////////////////////////////////////////////////////////////////////////
-  // Expression
-  /////////////////////////////////////////////////////////////////////////////
-
-  private lazy val runtimeMirror: universe.Mirror = universe.runtimeMirror(getClass.getClassLoader)
-
-  implicit object ExpressionFormat extends JsonFormat[Expression] {
-
-    private def writeExpressionGeneric(expr: Expression): JsValue = {
-      val classSymbol = runtimeMirror.classSymbol(expr.getClass)
-      val instanceMirror: universe.InstanceMirror = runtimeMirror.reflect(expr)
-
-      if (!classSymbol.isCaseClass || classSymbol.primaryConstructor.asMethod.paramLists.length != 1) {
-        serializationError("Generic serializer for Expression only works for " +
-          "case class with one parameter list. Please provide custom serialization " +
-          s"logic in writeExpression() for ${expr.getClass.getName}")
-      }
-
-      val params = classSymbol.primaryConstructor.asMethod.paramLists.head
-
-      val jsParams = params.zipWithIndex.map { case (p, idx) =>
-        val v = instanceMirror.reflectField(classSymbol.toType.member(p.name).asTerm).get
-        val jsVal = v match {
-          case subExpr: Expression => write(subExpr)
-
-          case expressions: Seq[_] if expressions.head.isInstanceOf[Expression] =>
-            JsArray(expressions.map(e => write(e.asInstanceOf[Expression])): _*)
-
-          case arr: Seq[_] if arr.head.isInstanceOf[(_, _)]
-            && arr.head.asInstanceOf[(_, _)]._1.isInstanceOf[Expression]
-            && arr.head.asInstanceOf[(_, _)]._2.isInstanceOf[Expression] =>
-            // special case of CaseWhen
-            val entries = arr.map(_.asInstanceOf[(Expression, Expression)]).map { tp =>
-              JsArray(write(tp._1), write(tp._2))
-            }
-            JsObject(Map("exprType" -> JsString("Array[Tuple2(Expression)]"),
-              "entries" -> JsArray(entries: _*)))
-
-          case opt: Option[_] if opt.nonEmpty && opt.get.isInstanceOf[Expression] =>
-            JsObject(Map("exprType" -> JsString("Option[Expression]"),
-              "value" -> write(opt.get.asInstanceOf[Expression])))
-
-          case None =>
-            JsObject(Map("exprType" -> JsString("Option[Expression]"), "value" -> JsNull))
-
-          case storageType: StorageType =>
-            JsObject(Map("exprType" -> JsString("StorageType"), "value" -> storageType.toJson))
-
-          case uuid: UUID =>
-            JsObject(Map("exprType" -> JsString("UUID"), "value" -> uuid.toJson))
-
-          case vv: Any => writeJson(vv)
-        }
-        s"param_$idx" -> jsVal
-      }.toMap
-
-      JsObject(Map("exprType" -> JsString(expr.getClass.getName)) ++ jsParams)
-    }
-
-    override def write(obj: Expression): JsValue = writeExpressionGeneric(obj)
-
-    ////////////////
-    // read
-    ////////////////
-
-    private def readExpressionGeneric(json: JsValue): Any = {
-      json match {
-        case jsArr: JsArray => jsArr.elements.map {
-          js => readExpressionGeneric(js)
-        }
-        case jsObj: JsObject =>
-          jsObj.fields.get("exprType") match {
-            case Some(JsString("Array[Tuple2(Expression)]")) =>
-              asJsType[JsArray](jsObj.fields("entries")).elements.map(asJsType[JsArray]).map { entry =>
-                if (entry.elements.length != 2) {
-                  deserializationError(s"Expected list of 2 elements, got ${entry.compactPrint}")
-                }
-                (read(entry.elements.head), read(entry.elements.last))
-              }
-
-            case Some(JsString("Option[Expression]")) =>
-              jsObj.fields("value") match {
-                case JsNull => None
-                case v => Some(read(v))
-              }
-
-            case Some(JsString("StorageType")) => jsObj.fields("value").convertTo[StorageType]
-
-            case Some(JsString("UUID")) => jsObj.fields("value").convertTo[UUID]
-
-            case Some(JsString(className)) =>
-
-              @tailrec
-              def getField(idx: Int, result: Seq[Any]): Seq[Any] = {
-                jsObj.fields.get(s"param_$idx") match {
-                  case None => result
-                  case Some(js) =>
-                    getField(idx + 1, result :+ readExpressionGeneric(js))
-                }
-              }
-
-              val params = getField(0, Seq.empty[Any])
-
-              val classSymbol: universe.ClassSymbol = runtimeMirror.classSymbol(Class.forName(className))
-              val classMirror: universe.ClassMirror = runtimeMirror.reflectClass(classSymbol)
-
-              val constructorSymbol = classSymbol.primaryConstructor.asMethod
-              if (!classSymbol.isCaseClass || constructorSymbol.paramLists.length != 1) {
-                deserializationError("Generic serializer for Expression only works for " +
-                  "case class with one parameter list. Please provide custom deserialization " +
-                  s"logic in readExpression() for $className")
-              }
-              if (constructorSymbol.paramLists.head.length != params.length) {
-                deserializationError(s"The constructor of the loaded class (${classSymbol.name}) " +
-                  s"requires ${constructorSymbol.paramLists.head.length} parameters, while we got " +
-                  s"${params.length} from JSON")
-              }
-              val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
-              Try(constructorMirror.apply(params: _*)) match {
-                case Success(v) =>
-                  v match {
-                    case expr: Expression => expr
-                    case _ => deserializationError(s"Unknown return type from constructor: ${v.toString}")
-                  }
-
-                case Failure(f) => deserializationError("Failed to run constructor", f)
-              }
-
-            case _ =>
-              readJson(jsObj)
-          }
-        case other =>
-          readJson(other)
-      }
-    }
-
-    override def read(json: JsValue): Expression = {
-      readExpressionGeneric(json) match {
-        case expr: Expression => expr
-        case other => deserializationError(s"Got unwanted type from Json: ${other.toString}")
-      }
-    }
-  }
-
-  implicit object ColumnFormat extends JsonFormat[Column] {
-
-    override def write(obj: Column): JsValue = {
-      JsObject(Map("expr" -> obj.expr.toJson))
-    }
-
-    override def read(json: JsValue): Column = json match {
-      case jsObj: JsObject =>
-        jsObj.fields.get("expr") match {
-          case Some(obj) => new Column(obj.convertTo[Expression])
-          case _ => deserializationError("Expression must be provided in key 'expr'")
-        }
-      case _ =>
-        deserializationError("A JsObject is expected")
-    }
-  }
-
-
 }
 
 object CebesCoreJsonProtocol extends CebesCoreJsonProtocol
