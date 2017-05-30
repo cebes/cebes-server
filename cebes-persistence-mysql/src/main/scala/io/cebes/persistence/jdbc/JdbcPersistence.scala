@@ -139,11 +139,14 @@ class JdbcPersistence[K <: Any, V] private[jdbc](val url: String,
     })
   }
 
-  override def findValue(value: V): ClosableIterator[K] = {
+  override def findValue(value: V, excludedFields: Seq[String] = Seq()): ClosableIterator[K] = {
     val connection = dataSource.getConnection()
-    val valuePlaceHolder = valueSchema.map(s => s"`${s.name}` = ?").mkString(" AND ")
+
+    val includedIndices = valueSchema.zipWithIndex.filterNot(f => excludedFields.contains(f._1.name)).map(_._2)
+    val valuePlaceHolder = valueSchema.zipWithIndex.filter(f => includedIndices.contains(f._2))
+      .map(s => s"`${s._1.name}` = ?").mkString(" AND ")
     val stmt = connection.prepareStatement(s"SELECT * FROM $tableName WHERE $valuePlaceHolder")
-    val values = safeValueSeq(value)
+    val values = safeValueSeq(value).zipWithIndex.filter(f => includedIndices.contains(f._2)).map(_._1)
     values.zipWithIndex.foreach {
       case (v, idx) =>
         stmt.setObject(idx + 1, v)

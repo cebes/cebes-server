@@ -27,10 +27,10 @@ import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
+import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TaggedDataframeResponse, TagsGetRequest}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import io.cebes.tag.Tag
-import spray.json.DefaultJsonProtocol.{DoubleJsonFormat, LongJsonFormat, arrayFormat, tuple2Format}
+import spray.json.DefaultJsonProtocol.{DoubleJsonFormat, LongJsonFormat, arrayFormat}
 
 class DataframeHandlerSuite extends AbstractRouteSuite {
 
@@ -142,27 +142,30 @@ class DataframeHandlerSuite extends AbstractRouteSuite {
     assert(df2a.id === df2.id)
 
     // no filter
-    val tags = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(None))
+    val tags = request[TagsGetRequest, Array[TaggedDataframeResponse]]("df/tags", TagsGetRequest(None))
     assert(tags.length >= 3)
-    assert(tags.exists(_ === (tag1a, df1.id)))
-    assert(tags.exists(_ === (tag1b, df1.id)))
-    assert(tags.exists(_ === (tag2a, df2.id)))
+    assert(tags.exists(_.tag === tag1a))
+    assert(tags.exists(_.tag === tag1b))
+    assert(tags.exists(_.tag === tag2a))
 
     // with filter
-    val tags2 = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(Some("cebes*/df?:v2")))
+    val tags2 = request[TagsGetRequest, Array[TaggedDataframeResponse]]("df/tags",
+      TagsGetRequest(Some("cebes*/df?:v2")))
     assert(tags2.nonEmpty)
-    assert(tags2.exists(_ === (tag1b, df1.id)))
+    assert(tags2.exists(_.tag === tag1b))
 
-    val tags3 = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(Some("google.com/df?:*")))
+    val tags3 = request[TagsGetRequest, Array[TaggedDataframeResponse]]("df/tags",
+      TagsGetRequest(Some("google.com/df?:*")))
     assert(tags3.nonEmpty)
-    assert(tags3.exists(_ === (tag2a, df2.id)))
+    assert(tags3.exists(_.tag === tag2a))
 
     // delete tags
     requestDf("df/tagdelete", TagDeleteRequest(tag1a))
     requestDf("df/tagdelete", TagDeleteRequest(tag1b))
     requestDf("df/tagdelete", TagDeleteRequest(tag2a))
 
-    val tags4 = request[TagsGetRequest, Array[(Tag, UUID)]]("df/tags", TagsGetRequest(Some("google.com/df2:*")))
+    val tags4 = request[TagsGetRequest, Array[TaggedDataframeResponse]]("df/tags",
+      TagsGetRequest(Some("google.com/df2:*")))
     assert(tags4.isEmpty)
   }
 

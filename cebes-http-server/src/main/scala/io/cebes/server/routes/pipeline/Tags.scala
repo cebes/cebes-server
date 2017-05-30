@@ -14,13 +14,10 @@
 
 package io.cebes.server.routes.pipeline
 
-import java.util.UUID
-
 import com.google.inject.Inject
 import io.cebes.pipeline.PipelineService
 import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.{AsyncSerializableOperation, TagsGetRequest}
-import io.cebes.tag.Tag
+import io.cebes.server.routes.common.{AsyncSerializableOperation, TaggedPipelineResponse, TagsGetRequest}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,13 +25,16 @@ import scala.concurrent.{ExecutionContext, Future}
   * Get all tags that match the given pattern.
   */
 class Tags @Inject()(pipelineService: PipelineService, override val resultStorage: ResultStorage)
-  extends AsyncSerializableOperation[TagsGetRequest, Array[(Tag, UUID)]] {
+  extends AsyncSerializableOperation[TagsGetRequest, Array[TaggedPipelineResponse]] {
 
   /**
     * Implement this to do the real work
     */
   override protected def runImpl(requestEntity: TagsGetRequest)
-                                (implicit ec: ExecutionContext): Future[Array[(Tag, UUID)]] = Future {
-    pipelineService.getTags(requestEntity.pattern, requestEntity.maxCount).toArray
+                                (implicit ec: ExecutionContext): Future[Array[TaggedPipelineResponse]] = Future {
+    pipelineService.getTags(requestEntity.pattern, requestEntity.maxCount).map {entry =>
+      val ppl = pipelineService.get(entry._2.objectId.toString).pipelineDef
+      TaggedPipelineResponse(entry._1, entry._2.objectId, entry._2.createdAt, ppl)
+    }.toArray
   }
 }

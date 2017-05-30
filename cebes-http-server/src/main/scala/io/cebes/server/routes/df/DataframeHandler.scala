@@ -14,8 +14,6 @@
 
 package io.cebes.server.routes.df
 
-import java.util.UUID
-
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -24,9 +22,8 @@ import io.cebes.df.sample.DataSample
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common.{OperationHelper, TagAddRequest, TagDeleteRequest, TagsGetRequest}
+import io.cebes.server.routes.common._
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
-import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol._
 
 /**
@@ -41,7 +38,7 @@ trait DataframeHandler extends SecuredSession with OperationHelper with LazyLogg
 
         operationDf[TagAdd, TagAddRequest],
         operationDf[TagDelete, TagDeleteRequest],
-        operation[Tags, TagsGetRequest, Array[(Tag, UUID)]],
+        operation[Tags, TagsGetRequest, Array[TaggedDataframeResponse]],
         operationDf[Get, String],
 
         operationDf[InferVariableTypes, LimitRequest],

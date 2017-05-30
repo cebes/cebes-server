@@ -21,9 +21,15 @@ import io.cebes.tag.Tag
 import io.cebes.persistence.ClosableIterator
 
 /**
+  * An entry in the [[TagStore]]
+  */
+case class TagEntry(createdAt: Long, objectId: UUID)
+
+/**
   * The trait doesn't really need the type parameter. We add this to facilitate Dependency Injection.
   */
 trait TagStore[T <: HasId] {
+
 
   /**
     * add a new tag for the given ID
@@ -34,12 +40,12 @@ trait TagStore[T <: HasId] {
   /**
     * Remove the given tag
     */
-  def remove(tag: Tag): Option[UUID]
+  def remove(tag: Tag): Option[TagEntry]
 
   /**
     * Get the ID with the given tag
     */
-  def get(tag: Tag): Option[UUID]
+  def get(tag: Tag): Option[TagEntry]
 
   /**
     * Find the given UUID in this store, return a sequence of tags
@@ -49,5 +55,5 @@ trait TagStore[T <: HasId] {
   /**
     * Get all tags
     */
-  def elements: ClosableIterator[(Tag, UUID)]
+  def elements: ClosableIterator[(Tag, TagEntry)]
 }

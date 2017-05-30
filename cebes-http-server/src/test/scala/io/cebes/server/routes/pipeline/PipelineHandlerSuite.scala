@@ -15,13 +15,12 @@ import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.df.functions
-import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.pipeline.json._
 import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
 import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TagsGetRequest}
+import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TaggedPipelineResponse, TagsGetRequest}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol._
@@ -110,17 +109,18 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     assert(ppl2.stages(0) === pplResult.stages(0))
 
     // get all the tags
-    val tags = request[TagsGetRequest, Array[(Tag, UUID)]]("pipeline/tags", TagsGetRequest(None, 10))
+    val tags = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags", TagsGetRequest(None, 10))
     assert(tags.length === 1)
-    assert(tags(0)._1.toString === "tag1:latest")
+    assert(tags(0).tag.toString === "tag1:latest")
 
-    val tags1 = request[TagsGetRequest, Array[(Tag, UUID)]]("pipeline/tags", TagsGetRequest(Some("randomstuff???"), 10))
+    val tags1 = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags",
+      TagsGetRequest(Some("randomstuff???"), 10))
     assert(tags1.length === 0)
 
     // delete tag
     requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
 
-    val tags2 = request[TagsGetRequest, Array[(Tag, UUID)]]("pipeline/tags", TagsGetRequest(None, 10))
+    val tags2 = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags", TagsGetRequest(None, 10))
     assert(tags2.length === 0)
 
     // cannot get the tag again

@@ -15,7 +15,7 @@ import java.util.UUID
 
 import io.cebes.common.HasId
 import io.cebes.tag.Tag
-import io.cebes.store.TagStore
+import io.cebes.store.{TagEntry, TagStore}
 import io.cebes.persistence.ClosableIterator
 import io.cebes.persistence.jdbc.{JdbcPersistenceBuilder, JdbcPersistenceColumn}
 import io.cebes.prop.types.MySqlBackendCredentials
@@ -28,25 +28,26 @@ import scala.collection.mutable
   */
 abstract class JdbcTagStore[T <: HasId](mySqlCreds: MySqlBackendCredentials, tableName: String) extends TagStore[T] {
 
-  private val jdbcStore = JdbcPersistenceBuilder.newBuilder[Tag, UUID]()
+  private val jdbcStore = JdbcPersistenceBuilder.newBuilder[Tag, TagEntry]()
     .withCredentials(mySqlCreds.url, mySqlCreds.userName, mySqlCreds.password,
       tableName, mySqlCreds.driver)
     .withValueSchema(Seq(
-      JdbcPersistenceColumn("uuid", "VARCHAR(200)")
+      JdbcPersistenceColumn("created_at", "BIGINT"),
+      JdbcPersistenceColumn("object_id", "VARCHAR(200)")
     ))
-    .withValueToSeq(v => Seq(v.toString))
-    .withSqlToValue { case (_, v) => UUID.fromString(v.getString(1)) }
+    .withValueToSeq(v => Seq(v.createdAt, v.objectId.toString))
+    .withSqlToValue { case (_, v) => TagEntry(v.getLong(1), UUID.fromString(v.getString(2))) }
     .withStrToKey(Tag.fromString)
     .build()
 
-  override def insert(tag: Tag, id: UUID): Unit = jdbcStore.insert(tag, id)
+  override def insert(tag: Tag, id: UUID): Unit = jdbcStore.insert(tag, TagEntry(System.currentTimeMillis(), id))
 
-  override def remove(tag: Tag): Option[UUID] = jdbcStore.remove(tag)
+  override def remove(tag: Tag): Option[TagEntry] = jdbcStore.remove(tag)
 
-  override def get(tag: Tag): Option[UUID] = jdbcStore.get(tag)
+  override def get(tag: Tag): Option[TagEntry] = jdbcStore.get(tag)
 
   override def find(id: UUID): Seq[Tag] = {
-    val tags = jdbcStore.findValue(id)
+    val tags = jdbcStore.findValue(TagEntry(0, id), excludedFields = Seq("created_at"))
     val results = mutable.ListBuffer.empty[Tag]
     try {
       while (tags.hasNext) {
@@ -58,5 +59,5 @@ abstract class JdbcTagStore[T <: HasId](mySqlCreds: MySqlBackendCredentials, tab
     results
   }
 
-  override def elements: ClosableIterator[(Tag, UUID)] = jdbcStore.elements
+  override def elements: ClosableIterator[(Tag, TagEntry)] = jdbcStore.elements
 }

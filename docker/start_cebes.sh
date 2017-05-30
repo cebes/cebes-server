@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 # source configure_mysql.sh
-/usr/share/mysql/mysql.server restart --user=root
+/usr/share/mysql/mysql.server start --user=root
 
 CEBES_MYSQL_SERVER="127.0.0.1:3306"
 MYSQL_OPTIONS="?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&useSSL=false"
