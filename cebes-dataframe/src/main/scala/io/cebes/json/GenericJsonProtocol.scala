@@ -136,6 +136,7 @@ trait GenericJsonProtocol {
     }
   }
 
+  /*
   protected def writeMap[K <: Any, V <: Any](m: Map[K, V]): JsValue = {
     val jsValues = m.map {
       case (key, value) =>
@@ -143,7 +144,7 @@ trait GenericJsonProtocol {
     }.toSeq
     JsArray(jsValues: _*)
   }
-
+  */
   protected def readMap[K, V](json: JsValue)(implicit tagK: ClassTag[K], tagV: ClassTag[V]): Map[K, V] = json match {
     case arr: JsArray =>
       arr.elements.map {
