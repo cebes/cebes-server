@@ -136,8 +136,7 @@ class CebesJsonProtocolSuite extends FunSuite {
     assert(data.zip(sample2.data).forall {
       case (s1, s2) => s1.zip(s2).forall {
         case (null, null) => true
-        case (v1: Array[Byte], v2: Array[Byte]) => v1.sameElements(v2)
-        case (v1: Array[Byte], v2: Array[_]) if v1.length == 0 => v2.length === 0
+        case (v1: Array[_], v2: Array[_]) => v1.sameElements(v2)
       }
     })
   }

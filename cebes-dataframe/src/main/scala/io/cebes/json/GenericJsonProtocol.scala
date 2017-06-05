@@ -45,15 +45,7 @@ trait GenericJsonProtocol {
       case t: Timestamp => toJsObject("timestamp", JsNumber(t.getTime))
       case d: Date => toJsObject("date", JsNumber(d.getTime))
       case arr: Array[_] =>
-        if (arr.length > 0 && !arr.head.isInstanceOf[Byte]) {
-          serializationError(s"Only an array of bytes is supported. " +
-            s"Got an array of ${
-              arr.head.getClass.getName
-            }")
-        }
-        toJsObject("byte_array", JsArray(arr.map {
-          v => JsNumber(v.asInstanceOf[Byte])
-        }: _*))
+        toJsObject("array", JsArray(arr.map(writeJson): _*))
       case arr: mutable.WrappedArray[_] =>
         toJsObject("wrapped_array", JsArray(arr.map(writeJson): _*))
       case m: Map[_, _] =>
@@ -102,12 +94,24 @@ trait GenericJsonProtocol {
           case JsString("double") => asJsType[JsNumber](jsData).value.doubleValue()
           case JsString("timestamp") => new Timestamp(asJsType[JsNumber](jsData).value.longValue())
           case JsString("date") => new Date(asJsType[JsNumber](jsData).value.longValue())
-          case JsString("byte_array") =>
-            val arr = Array.newBuilder[Byte]
-            arr ++= asJsType[JsArray](jsData).elements.map {
-              v => asJsType[JsNumber](v).value.byteValue()
+          case JsString("array") =>
+            val arrObj = asJsType[JsArray](jsData).elements.map(readJson).toArray
+            arrObj.headOption match {
+              case Some(_: Byte) => arrObj.map[Byte, Array[Byte]](_.asInstanceOf[Byte])
+              case Some(_: Short) => arrObj.map[Short, Array[Short]](_.asInstanceOf[Short])
+              case Some(_: Int) => arrObj.map[Int, Array[Int]](_.asInstanceOf[Int])
+              case Some(_: Long) => arrObj.map[Long, Array[Long]](_.asInstanceOf[Long])
+              case Some(_: Float) => arrObj.map[Float, Array[Float]](_.asInstanceOf[Float])
+              case Some(_: Double) => arrObj.map[Double, Array[Double]](_.asInstanceOf[Double])
+              case Some(_: String) => arrObj.map[String, Array[String]](_.asInstanceOf[String])
+              case Some(_: Boolean) => arrObj.map[Boolean, Array[Boolean]](_.asInstanceOf[Boolean])
+              case _ => arrObj
             }
-            arr.result()
+            //val arr = Array.newBuilder[Byte]
+            //arr ++= asJsType[JsArray](jsData).elements.map {
+            //  v => asJsType[JsNumber](v).value.byteValue()
+            //}
+            //arr.result()
           case JsString("wrapped_array") =>
             mutable.WrappedArray.make(asJsType[JsArray](jsData).elements.map(readJson).toArray)
           case JsString("map") =>
@@ -133,40 +137,6 @@ trait GenericJsonProtocol {
         }
       case other =>
         deserializationError(s"Don't support deserializing JSON value: ${other.compactPrint}")
-    }
-  }
-
-  /*
-  protected def writeMap[K <: Any, V <: Any](m: Map[K, V]): JsValue = {
-    val jsValues = m.map {
-      case (key, value) =>
-        JsArray(writeJson(key), writeJson(value))
-    }.toSeq
-    JsArray(jsValues: _*)
-  }
-  */
-  protected def readMap[K, V](json: JsValue)(implicit tagK: ClassTag[K], tagV: ClassTag[V]): Map[K, V] = json match {
-    case arr: JsArray =>
-      arr.elements.map {
-        case element: JsArray =>
-          require(element.elements.length == 2, "Require a JsArray of length 2, for the key and value")
-          safeCast[K](readJson(element.elements.head)) -> safeCast[V](readJson(element.elements.last))
-        case other =>
-          deserializationError(s"Expected a JsArray, got ${other.compactPrint}")
-      }.toMap
-    case other =>
-      deserializationError(s"Expected a JsArray, got ${other.compactPrint}")
-  }
-
-  protected def safeCast[T](v: Any)(implicit tag: ClassTag[T]): T = {
-    v match {
-      case null =>
-        // some types won't take nulls (e.g. Double)
-        // but some types do (e.g. String). So we do whatever we can here.
-        tag.runtimeClass.asInstanceOf[Class[T]].cast(null)
-      case t =>
-        // god helps us
-        t.asInstanceOf[T]
     }
   }
 }

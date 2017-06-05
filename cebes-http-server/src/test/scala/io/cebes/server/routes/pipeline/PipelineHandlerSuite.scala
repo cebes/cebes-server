@@ -231,4 +231,28 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     assert(ex2.message.contains("Invalid slot descriptor s3:wrongOutputName in the output list"))
   }
 
+  test("pipeline with drop: array[string] input slot") {
+    val pplDef = PipelineDef(None,
+      Array(StageDef("s1", "Drop", Map("colNames" -> ValueDef(Array[String]("hardener", "wax"))))))
+
+    val dfIn = getCylinderBands
+
+    val runDef = PipelineRunDef(pplDef,
+      Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
+      Array(StageOutputDef("s1", "outputDf")))
+
+    val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef)
+    assert(runResult.length === 1)
+    assert(runResult(0)._2.isInstanceOf[DataframeMessageDef])
+
+    val dfResultId = runResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    val dfResult = requestDf("df/get", dfResultId.toString)
+
+    import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
+
+    assert(count(dfResult) > 0)
+    assert(dfResult.schema.size === dfIn.schema.size - 2)
+    assert(!dfResult.schema.contains("hardener"))
+    assert(!dfResult.schema.contains("wax"))
+  }
 }
