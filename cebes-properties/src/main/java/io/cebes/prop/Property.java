@@ -35,6 +35,8 @@ public enum Property {
             "Username for the hive metastore"),
     HIVE_METASTORE_PASSWORD("CEBES_HIVE_METASTORE_PASSWORD", "cebes.hive.metastore.password", "",
             "Password for the hive metastore"),
+    SPARK_WAREHOUSE_DIR("CEBES_SPARK_WAREHOUSE_DIR", "cebes.spark.warehouse.dir", "/tmp/spark-warehouse",
+            "Parent directory to the Spark SQL warehouse"),
 
     CACHESPEC_DF_STORE("CEBES_CACHESPEC_DF_STORE", "cebes.cachespec.df.store",
             "maximumSize=1000,expireAfterAccess=30m",
