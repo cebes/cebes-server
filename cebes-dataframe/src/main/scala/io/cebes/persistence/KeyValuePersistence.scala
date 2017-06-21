@@ -44,5 +44,5 @@ trait KeyValuePersistence[K, V] {
     * Find the entry with the given value,
     * may returns several keys.
     */
-  def findValue(value: V): ClosableIterator[K]
+  def findValue(value: V, excludedFields: Seq[String] = Seq()): ClosableIterator[K]
 }

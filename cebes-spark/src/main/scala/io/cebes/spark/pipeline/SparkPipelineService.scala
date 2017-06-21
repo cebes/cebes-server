@@ -70,7 +70,7 @@ class SparkPipelineService @Inject()(pipelineFactory: PipelineFactory,
           case _ =>
         }
 
-        StageOutputDef(slot.parent, slot.parent) -> pplMessageSerializer.serialize(v)
+        StageOutputDef(slot.parent, slot.name) -> pplMessageSerializer.serialize(v)
       }
     }
 

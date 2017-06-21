@@ -13,7 +13,10 @@ package io.cebes.server.routes.common
 
 import java.util.UUID
 
+import io.cebes.df.schema.Schema
 import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.pipeline.json.PipelineDef
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -25,6 +28,10 @@ case class TagAddRequest(tag: Tag, df: UUID)
 case class TagDeleteRequest(tag: Tag)
 
 case class TagsGetRequest(pattern: Option[String], maxCount: Int = 100)
+
+case class TaggedDataframeResponse(tag: Tag, id: UUID, createdAt: Long, schema: Schema)
+
+case class TaggedPipelineResponse(tag: Tag, id: UUID, createdAt: Long, pipeline: PipelineDef)
 
 trait HttpTagJsonProtocol {
 
@@ -45,6 +52,10 @@ trait HttpTagJsonProtocol {
   implicit val tagAddRequestFormat: RootJsonFormat[TagAddRequest] = jsonFormat2(TagAddRequest)
   implicit val tagDeleteRequestFormat: RootJsonFormat[TagDeleteRequest] = jsonFormat1(TagDeleteRequest)
   implicit val tagsGetRequestFormat: RootJsonFormat[TagsGetRequest] = jsonFormat2(TagsGetRequest)
+  implicit val taggedDataframeResponseFormat: RootJsonFormat[TaggedDataframeResponse] =
+    jsonFormat4(TaggedDataframeResponse)
+  implicit val taggedPipelineResponseFormat: RootJsonFormat[TaggedPipelineResponse] =
+    jsonFormat4(TaggedPipelineResponse)
 }
 
 object HttpTagJsonProtocol extends HttpTagJsonProtocol

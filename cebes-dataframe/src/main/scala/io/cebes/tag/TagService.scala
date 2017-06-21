@@ -14,7 +14,7 @@ package io.cebes.tag
 import java.util.UUID
 
 import io.cebes.common.HasId
-import io.cebes.store.{CachedStore, TagStore}
+import io.cebes.store.{CachedStore, TagEntry, TagStore}
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -58,12 +58,12 @@ trait TagService[T <: HasId] {
     */
   def untag(tag: Tag): T = {
     tagStore.remove(tag) match {
-      case Some(id) =>
-        cachedStore.unpersist(id) match {
+      case Some(entry) =>
+        cachedStore.unpersist(entry.objectId) match {
           case Some(obj) => obj
           case None =>
-            throw new IllegalStateException(s"Object ID ${id.toString} of the given tag (${tag.toString}) " +
-              s"doesn't exist in the Store. This is likely a bug, " +
+            throw new IllegalStateException(s"Object ID ${entry.objectId.toString} of the given tag " +
+              s"(${tag.toString}) doesn't exist in the Store. This is likely a bug, " +
               s"please save the stack trace and notify your administrator")
         }
       case None =>
@@ -76,9 +76,9 @@ trait TagService[T <: HasId] {
     * Optionally submit a regex to filter the tags.
     * Only return `maxCount` entries if there are more than that.
     */
-  def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, UUID)] = {
+  def getTags(nameRegex: Option[String], maxCount: Int = 100): Iterable[(Tag, TagEntry)] = {
     val elements = tagStore.elements
-    val results = mutable.MutableList.empty[(Tag, UUID)]
+    val results = mutable.MutableList.empty[(Tag, TagEntry)]
     try {
       nameRegex match {
         case None =>
@@ -88,9 +88,9 @@ trait TagService[T <: HasId] {
         case Some(regexStr) =>
           val regex = regexStr.replace(".", "\\.").replace("*", ".*").replace("?", ".?").r
           while (elements.hasNext && results.size < maxCount) {
-            val (tag, id) = elements.next()
+            val (tag, entry) = elements.next()
             if (regex.findFirstIn(tag.toString()).isDefined) {
-              results += Tuple2(tag, id)
+              results += Tuple2(tag, entry)
             }
           }
       }
@@ -115,7 +115,7 @@ trait TagService[T <: HasId] {
       case Failure(_) =>
         Try(Tag.fromString(identifier)) match {
           case Success(tag) => tagStore.get(tag) match {
-            case Some(id) => id
+            case Some(entry) => entry.objectId
             case None =>
               throw new NoSuchElementException(s"Tag not found: $identifier")
           }

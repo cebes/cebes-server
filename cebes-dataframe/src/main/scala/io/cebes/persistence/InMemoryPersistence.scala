@@ -41,6 +41,8 @@ class InMemoryPersistence[K, V](private val map: mutable.Map[K, V]) extends KeyV
 
   override def elements: ClosableIterator[(K, V)] = ClosableIterator.fromIterator(map.iterator)
 
-  override def findValue(value: V): ClosableIterator[K] =
+  override def findValue(value: V, excludedFields: Seq[String] = Seq()): ClosableIterator[K] = {
+    require(excludedFields.isEmpty, s"Non-empty excluded fields is not supported in ${getClass.getName}")
     ClosableIterator.fromIterator(map.filter(_._2 == value).keys.toIterator)
+  }
 }

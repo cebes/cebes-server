@@ -18,7 +18,8 @@ ENV http_proxy=$PROXY_SERVER \
     NO_PROXY=${NO_PROXY}
     
 # mysql
-RUN apk add --update curl bash mysql mysql-client && rm -f /var/cache/apk/*
+# libc6-compat is needed for alpine: https://github.com/grpc/grpc/issues/6126
+RUN apk add --update curl bash libc6-compat mysql mysql-client && rm -f /var/cache/apk/*
 
 # Spark
 ENV SPARK_FILE_NAME "spark-${SPARK_VERSION}-bin-hadoop2.7"

@@ -104,13 +104,13 @@ trait HttpDfJsonProtocol extends GenericJsonProtocol {
   implicit object FillNAWithMapRequestFormat extends RootJsonFormat[FillNAWithMapRequest] {
 
     override def write(obj: FillNAWithMapRequest): JsValue = {
-      JsObject(Map("df" -> obj.df.toJson, "valueMap" -> writeMap(obj.valueMap)))
+      JsObject(Map("df" -> obj.df.toJson, "valueMap" -> writeJson(obj.valueMap)))
     }
 
     override def read(json: JsValue): FillNAWithMapRequest = json match {
       case jsObj: JsObject =>
         val df = jsObj.fields("df").convertTo[UUID]
-        val valueMap = readMap[String, Any](jsObj.fields("valueMap"))
+        val valueMap = readJson(jsObj.fields("valueMap")).asInstanceOf[Map[String, Any]]
         FillNAWithMapRequest(df, valueMap)
       case other =>
         deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
@@ -122,14 +122,14 @@ trait HttpDfJsonProtocol extends GenericJsonProtocol {
     override def write(obj: ReplaceRequest): JsValue = {
       JsObject(Map("df" -> obj.df.toJson,
         "cols" -> obj.colNames.toJson,
-        "replacement" -> writeMap(obj.replacement)))
+        "replacement" -> writeJson(obj.replacement)))
     }
 
     override def read(json: JsValue): ReplaceRequest = json match {
       case jsObj: JsObject =>
         val df = jsObj.fields("df").convertTo[UUID]
         val cols = jsObj.fields("cols").convertTo[Array[String]]
-        val replacement = readMap[Any, Any](jsObj.fields("replacement"))
+        val replacement = readJson(jsObj.fields("replacement")).asInstanceOf[Map[Any, Any]]
         ReplaceRequest(df, cols, replacement)
       case other =>
         deserializationError(s"Expected a JsObject, got ${other.compactPrint}")
@@ -144,7 +144,7 @@ trait HttpDfJsonProtocol extends GenericJsonProtocol {
     override def write(obj: SampleByRequest): JsValue = {
       JsObject(Map("df" -> obj.df.toJson,
         "col" -> obj.colName.toJson,
-        "fractions" -> writeMap(obj.fractions),
+        "fractions" -> writeJson(obj.fractions),
         "seed" -> obj.seed.toJson))
     }
 
@@ -152,7 +152,7 @@ trait HttpDfJsonProtocol extends GenericJsonProtocol {
       case jsObj: JsObject =>
         val df = jsObj.fields("df").convertTo[UUID]
         val col = jsObj.fields("col").convertTo[String]
-        val fractions = readMap[Any, Double](jsObj.fields("fractions"))
+        val fractions = readJson(jsObj.fields("fractions")).asInstanceOf[Map[Any, Double]]
         val seed = jsObj.fields("seed").convertTo[Long]
         SampleByRequest(df, col, fractions, seed)
       case other =>
