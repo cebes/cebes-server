@@ -37,7 +37,7 @@ trait HasSparkSession {
     val builder = SparkSession.builder()
       .appName("Cebes service on Spark (local)")
       .master("local[4]")
-      .config("spark.sql.warehouse.dir", s"file:$sparkWarehouseDir")
+      .config("spark.sql.warehouse.dir", sparkWarehouseDir)
 
     // update log4j configuration if there is some log4j.properties in the classpath
     Option(getClass.getClassLoader.getResourceAsStream("log4j.properties")).foreach { f =>
