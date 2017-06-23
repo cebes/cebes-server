@@ -18,9 +18,12 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.server.http.SecuredSession
+import io.cebes.server.routes.DataframeResponse
+import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common._
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
@@ -36,10 +39,10 @@ trait DataframeHandler extends SecuredSession with OperationHelper with LazyLogg
       concat(
         operationDf[Sql, String],
 
-        operationDf[TagAdd, TagAddRequest],
-        operationDf[TagDelete, TagDeleteRequest],
+        operation[TagAdd, TagAddRequest, DataframeResponse],
+        operation[TagDelete, TagDeleteRequest, DataframeResponse],
         operation[Tags, TagsGetRequest, Array[TaggedDataframeResponse]],
-        operationDf[Get, String],
+        operation[Get, String, DataframeResponse],
 
         operationDf[InferVariableTypes, LimitRequest],
         operationDf[WithVariableTypes, WithVariableTypesRequest],
