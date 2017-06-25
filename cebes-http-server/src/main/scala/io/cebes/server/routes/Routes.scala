@@ -20,12 +20,13 @@ import akka.http.scaladsl.server.Route
 import io.cebes.server.routes.HttpJsonProtocol._
 import io.cebes.server.routes.auth.AuthHandler
 import io.cebes.server.routes.df.DataframeHandler
+import io.cebes.server.routes.model.ModelHandler
 import io.cebes.server.routes.pipeline.PipelineHandler
 import io.cebes.server.routes.result.ResultHandler
 import io.cebes.server.routes.storage.StorageHandler
 import io.cebes.server.routes.test.TestHandler
 
-trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with PipelineHandler
+trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with PipelineHandler with ModelHandler
   with StorageHandler with ResultHandler with TestHandler {
 
   val routes: Route =
@@ -33,6 +34,7 @@ trait Routes extends ApiErrorHandler with AuthHandler with DataframeHandler with
       authApi ~
         dataframeApi ~
         pipelineApi ~
+        modelApi ~
         storageApi ~
         resultApi ~
         testApi

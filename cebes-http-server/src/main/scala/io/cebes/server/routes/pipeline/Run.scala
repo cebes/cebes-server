@@ -23,7 +23,12 @@ import io.cebes.server.routes.common.AsyncSerializableOperation
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Create (i.e. register) a [[PipelineDef]] to the server
+  * Run the given pipeline
+  *
+  * **NOTE**: This command needs to return an Array of tuple.
+  * We can't return Map[StageOutputDef, PipelineMessageDef]
+  * because spray-json requires that the key of a [[Map]] must be serialized as [[spray.json.JsString]],
+  * while in our case, [[StageOutputDef]] will be serialized as a [[spray.json.JsObject]]
   */
 class Run @Inject()(pipelineService: PipelineService, override val resultStorage: ResultStorage)
   extends AsyncSerializableOperation[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]] {

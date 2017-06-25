@@ -13,7 +13,6 @@ package io.cebes.pipeline.ml
 
 import io.cebes.common.HasId
 import io.cebes.df.Dataframe
-import io.cebes.pipeline.json.ModelDef
 import io.cebes.pipeline.models._
 
 /**
@@ -23,7 +22,7 @@ import io.cebes.pipeline.models._
 trait Model extends HasId with Inputs {
 
   /** Implement this to do the real transformation */
-  def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe
+  protected def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe
 
   /////////////////////////////////////////////////////////////////////////////
   // public APIs

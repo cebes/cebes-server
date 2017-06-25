@@ -30,7 +30,7 @@ case class DataframeMessageDef(dfId: UUID) extends PipelineMessageDef
 
 case class SampleMessageDef() extends PipelineMessageDef
 
-case class ModelMessageDef() extends PipelineMessageDef
+case class ModelMessageDef(modelId: UUID) extends PipelineMessageDef
 
 case class ColumnDef(col: Column) extends PipelineMessageDef
 
@@ -56,6 +56,14 @@ case class StageDef(name: String, stageClass: String, inputs: Map[String, Pipeli
   */
 case class ModelDef(id: UUID, modelClass: String, inputs: Map[String, PipelineMessageDef] = Map.empty,
                     metaData: Map[String, String] = Map.empty)
+
+/**
+  * Request running a model on the given [[io.cebes.df.Dataframe]]
+  *
+  * @param model   The model to run
+  * @param inputDf the input [[io.cebes.df.Dataframe]]
+  */
+case class ModelRunDef(model: ModelMessageDef, inputDf: DataframeMessageDef)
 
 /**
   * Definition of a Pipeline

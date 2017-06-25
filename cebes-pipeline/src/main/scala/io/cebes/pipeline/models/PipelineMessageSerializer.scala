@@ -15,6 +15,7 @@ import java.util.UUID
 
 import io.cebes.df.{Column, Dataframe}
 import io.cebes.pipeline.json._
+import io.cebes.pipeline.ml.Model
 
 /**
   * Functions for serializing and deserializing [[PipelineMessageDef]]
@@ -28,16 +29,14 @@ trait PipelineMessageSerializer {
   protected def getDataframe(dfId: UUID): Dataframe
 
   /**
-    * Serialize the given value into a [[PipelineMessageDef]]
+    * Get a [[Model]] object given the ID
+    * Should be implemented by child classes
     */
-  def serialize[T](value: T): PipelineMessageDef = {
-    value match {
-      case col: Column => ColumnDef(col)
-      case df: Dataframe => DataframeMessageDef(df.id)
-      case slot: SlotDescriptor => StageOutputDef(slot.parent, slot.name)
-      case other => writeValueDef(other)
-    }
-  }
+  protected def getModel(modelId: UUID): Model
+
+  //////////////////////////////////////////////////
+  // private helper
+  //////////////////////////////////////////////////
 
   /**
     * TODO: This might be a bit overdo, probably a `ValueDef(x)` would be enough for all?
@@ -57,6 +56,23 @@ trait PipelineMessageSerializer {
         s"pipeline message of type ${other.getClass.getName}")
   }
 
+  //////////////////////////////////////////////////
+  // Public APIs
+  //////////////////////////////////////////////////
+
+  /**
+    * Serialize the given value into a [[PipelineMessageDef]]
+    */
+  def serialize[T](value: T): PipelineMessageDef = {
+    value match {
+      case col: Column => ColumnDef(col)
+      case df: Dataframe => DataframeMessageDef(df.id)
+      case model: Model => ModelMessageDef(model.id)
+      case slot: SlotDescriptor => StageOutputDef(slot.parent, slot.name)
+      case other => writeValueDef(other)
+    }
+  }
+
   /**
     * Parse the given [[PipelineMessageDef]] and return the actual value, which can be
     * used to feed the pipeline stages
@@ -68,6 +84,7 @@ trait PipelineMessageSerializer {
       case v: ValueDef => v.value
       case c: ColumnDef => c.col
       case d: DataframeMessageDef => getDataframe(d.dfId)
+      case m: ModelMessageDef => getModel(m.modelId)
       case s: StageOutputDef => SlotDescriptor(s.stageName, s.outputName)
       case valueDef =>
         throw new UnsupportedOperationException(s"Unknown pipeline message of type ${valueDef.getClass.getName}")

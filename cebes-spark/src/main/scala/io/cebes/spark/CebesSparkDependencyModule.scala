@@ -16,12 +16,13 @@ package io.cebes.spark
 
 import com.google.inject.{AbstractModule, Singleton, TypeLiteral}
 import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.pipeline.ModelService
 import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer}
 import io.cebes.spark.config._
 import io.cebes.spark.df.SparkDataframeService
-import io.cebes.spark.pipeline.{SparkModelFactory, SparkPipelineMessageSerializer}
+import io.cebes.spark.pipeline.{SparkModelFactory, SparkModelService, SparkPipelineMessageSerializer}
 import io.cebes.store.{CachedStore, TagStore}
 
 
@@ -44,7 +45,8 @@ class CebesSparkDependencyModule extends AbstractModule {
       .toProvider(classOf[TagStoreModelProvider]).in(classOf[Singleton])
 
     bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
-    bind(classOf[PipelineMessageSerializer]).to(classOf[SparkPipelineMessageSerializer])
+    bind(classOf[ModelService]).to(classOf[SparkModelService])
     bind(classOf[ModelFactory]).to(classOf[SparkModelFactory])
+    bind(classOf[PipelineMessageSerializer]).to(classOf[SparkPipelineMessageSerializer])
   }
 }

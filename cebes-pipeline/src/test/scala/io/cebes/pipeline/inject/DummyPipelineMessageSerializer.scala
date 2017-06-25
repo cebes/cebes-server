@@ -14,6 +14,7 @@ package io.cebes.pipeline.inject
 import java.util.UUID
 
 import io.cebes.df.Dataframe
+import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.PipelineMessageSerializer
 
 /**
@@ -23,4 +24,6 @@ import io.cebes.pipeline.models.PipelineMessageSerializer
 class DummyPipelineMessageSerializer extends PipelineMessageSerializer {
 
   override protected def getDataframe(dfId: UUID): Dataframe = ???
+
+  override protected def getModel(modelId: UUID): Model = ???
 }

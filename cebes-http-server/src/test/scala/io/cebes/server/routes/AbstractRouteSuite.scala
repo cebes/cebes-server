@@ -19,7 +19,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import io.cebes.pipeline.json.PipelineDef
+import io.cebes.pipeline.json.{ModelDef, PipelineDef}
 import io.cebes.server.client.{RemoteDataframe, ServerException}
 import io.cebes.server.helpers.CebesHttpServerTestInjector
 import io.cebes.server.http.HttpServer
@@ -148,6 +148,11 @@ abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
   protected def requestPipeline[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
                                                            jsDfr: JsonFormat[PipelineDef]): PipelineDef = {
     wait(postAsync[E, PipelineDef](url, entity))
+  }
+
+  protected def requestModel[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
+                                                           jsDfr: JsonFormat[ModelDef]): ModelDef = {
+    wait(postAsync[E, ModelDef](url, entity))
   }
 
 }

@@ -42,7 +42,7 @@ trait SparkModel extends Model with CebesSparkUtil with SparkSchemaUtils {
 
   protected val dfFactory: SparkDataframeFactory
 
-  override def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe = {
+  override protected def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe = {
     val sparkDf = sparkTransformer.transform(getSparkDataframe(data).sparkDf)
 
     dfFactory.df(sparkDf, getSchema(sparkDf, data.schema, Seq.empty[String]: _*))
