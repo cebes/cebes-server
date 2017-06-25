@@ -12,6 +12,7 @@
 package io.cebes.spark.pipeline.ml.regression
 
 import io.cebes.df.types.StorageTypes
+import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import io.cebes.spark.pipeline.features.VectorAssembler
 import org.scalatest.FunSuite
@@ -22,7 +23,6 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     super.beforeAll()
     createOrReplaceCylinderBands()
   }
-
 
   test("Linear regression with vector assembler") {
     val df = getCylinderBands.limit(200).na.drop()
@@ -86,4 +86,37 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(dfPredict4.numCols === df2.numCols + 2)
     assert(dfPredict4.schema("caliper_predict_2").storageType === StorageTypes.DoubleType)
   }
+
+  test("LinearRegression serialization") {
+    val df = getCylinderBands.limit(200).na.drop()
+    assert(df.numRows > 1)
+
+    val assembler = getInstance[VectorAssembler]
+    assembler.input(assembler.inputCols, Array("viscosity", "proof_cut"))
+      .input(assembler.outputCol, "features")
+      .input(assembler.inputDf, df)
+
+    val lr = getInstance[LinearRegression]
+    lr.input(lr.featuresCol, "features")
+      .input(lr.labelCol, "caliper")
+      .input(lr.predictionCol, "caliper_predict")
+      .input(lr.inputDf, assembler.output(assembler.outputDf))
+
+    val lrModel = lr.getModel()
+    assert(lrModel.isInstanceOf[LinearRegressionModel])
+    val v = lrModel.input(lrModel.getInput("labelCol")).get
+    assert(v.isInstanceOf[String])
+    assert(v.asInstanceOf[String] === "caliper")
+
+    val modelFactory = getInstance[ModelFactory]
+    val lrModelDef = modelFactory.save(lrModel)
+    val lrModel2 = modelFactory.create(lrModelDef)
+
+    assert(lrModel2.isInstanceOf[LinearRegressionModel])
+    assert(lrModel2.id === lrModel.id)
+    val v2 = lrModel2.input(lrModel2.getInput("labelCol")).get
+    assert(v2.isInstanceOf[String])
+    assert(v2.asInstanceOf[String] === "caliper")
+  }
+
 }

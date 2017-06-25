@@ -47,6 +47,17 @@ case class StageDef(name: String, stageClass: String, inputs: Map[String, Pipeli
                     outputs: Map[String, PipelineMessageDef] = Map.empty)
 
 /**
+  * Definition of a Model, serializable so that it can be sent to clients and persisted to database
+  *
+  * @param id         ID of the model
+  * @param modelClass full class name of the model
+  * @param inputs     values of input slots
+  * @param metaData   additional meta data
+  */
+case class ModelDef(id: UUID, modelClass: String, inputs: Map[String, PipelineMessageDef] = Map.empty,
+                    metaData: Map[String, String] = Map.empty)
+
+/**
   * Definition of a Pipeline
   *
   * @param id     The unique ID of this Pipeline.

@@ -15,11 +15,12 @@ import java.util.UUID
 
 import com.google.inject.Inject
 import io.cebes.common.HasId
-import io.cebes.pipeline.models.{InputSlot, OutputSlot, SlotValueMap}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits.{SparkEstimator, SparkModel}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.feature.{MinMaxScaler => SparkMinMaxScaler}
+import org.apache.spark.ml.util.MLWritable
 
 trait MinMaxScalerInputs extends HasInputCol with HasOutputCol {
 
@@ -38,23 +39,21 @@ trait MinMaxScalerInputs extends HasInputCol with HasOutputCol {
   * feature E is calculated as:
   *
   * <blockquote>
-  *    $$
-  *    Rescaled(e_i) = \frac{e_i - E_{min}}{E_{max} - E_{min}} * (max - min) + min
-  *    $$
+  * $$
+  * Rescaled(e_i) = \frac{e_i - E_{min}}{E_{max} - E_{min}} * (max - min) + min
+  * $$
   * </blockquote>
   *
   * For the case $E_{max} == E_{min}$, $Rescaled(e_i) = 0.5 * (max + min)$.
   *
   * @note Since zero values will probably be transformed to non-zero values, output of the
-  * transformer will be DenseVector even for sparse input.
-  *
+  *       transformer will be DenseVector even for sparse input.
   * @see [[StandardScaler]]
   */
 case class MinMaxScaler @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with MinMaxScalerInputs {
 
-
-  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+  override protected def estimate(inputs: SlotValueMap): SparkModel = {
     val scaler = new SparkMinMaxScaler()
       .setInputCol(inputs(inputCol))
       .setOutputCol(inputs(outputCol))
@@ -66,6 +65,6 @@ case class MinMaxScaler @Inject()(dfFactory: SparkDataframeFactory)
   }
 }
 
-case class MinMaxScalerModel(id: UUID, sparkTransformer: Transformer,
-                               dfFactory: SparkDataframeFactory)
+case class MinMaxScalerModel(id: UUID, sparkTransformer: Transformer with MLWritable,
+                             dfFactory: SparkDataframeFactory)
   extends SparkModel with MinMaxScalerInputs

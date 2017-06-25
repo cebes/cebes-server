@@ -12,7 +12,7 @@
 package io.cebes.spark.pipeline.ml.traits
 
 import io.cebes.pipeline.ml.Estimator
-import io.cebes.pipeline.models.SlotValueMap
+import io.cebes.pipeline.models.{OutputSlot, SlotValueMap}
 import io.cebes.spark.util.CebesSparkUtil
 
 /**
@@ -20,8 +20,20 @@ import io.cebes.spark.util.CebesSparkUtil
   */
 trait SparkEstimator extends Estimator with CebesSparkUtil {
 
+  /**
+    * Subclasses only needs to implement this function and returns a [[SparkModel]]
+    */
+  protected def estimate(inputs: SlotValueMap): SparkModel
+
   override protected def computeStatelessOutputs(inputs: SlotValueMap, states: SlotValueMap): SlotValueMap = {
     SlotValueMap(outputDf, states(model).transform(inputs(inputDf)))
   }
 
+  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+    require(stateSlot.equals(this.model), s"${getClass.getName} only has one stateful output slot, " +
+      s"but required to compute for ${stateSlot.toString}")
+
+    // call estimate and copy all the parameters to the estimated model
+    estimate(inputs).copyInputs(inputs)
+  }
 }

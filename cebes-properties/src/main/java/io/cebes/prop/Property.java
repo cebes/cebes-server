@@ -40,22 +40,29 @@ public enum Property {
 
     CACHESPEC_DF_STORE("CEBES_CACHESPEC_DF_STORE", "cebes.cachespec.df.store",
             "maximumSize=1000,expireAfterAccess=30m",
-            "Spec for the cache used for dataframe storage in cebes-dataframe-spark"),
+            "Spec for the cache used for dataframe storage in cebes-spark"),
 
     // Non-essential properties
     CACHESPEC_RESULT_STORE("CEBES_CACHESPEC_RESULT_STORE", "cebes.cachespec.result.store",
-            "maximumSize=100,expireAfterAccess=30m",
+            "maximumSize=1000,expireAfterAccess=30m",
             "Spec for the cache used for result storage in cebes-http-server"),
 
-    CACHESPEC_PIPELINE_STORE("CEBES_CACHESPEC_PIPELINE_STORE", "cebes.cachespec.pipeline.store",
-            "maximumSize=100,expireAfterAccess=30m",
-            "Spec for the cache used for pipeline storage in cebes-dataframe-spark"),
-
     // Pipeline related
+    CACHESPEC_PIPELINE_STORE("CEBES_CACHESPEC_PIPELINE_STORE", "cebes.cachespec.pipeline.store",
+            "maximumSize=500,expireAfterAccess=30m",
+            "Spec for the cache used for pipeline storage in cebes-spark"),
+
+    CACHESPEC_MODEL_STORE("CEBES_CACHESPEC_MODEL_STORE", "cebes.cachespec.model.store",
+            "maximumSize=500,expireAfterAccess=30m",
+            "Spec for the cache used for model storage in cebes-spark"),
+
     PIPELINE_STAGE_NAMESPACES("CEBES_PIPELINE_STAGE_NAMESPACES", "cebes.pipeline.stage.namespaces",
             "io.cebes.pipeline.models,io.cebes.spark.pipeline.etl,io.cebes.spark.pipeline.features," +
                     "io.cebes.spark.pipeline.ml.regression",
             "a comma-separated list of namespaces containing definition of stages"),
+
+    MODEL_STORAGE_DIR("CEBES_MODEL_STORAGE_DIR", "cebes.model.storage.dir",
+            "/tmp", "The directory to which all the models are serialized and saved"),
 
     // MYSQL backend
     MYSQL_URL("CEBES_MYSQL_URL", "cebes.mysql.url", "", "URL for MySQL database"),

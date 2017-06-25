@@ -8,21 +8,21 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
+ *
+ * Created by phvu on 29/12/2016.
  */
-package io.cebes.spark.pipeline.store
+
+package io.cebes.spark.df.store
 
 import com.google.inject.{Inject, Singleton}
+import io.cebes.df.Dataframe
 import io.cebes.persistence.jdbc.TableNames
 import io.cebes.persistence.store.JdbcTagStore
-import io.cebes.pipeline.models.Pipeline
 import io.cebes.prop.types.MySqlBackendCredentials
-import io.cebes.store.TagStore
-
 
 /**
-  * An implementation of [[TagStore[Pipeline]]] for Pipelines,
+  * An implementation of [[io.cebes.store.TagStore[Dataframe]] for Spark Dataframes,
   * with JDBC persistence backend.
   */
-@Singleton class JdbcPipelineTagStore @Inject()
-(mySqlCreds: MySqlBackendCredentials)
-  extends JdbcTagStore[Pipeline](mySqlCreds, TableNames.PIPELINE_TAG_STORE)
+@Singleton class SparkDataframeTagStore @Inject()
+(mySqlCreds: MySqlBackendCredentials) extends JdbcTagStore[Dataframe](mySqlCreds, TableNames.DF_TAG_STORE)

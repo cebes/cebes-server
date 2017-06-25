@@ -12,6 +12,7 @@
 package io.cebes.spark.pipeline.features
 
 import io.cebes.df.types.StorageTypes
+import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -34,14 +35,26 @@ class MaxAbsScalerSuite extends FunSuite with ImplicitExecutor with TestDataHelp
 
     val scaler = getInstance[MaxAbsScaler]
     scaler.input(scaler.inputCol, "features")
-    .input(scaler.outputCol, "features_scaled")
-    .input(scaler.inputDf, assembler.output(assembler.outputDf))
+      .input(scaler.outputCol, "features_scaled")
+      .input(scaler.inputDf, assembler.output(assembler.outputDf))
 
     val result = scaler.output(scaler.outputDf).getResult(TEST_WAIT_TIME)
     assert(result.numRows === df.numRows)
     assert(result.numCols === df.numCols + 2)
     assert(result.schema.last.name === "features_scaled")
     assert(result.schema.last.storageType === StorageTypes.VectorType)
-  }
 
+    // serialization
+    val scalerModel = scaler.getModel(TEST_WAIT_TIME)
+    assert(scalerModel.isInstanceOf[MaxAbsScalerModel])
+    assert(scalerModel.input(scalerModel.getInput("outputCol")).get === "features_scaled")
+
+    val modelFactory = getInstance[ModelFactory]
+    val scalerModelDef = modelFactory.save(scalerModel)
+    val scalerModel2 = getInstance[ModelFactory].create(scalerModelDef)
+
+    assert(scalerModel2.id === scalerModel.id)
+    assert(scalerModel2.isInstanceOf[MaxAbsScalerModel])
+    assert(scalerModel2.input(scalerModel2.getInput("outputCol")).get === "features_scaled")
+  }
 }

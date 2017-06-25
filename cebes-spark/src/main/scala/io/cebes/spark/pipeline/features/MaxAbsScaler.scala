@@ -15,11 +15,12 @@ import java.util.UUID
 
 import com.google.inject.Inject
 import io.cebes.common.HasId
-import io.cebes.pipeline.models.{OutputSlot, SlotValueMap}
+import io.cebes.pipeline.models.SlotValueMap
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits.{SparkEstimator, SparkModel}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.feature.{MaxAbsScaler => SparkMaxAbsScaler}
+import org.apache.spark.ml.util.MLWritable
 
 trait MaxAbsScalerInputs extends HasInputCol with HasOutputCol {
 
@@ -36,8 +37,7 @@ trait MaxAbsScalerInputs extends HasInputCol with HasOutputCol {
 case class MaxAbsScaler @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with MaxAbsScalerInputs {
 
-
-  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+  override protected def estimate(inputs: SlotValueMap): SparkModel = {
     val scaler = new SparkMaxAbsScaler()
       .setInputCol(inputs(inputCol))
       .setOutputCol(inputs(outputCol))
@@ -47,6 +47,6 @@ case class MaxAbsScaler @Inject()(dfFactory: SparkDataframeFactory)
   }
 }
 
-case class MaxAbsScalerModel(id: UUID, sparkTransformer: Transformer,
+case class MaxAbsScalerModel(id: UUID, sparkTransformer: Transformer with MLWritable,
                              dfFactory: SparkDataframeFactory)
   extends SparkModel with MaxAbsScalerInputs
