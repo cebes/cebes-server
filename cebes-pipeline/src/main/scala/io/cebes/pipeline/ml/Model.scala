@@ -22,7 +22,7 @@ import io.cebes.pipeline.models._
 trait Model extends HasId with Inputs {
 
   /** Implement this to do the real transformation */
-  def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe
+  protected def transformImpl(data: Dataframe, params: SlotValueMap): Dataframe
 
   /////////////////////////////////////////////////////////////////////////////
   // public APIs
@@ -56,8 +56,10 @@ trait Model extends HasId with Inputs {
     * @return this instance
     */
   def copyInputs(slotValueMap: SlotValueMap): this.type = {
-    slotValueMap.foreach { case (s: Slot[_], v) if hasInput(s.name) =>
-      input(getInput(s.name), v)
+    slotValueMap.foreach { case Tuple2(s: InputSlot[_], v) =>
+      if (hasInput(s.name)) {
+        input(getInput(s.name), v)
+      }
     }
     this
   }

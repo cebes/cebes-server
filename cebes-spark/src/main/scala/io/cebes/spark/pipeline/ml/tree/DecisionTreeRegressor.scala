@@ -21,6 +21,7 @@ import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits._
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.regression.{DecisionTreeRegressor => SparkDecisionTreeRegressor}
+import org.apache.spark.ml.util.MLWritable
 
 trait DecisionTreeRegressorInputs extends DecisionTreeInputs with HasProbabilityCol with HasRawPredictionCol {
 
@@ -39,7 +40,7 @@ trait DecisionTreeRegressorInputs extends DecisionTreeInputs with HasProbability
 class DecisionTreeRegressor @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with DecisionTreeRegressorInputs {
 
-  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+  override protected def estimate(inputs: SlotValueMap): SparkModel = {
     val sparkEstimator = new SparkDecisionTreeRegressor()
       .setFeaturesCol(inputs(featuresCol))
       .setLabelCol(inputs(labelCol))
@@ -60,6 +61,6 @@ class DecisionTreeRegressor @Inject()(dfFactory: SparkDataframeFactory)
   }
 }
 
-case class DecisionTreeRegressorModel(id: UUID, sparkTransformer: Transformer,
+case class DecisionTreeRegressorModel(id: UUID, sparkTransformer: Transformer with MLWritable,
                                       dfFactory: SparkDataframeFactory)
   extends SparkModel with DecisionTreeRegressorInputs

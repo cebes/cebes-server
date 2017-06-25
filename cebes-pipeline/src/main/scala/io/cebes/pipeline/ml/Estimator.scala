@@ -13,7 +13,6 @@ package io.cebes.pipeline.ml
 
 import java.util.concurrent.TimeUnit
 
-import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.Dataframe
 import io.cebes.pipeline.models._
 
@@ -27,7 +26,7 @@ import scala.concurrent.duration.Duration
   * and is non-deterministic by default.
   * Subclasses can add more output slot to output additional information related to the training process.
   */
-trait Estimator extends Stage with LazyLogging {
+trait Estimator extends Stage {
 
   val inputDf: InputSlot[Dataframe] = inputSlot[Dataframe]("inputDf", "The training dataset", None, stateful = false)
 

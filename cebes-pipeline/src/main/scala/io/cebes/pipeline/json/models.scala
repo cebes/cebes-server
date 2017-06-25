@@ -30,7 +30,7 @@ case class DataframeMessageDef(dfId: UUID) extends PipelineMessageDef
 
 case class SampleMessageDef() extends PipelineMessageDef
 
-case class ModelMessageDef() extends PipelineMessageDef
+case class ModelMessageDef(modelId: UUID) extends PipelineMessageDef
 
 case class ColumnDef(col: Column) extends PipelineMessageDef
 
@@ -45,6 +45,25 @@ case class ColumnDef(col: Column) extends PipelineMessageDef
   */
 case class StageDef(name: String, stageClass: String, inputs: Map[String, PipelineMessageDef] = Map.empty,
                     outputs: Map[String, PipelineMessageDef] = Map.empty)
+
+/**
+  * Definition of a Model, serializable so that it can be sent to clients and persisted to database
+  *
+  * @param id         ID of the model
+  * @param modelClass full class name of the model
+  * @param inputs     values of input slots
+  * @param metaData   additional meta data
+  */
+case class ModelDef(id: UUID, modelClass: String, inputs: Map[String, PipelineMessageDef] = Map.empty,
+                    metaData: Map[String, String] = Map.empty)
+
+/**
+  * Request running a model on the given [[io.cebes.df.Dataframe]]
+  *
+  * @param model   The model to run
+  * @param inputDf the input [[io.cebes.df.Dataframe]]
+  */
+case class ModelRunDef(model: ModelMessageDef, inputDf: DataframeMessageDef)
 
 /**
   * Definition of a Pipeline

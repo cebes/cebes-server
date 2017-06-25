@@ -8,21 +8,21 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 29/12/2016.
  */
-
-package io.cebes.spark.df.store
+package io.cebes.spark.pipeline.store
 
 import com.google.inject.{Inject, Singleton}
-import io.cebes.df.Dataframe
 import io.cebes.persistence.jdbc.TableNames
 import io.cebes.persistence.store.JdbcTagStore
+import io.cebes.pipeline.ml.Model
 import io.cebes.prop.types.MySqlBackendCredentials
+import io.cebes.store.TagStore
+
 
 /**
-  * An implementation of [[io.cebes.store.TagStore[Dataframe]] for Spark Dataframes,
+  * An implementation of [[TagStore[Model]]] for [[Model]]s,
   * with JDBC persistence backend.
   */
-@Singleton class JdbcDataframeTagStore @Inject()
-(mySqlCreds: MySqlBackendCredentials) extends JdbcTagStore[Dataframe](mySqlCreds, TableNames.DF_TAG_STORE)
+@Singleton class SparkModelTagStore @Inject()
+(mySqlCreds: MySqlBackendCredentials)
+  extends JdbcTagStore[Model](mySqlCreds, TableNames.MODEL_TAG_STORE)

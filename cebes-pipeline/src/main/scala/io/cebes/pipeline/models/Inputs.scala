@@ -14,6 +14,8 @@ package io.cebes.pipeline.models
 import java.lang.reflect.Modifier
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
+import io.cebes.pipeline.json.{PipelineMessageDef, StageOutputDef}
+
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -108,6 +110,51 @@ trait Inputs extends HasInputSlots {
     shouldOwn(slot)
     inputSlotMap.get(slot)
   }
+
+  /////////////////////////////////
+  // serialization
+  /////////////////////////////////
+
+  /**
+    * Serialize all the input slot into a map of slot name -> [[PipelineMessageDef]]
+    *
+    * @param msgSerializer the [[PipelineMessageSerializer]] instance
+    * @return a map from slot name to [[PipelineMessageDef]]
+    */
+  def toPipelineMessages(msgSerializer: PipelineMessageSerializer): Map[String, PipelineMessageDef] = {
+    _inputs.flatMap { slot =>
+      inputOption(slot).map {
+        case stageOut: StageOutput[_] =>
+          slot.name -> StageOutputDef(stageOut.stage.getName, stageOut.outputName)
+        case ordinary: OrdinaryInput[_] =>
+          slot.name -> msgSerializer.serialize(ordinary.get)
+      }
+    }.toMap
+  }
+
+  /**
+    * Read the message in the given JSON data to this [[Inputs]] instance
+    * This function will NOT consider [[StageOutputDef]] messages. Those should only be considered in the [[Pipeline]]
+    *
+    * @param jsData        JSON data to read from
+    * @param msgSerializer the [[PipelineMessageSerializer]] instance
+    * @return this instance
+    */
+  def fromPipelineMessages(jsData: Map[String, PipelineMessageDef],
+                           msgSerializer: PipelineMessageSerializer): this.type = {
+    jsData.foreach { case (inpName, inpMessage) =>
+      require(hasInput(inpName), s"Input name $inpName not found in stage $toString")
+      msgSerializer.deserialize(inpMessage) match {
+        case _: SlotDescriptor => // will be connected later
+        case v => input(getInput(inpName), v)
+      }
+    }
+    this
+  }
+
+  /////////////////////////////////
+  // protected helpers, used by classes extending this trait
+  /////////////////////////////////
 
   /**
     * Run some work on all the input, return a Future[R] where R is the return type of the work.

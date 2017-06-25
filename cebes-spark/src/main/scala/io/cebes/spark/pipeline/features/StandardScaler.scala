@@ -15,11 +15,12 @@ import java.util.UUID
 
 import com.google.inject.Inject
 import io.cebes.common.HasId
-import io.cebes.pipeline.models.{InputSlot, OutputSlot, SlotValueMap}
+import io.cebes.pipeline.models.{InputSlot, SlotValueMap}
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits.{SparkEstimator, SparkModel}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.feature.{StandardScaler => SparkStandardScaler}
+import org.apache.spark.ml.util.MLWritable
 
 trait StandardScalerInputs extends HasInputCol with HasOutputCol {
 
@@ -43,8 +44,7 @@ trait StandardScalerInputs extends HasInputCol with HasOutputCol {
 case class StandardScaler @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with StandardScalerInputs {
 
-
-  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+  override protected def estimate(inputs: SlotValueMap): SparkModel = {
     val scaler = new SparkStandardScaler()
       .setInputCol(inputs(inputCol))
       .setOutputCol(inputs(outputCol))
@@ -56,6 +56,6 @@ case class StandardScaler @Inject()(dfFactory: SparkDataframeFactory)
   }
 }
 
-case class StandardScalerModel(id: UUID, sparkTransformer: Transformer,
+case class StandardScalerModel(id: UUID, sparkTransformer: Transformer with MLWritable,
                                dfFactory: SparkDataframeFactory)
   extends SparkModel with StandardScalerInputs

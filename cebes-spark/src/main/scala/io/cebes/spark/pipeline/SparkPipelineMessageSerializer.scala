@@ -15,16 +15,26 @@ import java.util.UUID
 import javax.inject.Inject
 
 import io.cebes.df.{Dataframe, DataframeService}
+import io.cebes.pipeline.ModelService
+import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.PipelineMessageSerializer
 
 /**
   * Implements [[PipelineMessageSerializer]] on Spark
   */
-class SparkPipelineMessageSerializer @Inject()(dfService: DataframeService) extends PipelineMessageSerializer {
+class SparkPipelineMessageSerializer @Inject()(private val dfService: DataframeService,
+                                               private val modelService: ModelService)
+  extends PipelineMessageSerializer {
 
   /**
     * Get a [[Dataframe]] object given the ID.
     * This should be implemented by child classes
     */
   override protected def getDataframe(dfId: UUID): Dataframe = dfService.get(dfId.toString)
+
+  /**
+    * Get a [[Model]] object given the ID
+    * Should be implemented by child classes
+    */
+  override protected def getModel(modelId: UUID): Model = modelService.get(modelId.toString)
 }

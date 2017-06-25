@@ -16,11 +16,12 @@ import java.util.UUID
 import com.google.inject.Inject
 import io.cebes.common.HasId
 import io.cebes.pipeline.ml.{HasFeaturesCol, HasLabelCol, HasPredictionCol}
-import io.cebes.pipeline.models.{InputSlot, OutputSlot, SlotValidators, SlotValueMap}
+import io.cebes.pipeline.models.{InputSlot, SlotValidators, SlotValueMap}
 import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits._
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.regression.{LinearRegression => SparkLR}
+import org.apache.spark.ml.util.MLWritable
 
 trait LinearRegressionInputs extends HasFeaturesCol with HasLabelCol with HasPredictionCol {
 
@@ -67,7 +68,7 @@ trait LinearRegressionInputs extends HasFeaturesCol with HasLabelCol with HasPre
 class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with LinearRegressionInputs {
 
-  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+  override protected def estimate(inputs: SlotValueMap): SparkModel = {
     val sparkEstimator = new SparkLR()
       .setFeaturesCol(inputs(featuresCol))
       .setLabelCol(inputs(labelCol))
@@ -88,6 +89,6 @@ class LinearRegression @Inject()(dfFactory: SparkDataframeFactory)
   }
 }
 
-case class LinearRegressionModel(id: UUID, sparkTransformer: Transformer,
+case class LinearRegressionModel(id: UUID, sparkTransformer: Transformer with MLWritable,
                                  dfFactory: SparkDataframeFactory)
   extends SparkModel with LinearRegressionInputs

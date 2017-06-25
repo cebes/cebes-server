@@ -9,21 +9,24 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.pipeline.inject
+package io.cebes.pipeline.factory
 
-import java.util.UUID
-
-import io.cebes.df.Dataframe
+import io.cebes.pipeline.json.ModelDef
 import io.cebes.pipeline.ml.Model
-import io.cebes.pipeline.models.PipelineMessageSerializer
 
 /**
-  * Simple implementation of [[PipelineMessageSerializer]], that actually do nothing
-  * Only for testing purpose
+  * Generic trait for a factory of [[Model]]s
   */
-class DummyPipelineMessageSerializer extends PipelineMessageSerializer {
+trait ModelFactory {
 
-  override protected def getDataframe(dfId: UUID): Dataframe = ???
+  /**
+    * Create a model from the given [[ModelDef]]
+    */
+  def create(modelDef: ModelDef): Model
 
-  override protected def getModel(modelId: UUID): Model = ???
+  /**
+    * Serialize a [[Model]] into a [[ModelDef]]
+    * @param model the model instance to be serialized
+    */
+  def save(model: Model): ModelDef
 }

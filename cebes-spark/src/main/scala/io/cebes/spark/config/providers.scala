@@ -13,10 +13,11 @@ package io.cebes.spark.config
 
 import com.google.inject.{Inject, Injector, Provider}
 import io.cebes.df.Dataframe
+import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.Pipeline
 import io.cebes.prop.{Prop, Property}
-import io.cebes.spark.df.store.{JdbcDataframeTagStore, SparkDataframeStore}
-import io.cebes.spark.pipeline.store.{JdbcPipelineTagStore, SparkPipelineStore}
+import io.cebes.spark.df.store.{SparkDataframeTagStore, SparkDataframeStore}
+import io.cebes.spark.pipeline.store.{SparkModelTagStore, SparkPipelineTagStore, SparkModelStore, SparkPipelineStore}
 import io.cebes.store.{CachedStore, TagStore}
 
 class HasSparkSessionProvider @Inject()
@@ -39,7 +40,7 @@ class CachedStoreDataframeProvider @Inject()(injector: Injector) extends Provide
 
 class TagStoreDataframeProvider @Inject()(injector: Injector) extends Provider[TagStore[Dataframe]] {
 
-  override def get(): TagStore[Dataframe] = injector.getInstance(classOf[JdbcDataframeTagStore])
+  override def get(): TagStore[Dataframe] = injector.getInstance(classOf[SparkDataframeTagStore])
 }
 
 class CachedStorePipelineProvider @Inject()(injector: Injector) extends Provider[CachedStore[Pipeline]] {
@@ -49,5 +50,15 @@ class CachedStorePipelineProvider @Inject()(injector: Injector) extends Provider
 
 class TagStorePipelineProvider @Inject()(injector: Injector) extends Provider[TagStore[Pipeline]] {
 
-  override def get(): TagStore[Pipeline] = injector.getInstance(classOf[JdbcPipelineTagStore])
+  override def get(): TagStore[Pipeline] = injector.getInstance(classOf[SparkPipelineTagStore])
+}
+
+class CachedStoreModelProvider @Inject()(injector: Injector) extends Provider[CachedStore[Model]] {
+
+  override def get(): CachedStore[Model] = injector.getInstance(classOf[SparkModelStore])
+}
+
+class TagStoreModelProvider @Inject()(injector: Injector) extends Provider[TagStore[Model]] {
+
+  override def get(): TagStore[Model] = injector.getInstance(classOf[SparkModelTagStore])
 }

@@ -21,6 +21,7 @@ import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits._
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.classification.{DecisionTreeClassifier => SparkDecisionTreeClassifier}
+import org.apache.spark.ml.util.MLWritable
 
 trait DecisionTreeClassifierInputs extends DecisionTreeInputs with HasProbabilityCol with HasRawPredictionCol {
 
@@ -38,13 +39,13 @@ trait DecisionTreeClassifierInputs extends DecisionTreeInputs with HasProbabilit
 }
 
 /**
-  *  thin wrapper around Spark's DecisionTreeClassifier
-  *  It supports both continuous and categorical features.
+  * thin wrapper around Spark's DecisionTreeClassifier
+  * It supports both continuous and categorical features.
   */
 class DecisionTreeClassifier @Inject()(dfFactory: SparkDataframeFactory)
   extends SparkEstimator with DecisionTreeClassifierInputs {
 
-  override protected def computeStatefulOutput(inputs: SlotValueMap, stateSlot: OutputSlot[Any]): Any = {
+  override protected def estimate(inputs: SlotValueMap): SparkModel = {
     val sparkEstimator = new SparkDecisionTreeClassifier()
       .setFeaturesCol(inputs(featuresCol))
       .setLabelCol(inputs(labelCol))
@@ -64,10 +65,12 @@ class DecisionTreeClassifier @Inject()(dfFactory: SparkDataframeFactory)
     inputs.get(thresholds).foreach(sparkEstimator.setThresholds)
 
     val df = getSparkDataframe(inputs(inputDf)).sparkDf
-    DecisionTreeClassifierModel(HasId.randomId, sparkEstimator.fit(df), dfFactory)
+    val sparkModel = sparkEstimator.fit(df)
+    DecisionTreeClassifierModel(HasId.randomId, sparkModel, dfFactory)
   }
 }
 
-case class DecisionTreeClassifierModel(id: UUID, sparkTransformer: Transformer,
+case class DecisionTreeClassifierModel(id: UUID,
+                                       sparkTransformer: Transformer with MLWritable,
                                        dfFactory: SparkDataframeFactory)
   extends SparkModel with DecisionTreeClassifierInputs
