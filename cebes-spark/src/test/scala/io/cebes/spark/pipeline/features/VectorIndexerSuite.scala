@@ -12,6 +12,7 @@
 package io.cebes.spark.pipeline.features
 
 import io.cebes.df.types.StorageTypes
+import io.cebes.pipeline.stages.DataframePlaceholder
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import org.scalatest.FunSuite
 
@@ -38,6 +39,39 @@ class VectorIndexerSuite extends FunSuite with ImplicitExecutor with TestDataHel
       .input(indexer.maxCategories, 10)
       .input(indexer.inputDf, assembler.output(assembler.outputDf))
 
+    val result = indexer.output(indexer.outputDf).getResult()
+    assert(result.numRows === df.numRows)
+    assert(result.numCols === df.numCols + 2)
+    assert(result.columns.last === "features_indexed")
+    assert(result.schema("features").storageType === StorageTypes.VectorType)
+  }
+
+  test("with placeholder") {
+    val cols = Array("press", "viscosity", "caliper")
+    val df = getCylinderBands.limit(200).na.drop(cols)
+    assert(df.numRows > 1)
+
+    val placeholder = getInstance[DataframePlaceholder]
+
+    val assembler = getInstance[VectorAssembler]
+    assembler.input(assembler.inputCols, cols)
+      .input(assembler.outputCol, "features")
+      .input(assembler.inputDf, placeholder.output(placeholder.outputVal))
+
+    val indexer = getInstance[VectorIndexer]
+    indexer.input(indexer.inputCol, "features")
+      .input(indexer.outputCol, "features_indexed")
+      .input(indexer.maxCategories, 10)
+      .input(indexer.inputDf, assembler.output(assembler.outputDf))
+
+    // placeholder isn't filled
+    val ex = intercept[NoSuchElementException] {
+      indexer.output(indexer.outputDf).getResult()
+    }
+    assert(ex.getMessage.contains("Input slot inputVal is undefined"))
+
+    // fill the placeholder
+    placeholder.input(placeholder.inputVal, df)
     val result = indexer.output(indexer.outputDf).getResult()
     assert(result.numRows === df.numRows)
     assert(result.numCols === df.numCols + 2)

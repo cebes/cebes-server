@@ -255,4 +255,52 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     assert(!dfResult.schema.contains("hardener"))
     assert(!dfResult.schema.contains("wax"))
   }
+
+  test("pipeline with drop: array[string] input slot - with placeholders") {
+    val pplDef = PipelineDef(None,
+      Array(
+        StageDef("s0", "ValuePlaceholder", Map("inputVal" -> ValueDef(Array[String]("hardener", "wax")))),
+        StageDef("df", "DataframePlaceholder", Map()),
+        StageDef("s1", "Drop", Map("colNames" -> StageOutputDef("s0", "outputVal"),
+          "inputDf" -> StageOutputDef("df", "outputVal")))
+      ))
+
+    val dfIn = getCylinderBands
+
+    // missing the dataframe placeholder
+    val ex1 = intercept[ServerException] {
+      val runDef1 = PipelineRunDef(pplDef, Map(), Array(StageOutputDef("s1", "outputDf")))
+      request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef1)
+    }
+    assert(ex1.message.contains("DataframePlaceholder(name=df): Input slot inputVal is undefined"))
+
+    // with the dataframe placeholder
+    val runDef2 = PipelineRunDef(pplDef, Map("df:inputVal" -> DataframeMessageDef(dfIn.id)),
+      Array(StageOutputDef("s1", "outputDf")))
+    val runResult2 = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef2)
+    assert(runResult2.length === 1)
+    assert(runResult2(0)._2.isInstanceOf[DataframeMessageDef])
+    val dfResultId = runResult2(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    val dfResult = requestDf("df/get", dfResultId.toString)
+    import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
+    assert(count(dfResult) > 0)
+    assert(dfResult.schema.size === dfIn.schema.size - 2)
+    assert(!dfResult.schema.contains("hardener"))
+    assert(!dfResult.schema.contains("wax"))
+
+    // overwrite the value placeholder with feeds
+    val runDef3 = PipelineRunDef(pplDef, Map("df:inputVal" -> DataframeMessageDef(dfIn.id),
+    "s0:inputVal" -> ValueDef(Array[String]("hardener", "customer"))),
+      Array(StageOutputDef("s1", "outputDf")))
+    val runResult3 = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef3)
+    assert(runResult3.length === 1)
+    assert(runResult3(0)._2.isInstanceOf[DataframeMessageDef])
+    val dfResultId3 = runResult3(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    val dfResult3 = requestDf("df/get", dfResultId3.toString)
+    assert(count(dfResult3) > 0)
+    assert(dfResult3.schema.size === dfIn.schema.size - 2)
+    assert(!dfResult3.schema.contains("hardener"))
+    assert(!dfResult3.schema.contains("customer"))
+    assert(dfResult3.schema.contains("wax"))
+  }
 }

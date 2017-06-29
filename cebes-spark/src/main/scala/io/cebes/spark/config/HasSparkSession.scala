@@ -16,7 +16,7 @@ package io.cebes.spark.config
 
 import java.util.Properties
 
-import com.google.inject.{Inject, Singleton}
+import com.google.inject.{Inject, Injector, Provider, Singleton}
 import io.cebes.prop.{Prop, Property}
 import io.cebes.prop.types.HiveMetastoreCredentials
 import org.apache.log4j.PropertyConfigurator
@@ -26,6 +26,26 @@ trait HasSparkSession {
 
   val session: SparkSession
 }
+
+/**
+  * Provider that provides an instance of [[HasSparkSession]] based on user configuration.
+  */
+class HasSparkSessionProvider @Inject()
+(@Prop(Property.SPARK_MODE) val sparkMode: String,
+ val injector: Injector) extends Provider[HasSparkSession] {
+
+  override def get(): HasSparkSession = {
+    sparkMode.toLowerCase match {
+      case "local" => injector.getInstance(classOf[HasSparkSessionLocal])
+      case "yarn" => injector.getInstance(classOf[HasSparkSessionYarn])
+      case _ => throw new IllegalArgumentException(s"Invalid spark mode: $sparkMode")
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
 
 @Singleton class HasSparkSessionLocal @Inject()
 (hiveCreds: HiveMetastoreCredentials,

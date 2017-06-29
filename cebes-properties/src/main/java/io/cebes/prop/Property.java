@@ -57,8 +57,8 @@ public enum Property {
             "Spec for the cache used for model storage in cebes-spark"),
 
     PIPELINE_STAGE_NAMESPACES("CEBES_PIPELINE_STAGE_NAMESPACES", "cebes.pipeline.stage.namespaces",
-            "io.cebes.pipeline.models,io.cebes.spark.pipeline.etl,io.cebes.spark.pipeline.features," +
-                    "io.cebes.spark.pipeline.ml.regression",
+            "io.cebes.pipeline.models,io.cebes.pipeline.stages,io.cebes.spark.pipeline.etl," +
+                    "io.cebes.spark.pipeline.features,io.cebes.spark.pipeline.ml.regression",
             "a comma-separated list of namespaces containing definition of stages"),
 
     MODEL_STORAGE_DIR("CEBES_MODEL_STORAGE_DIR", "cebes.model.storage.dir",
