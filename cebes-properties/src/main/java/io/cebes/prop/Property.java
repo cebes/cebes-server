@@ -29,7 +29,7 @@ public enum Property {
     // for Hive metastore
     HIVE_METASTORE_URL("CEBES_HIVE_METASTORE_URL", "cebes.hive.metastore.url", "",
             "URL for the hive metastore"),
-    HIVE_METASTORE_DRIVER("CEBES_HIVE_METASTORE_DRIVER", "cebes.hive.metastore.driver", "com.mysql.cj.jdbc.Driver",
+    HIVE_METASTORE_DRIVER("CEBES_HIVE_METASTORE_DRIVER", "cebes.hive.metastore.driver", "org.mariadb.jdbc.Driver",
             "Driver name for the hive metastore"),
     HIVE_METASTORE_USERNAME("CEBES_HIVE_METASTORE_USERNAME", "cebes.hive.metastore.username", "",
             "Username for the hive metastore"),
@@ -57,8 +57,8 @@ public enum Property {
             "Spec for the cache used for model storage in cebes-spark"),
 
     PIPELINE_STAGE_NAMESPACES("CEBES_PIPELINE_STAGE_NAMESPACES", "cebes.pipeline.stage.namespaces",
-            "io.cebes.pipeline.models,io.cebes.spark.pipeline.etl,io.cebes.spark.pipeline.features," +
-                    "io.cebes.spark.pipeline.ml.regression",
+            "io.cebes.pipeline.models,io.cebes.pipeline.stages,io.cebes.spark.pipeline.etl," +
+                    "io.cebes.spark.pipeline.features,io.cebes.spark.pipeline.ml.regression",
             "a comma-separated list of namespaces containing definition of stages"),
 
     MODEL_STORAGE_DIR("CEBES_MODEL_STORAGE_DIR", "cebes.model.storage.dir",
@@ -66,7 +66,7 @@ public enum Property {
 
     // MYSQL backend
     MYSQL_URL("CEBES_MYSQL_URL", "cebes.mysql.url", "", "URL for MySQL database"),
-    MYSQL_DRIVER("CEBES_MYSQL_DRIVER", "cebes.mysql.driver", "com.mysql.cj.jdbc.Driver", "Driver for MySQL database"),
+    MYSQL_DRIVER("CEBES_MYSQL_DRIVER", "cebes.mysql.driver", "org.mariadb.jdbc.Driver", "Driver for MySQL database"),
     MYSQL_USERNAME("CEBES_MYSQL_USERNAME", "cebes.mysql.username", "", "Username for MySQL database"),
     MYSQL_PASSWORD("CEBES_MYSQL_PASSWORD", "cebes.mysql.password", "", "Password for MySQL database"),
 
@@ -78,7 +78,7 @@ public enum Property {
 
     TEST_JDBC_URL("CEBES_TEST_JDBC_URL", "cebes.test.jdbc.url", "",
             "URL for JDBC data source for tests", true),
-    TEST_JDBC_DRIVER("CEBES_TEST_JDBC_DRIVER", "cebes.test.jdbc.driver", "com.mysql.cj.jdbc.Driver",
+    TEST_JDBC_DRIVER("CEBES_TEST_JDBC_DRIVER", "cebes.test.jdbc.driver", "org.mariadb.jdbc.Driver",
             "Driver for JDBC data source for tests", true),
     TEST_JDBC_USERNAME("CEBES_TEST_JDBC_USERNAME", "cebes.test.jdbc.username", "",
             "Username for JDBC data source for tests", true),

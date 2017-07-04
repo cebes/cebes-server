@@ -15,12 +15,12 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, StageOutputDef}
+import io.cebes.pipeline.json._
 import io.cebes.server.http.SecuredSession
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common._
 import io.cebes.spark.json.CebesSparkJsonProtocol._
-import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat, tuple2Format}
+import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat}
 
 trait PipelineHandler extends SecuredSession with OperationHelper with LazyLogging {
 
@@ -33,7 +33,7 @@ trait PipelineHandler extends SecuredSession with OperationHelper with LazyLoggi
         operation[Get, String, PipelineDef],
 
         operation[Create, PipelineDef, PipelineDef],
-        operation[Run, PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]
+        operation[Run, PipelineRunDef, PipelineRunResultDef]
       )
     }
   }

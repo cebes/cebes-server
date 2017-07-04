@@ -6,7 +6,7 @@ Cebes - The integrated framework for Data Science at Scale
 ## Contents
 
 * [Building](#building)
-    * [Configure MySql](#configure-mySql)
+    * [Configure MariaDB](#Configure-MariaDB)
     * [Compile and run unittests](#compile-and-run-unittests)
 * [Running Cebes in Docker](#running-cebes-in-docker)
 * [Development guide](#development-guide)
@@ -15,15 +15,18 @@ Cebes - The integrated framework for Data Science at Scale
     
 ## Building
 
-To build Cebes, you need JDK 1.8+, [sbt](http://www.scala-sbt.org/) and a SQL database. By default, Cebes is configured
-with mySql, but using other variants is possible.
+To build Cebes, you need [JDK 1.8+](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html), 
+[sbt](http://www.scala-sbt.org/) and a SQL database.
 
-### Configure MySql
+By default, Cebes uses [MariaDB connector](http://mariadb.org/), and should be compatible with 
+most SQL databases providing JDBC APIs.
+
+### Configure MariaDB
 
 This will create databases and users with default credentials for Cebes. You only need to do this once.
     
     mysql.server start
-    mysql -u root -p < cebes-http-server/script/setup-db.sql
+    ./cebes-http-server/script/setup-db.sh
     
 Note that the usernames and passwords are default. For production settings, you may want to change them
 to something more secured.
@@ -82,4 +85,4 @@ use either `java.util.logging` or hard-coded `log4j`. For this, we tried our bes
 to mute them in `cebes-http-server` with the `log4j.properties` and `parquet.logging.properties`
 files.
 
-It seems impossible to mute them in `cebes-dataframe-spark` though.
+It seems impossible to mute them in `cebes-spark` though.

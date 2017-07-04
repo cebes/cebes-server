@@ -56,9 +56,7 @@ trait GenericJsonProtocol {
       case seq: Seq[_] =>
         toJsObject("seq", JsArray(seq.map(writeJson): _*))
       case other =>
-        serializationError(s"Don't know how to serialize values of class ${
-          other.getClass.getName
-        }")
+        serializationError(s"Don't know how to serialize values of class ${other.getClass.getName}")
     }
   }
 
@@ -79,9 +77,7 @@ trait GenericJsonProtocol {
       case JsBoolean(v) => v
       case obj: JsObject =>
         if (!obj.fields.contains("type") || !obj.fields.contains("data")) {
-          deserializationError(s"Unknown 'type' or 'data' of JSON value: ${
-            obj.compactPrint
-          }")
+          deserializationError(s"Unknown 'type' or 'data' of JSON value: ${obj.compactPrint}")
         }
         val jsData = obj.fields("data")
 
@@ -107,26 +103,17 @@ trait GenericJsonProtocol {
               case Some(_: Boolean) => arrObj.map[Boolean, Array[Boolean]](_.asInstanceOf[Boolean])
               case _ => arrObj
             }
-            //val arr = Array.newBuilder[Byte]
-            //arr ++= asJsType[JsArray](jsData).elements.map {
-            //  v => asJsType[JsNumber](v).value.byteValue()
-            //}
-            //arr.result()
           case JsString("wrapped_array") =>
             mutable.WrappedArray.make(asJsType[JsArray](jsData).elements.map(readJson).toArray)
           case JsString("map") =>
             val elements = asJsType[JsArray](jsData).elements.map {
               case o: JsObject =>
                 if (!o.fields.contains("key") || !o.fields.contains("val")) {
-                  deserializationError(s"Unknown 'key' or 'val' of JSON value: ${
-                    o.compactPrint
-                  }")
+                  deserializationError(s"Unknown 'key' or 'val' of JSON value: ${o.compactPrint}")
                 }
                 readJson(o.fields("key")) -> readJson(o.fields("val"))
               case other =>
-                deserializationError(s"Expected a JsObject, got: ${
-                  other.getClass.getName
-                }")
+                deserializationError(s"Expected a JsObject, got: ${other.getClass.getName}")
             }
             Map(elements: _*)
           case JsString("seq") => asJsType[JsArray](jsData).elements.map(readJson)

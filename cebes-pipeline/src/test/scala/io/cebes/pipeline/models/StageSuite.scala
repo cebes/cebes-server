@@ -13,6 +13,7 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.TimeUnit
 
+import io.cebes.pipeline.stages.ValuePlaceholder
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.Duration
@@ -296,5 +297,26 @@ class StageSuite extends FunSuite {
     assert(o3 ne o5)
     assert(o4 eq s.output(s.outStateful).getResult())
     assert(o5 eq s.output(s.outStateless).getResult())
+  }
+
+  test("Placeholders") {
+    val s = new ValuePlaceholder()
+    val f = new StageFoo()
+    f.input(f.strIn, s.output(s.outputVal))
+
+    val ex = intercept[NoSuchElementException] {
+      f.output(f.out).getResult()
+    }
+    assert(ex.getMessage.contains("Input slot inputVal is undefined"))
+
+    s.input(s.inputVal, 100)
+    val ex2 = intercept[IllegalArgumentException] {
+      f.output(f.out).getResult()
+    }
+    assert(ex2.getMessage.contains("Invalid type at slot strIn, expected a String, got Integer"))
+
+    s.input(s.inputVal, "this is my string")
+    val r = f.output(f.out).getResult()
+    assert(r.isInstanceOf[Array[_]])
   }
 }
