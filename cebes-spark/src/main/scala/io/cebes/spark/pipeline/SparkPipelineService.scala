@@ -17,7 +17,7 @@ import com.google.inject.Inject
 import io.cebes.df.{Dataframe, DataframeService}
 import io.cebes.pipeline.{ModelService, PipelineService}
 import io.cebes.pipeline.factory.PipelineFactory
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, StageOutputDef}
+import io.cebes.pipeline.json._
 import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer, SlotDescriptor}
 import io.cebes.store.{CachedStore, TagStore}
@@ -53,7 +53,7 @@ class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactor
     *         Will only contain the results of stages requested in the request.
     */
   override def run(runRequest: PipelineRunDef)
-                  (implicit ec: ExecutionContext): Map[StageOutputDef, PipelineMessageDef] = {
+                  (implicit ec: ExecutionContext): PipelineRunResultDef = {
 
     val ppl = runRequest.pipeline.id.map(i => get(i.toString))
       .getOrElse(fromPipelineDef(runRequest.pipeline))
@@ -63,8 +63,9 @@ class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactor
       SlotDescriptor(k) -> pplMessageSerializer.deserialize(v)
     }
 
+    val pplId = ppl.id
     val result = ppl.run(outs, feeds).map { result =>
-      result.map { case (slot, v) =>
+      val results = result.map { case (slot, v) =>
 
         // cache the results of the pipeline
         v match {
@@ -73,8 +74,9 @@ class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactor
           case _ =>
         }
 
-        StageOutputDef(slot.parent, slot.name) -> pplMessageSerializer.serialize(v)
+        (StageOutputDef(slot.parent, slot.name), pplMessageSerializer.serialize(v))
       }
+      PipelineRunResultDef(pplId, results.toArray)
     }
 
     val waitTime = if (runRequest.timeout <= 0) {

@@ -90,3 +90,12 @@ case class PipelineDef(id: Option[UUID], stages: Array[StageDef])
   */
 case class PipelineRunDef(pipeline: PipelineDef, feeds: Map[String, PipelineMessageDef],
                           outputs: Array[StageOutputDef], timeout: Long = -1)
+
+/**
+  * Results of running a pipeline, goes with [[PipelineRunDef]]
+  *
+  * @param pipelineId the ID of the pipeline being run. If the [[PipelineRunDef]] doesn't contain
+  *                   a pipeline ID, it will be generated and returned in this field
+  * @param results    The results of all the outputs requested in [[PipelineRunDef]]
+  */
+case class PipelineRunResultDef(pipelineId: UUID, results: Array[(StageOutputDef, PipelineMessageDef)])

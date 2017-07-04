@@ -60,7 +60,7 @@ abstract class TagAddAbstract[T <: HasId, R](protected val tagService: TagServic
 
   override protected def runImpl(requestEntity: TagAddRequest)
                                 (implicit ec: ExecutionContext): Future[T] = Future {
-    tagService.tag(requestEntity.df, requestEntity.tag)
+    tagService.tag(requestEntity.objectId, requestEntity.tag)
   }
 
   override protected def transformResult(requestEntity: TagAddRequest, result: T): Option[R] =

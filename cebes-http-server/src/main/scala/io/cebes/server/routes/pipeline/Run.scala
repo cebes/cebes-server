@@ -24,20 +24,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Run the given pipeline
-  *
-  * **NOTE**: This command needs to return an Array of tuple.
-  * We can't return Map[StageOutputDef, PipelineMessageDef]
-  * because spray-json requires that the key of a [[Map]] must be serialized as [[spray.json.JsString]],
-  * while in our case, [[StageOutputDef]] will be serialized as a [[spray.json.JsObject]]
   */
 class Run @Inject()(pipelineService: PipelineService, override val resultStorage: ResultStorage)
-  extends AsyncSerializableOperation[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]] {
+  extends AsyncSerializableOperation[PipelineRunDef, PipelineRunResultDef] {
 
   override protected def runImpl(requestEntity: PipelineRunDef)
-                                (implicit ec: ExecutionContext): Future[Array[(StageOutputDef, PipelineMessageDef)]] =
-    Future {
-      pipelineService.run(requestEntity).map { case (k, v) =>
-        (k, v)
-      }.toArray
-    }
+                                (implicit ec: ExecutionContext): Future[PipelineRunResultDef] = Future {
+    pipelineService.run(requestEntity)
+  }
 }

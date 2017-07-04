@@ -59,11 +59,11 @@ class ModelHandlerSuite extends AbstractRouteSuite {
       Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s2", "model")))
 
-    val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run",
+    val runResult = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run",
       runDefMultOutputs)
-    assert(runResult.length === 1)
-    assert(runResult(0)._2.isInstanceOf[ModelMessageDef])
-    runResult(0)._2.asInstanceOf[ModelMessageDef].modelId
+    assert(runResult.results.length === 1)
+    assert(runResult.results(0)._2.isInstanceOf[ModelMessageDef])
+    runResult.results(0)._2.asInstanceOf[ModelMessageDef].modelId
   }
 
   test("create and get model") {
@@ -147,10 +147,10 @@ class ModelHandlerSuite extends AbstractRouteSuite {
     val pplRunDef = PipelineRunDef(PipelineDef(Some(pipelineId), Array()),
       Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s1", "outputDf")))
-    val preprocessedDfResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]](
+    val preprocessedDfResult = request[PipelineRunDef, PipelineRunResultDef](
       "pipeline/run", pplRunDef)
-    assert(preprocessedDfResult.length === 1)
-    val preprocessedDfId = preprocessedDfResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    assert(preprocessedDfResult.results.length === 1)
+    val preprocessedDfId = preprocessedDfResult.results(0)._2.asInstanceOf[DataframeMessageDef].dfId
 
     // feed the preprocessed Dataframe into the model
     val runDef = ModelRunDef(ModelMessageDef(modelId), DataframeMessageDef(preprocessedDfId))

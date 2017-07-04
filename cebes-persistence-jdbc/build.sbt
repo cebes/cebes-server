@@ -1,10 +1,10 @@
-name := "cebes-persistence-mysql"
+name := "cebes-persistence-jdbc"
 
 scalastyleConfig := baseDirectory.value / "../build/scalastyle-config.xml"
 
 libraryDependencies ++= Seq(
   "com.google.inject" % "guice" % Common.guiceVersion,
-  "mysql" % "mysql-connector-java" % Common.mySqlConnectorVersion,
+  "org.mariadb.jdbc" % "mariadb-java-client" % Common.mariaDbConnectorVersion,
   "org.apache.commons" % "commons-dbcp2" % "2.1.1",
 
   //http://stackoverflow.com/questions/13162671/missing-dependency-class-javax-annotation-nullable

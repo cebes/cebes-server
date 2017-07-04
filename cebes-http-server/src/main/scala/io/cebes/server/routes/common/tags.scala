@@ -23,7 +23,7 @@ import spray.json._
 
 import scala.util.{Failure, Success, Try}
 
-case class TagAddRequest(tag: Tag, df: UUID)
+case class TagAddRequest(tag: Tag, objectId: UUID)
 
 case class TagDeleteRequest(tag: Tag)
 

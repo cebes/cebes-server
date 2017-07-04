@@ -170,11 +170,11 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
       Array(StageOutputDef("s3", "outputDf")))
 
     Seq(runDef, runDefWithoutPipelineId).map { pplRunDef =>
-      val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", pplRunDef)
-      assert(runResult.length === 1)
-      assert(runResult(0)._2.isInstanceOf[DataframeMessageDef])
+      val runResult = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", pplRunDef)
+      assert(runResult.results.length === 1)
+      assert(runResult.results(0)._2.isInstanceOf[DataframeMessageDef])
 
-      val dfResultId = runResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+      val dfResultId = runResult.results(0)._2.asInstanceOf[DataframeMessageDef].dfId
       val dfResult = requestDf("df/get", dfResultId.toString)
 
       import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
@@ -189,12 +189,12 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
       Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s3", "outputDf"), StageOutputDef("s2", "outputDf")))
 
-    val runResult2 = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run",
+    val runResult2 = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run",
       runDefMultOutputs)
-    assert(runResult2.length === 2)
-    assert(runResult2.forall(_._2.isInstanceOf[DataframeMessageDef]))
+    assert(runResult2.results.length === 2)
+    assert(runResult2.results.forall(_._2.isInstanceOf[DataframeMessageDef]))
 
-    runResult2.foreach { case (outputDef, resultPipelineDef) =>
+    runResult2.results.foreach { case (outputDef, resultPipelineDef) =>
       val dfResultId = resultPipelineDef.asInstanceOf[DataframeMessageDef].dfId
       val dfResult = requestDf("df/get", dfResultId.toString)
 
@@ -218,7 +218,7 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     // no input
     val runDefNoInputs = PipelineRunDef(simplePipeline, Map(), Array(StageOutputDef("s3", "outputDf")))
     val ex1 = intercept[ServerException] {
-      request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDefNoInputs)
+      request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDefNoInputs)
     }
     assert(ex1.message.contains("Where(name=s1): Input slot inputDf is undefined"))
 
@@ -226,7 +226,7 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
       Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s3", "wrongOutputName")))
     val ex2 = intercept[ServerException] {
-      request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDefWrongOutput)
+      request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDefWrongOutput)
     }
     assert(ex2.message.contains("Invalid slot descriptor s3:wrongOutputName in the output list"))
   }
@@ -241,11 +241,11 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
       Map("s1:inputDf" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s1", "outputDf")))
 
-    val runResult = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef)
-    assert(runResult.length === 1)
-    assert(runResult(0)._2.isInstanceOf[DataframeMessageDef])
+    val runResult = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDef)
+    assert(runResult.results.length === 1)
+    assert(runResult.results(0)._2.isInstanceOf[DataframeMessageDef])
 
-    val dfResultId = runResult(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    val dfResultId = runResult.results(0)._2.asInstanceOf[DataframeMessageDef].dfId
     val dfResult = requestDf("df/get", dfResultId.toString)
 
     import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
@@ -270,17 +270,17 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     // missing the dataframe placeholder
     val ex1 = intercept[ServerException] {
       val runDef1 = PipelineRunDef(pplDef, Map(), Array(StageOutputDef("s1", "outputDf")))
-      request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef1)
+      request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDef1)
     }
     assert(ex1.message.contains("DataframePlaceholder(name=df): Input slot inputVal is undefined"))
 
     // with the dataframe placeholder
     val runDef2 = PipelineRunDef(pplDef, Map("df:inputVal" -> DataframeMessageDef(dfIn.id)),
       Array(StageOutputDef("s1", "outputDf")))
-    val runResult2 = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef2)
-    assert(runResult2.length === 1)
-    assert(runResult2(0)._2.isInstanceOf[DataframeMessageDef])
-    val dfResultId = runResult2(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    val runResult2 = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDef2)
+    assert(runResult2.results.length === 1)
+    assert(runResult2.results(0)._2.isInstanceOf[DataframeMessageDef])
+    val dfResultId = runResult2.results(0)._2.asInstanceOf[DataframeMessageDef].dfId
     val dfResult = requestDf("df/get", dfResultId.toString)
     import io.cebes.server.routes.df.HttpDfJsonProtocol.dataframeRequestFormat
     assert(count(dfResult) > 0)
@@ -292,10 +292,10 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     val runDef3 = PipelineRunDef(pplDef, Map("df:inputVal" -> DataframeMessageDef(dfIn.id),
     "s0:inputVal" -> ValueDef(Array[String]("hardener", "customer"))),
       Array(StageOutputDef("s1", "outputDf")))
-    val runResult3 = request[PipelineRunDef, Array[(StageOutputDef, PipelineMessageDef)]]("pipeline/run", runDef3)
-    assert(runResult3.length === 1)
-    assert(runResult3(0)._2.isInstanceOf[DataframeMessageDef])
-    val dfResultId3 = runResult3(0)._2.asInstanceOf[DataframeMessageDef].dfId
+    val runResult3 = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDef3)
+    assert(runResult3.results.length === 1)
+    assert(runResult3.results(0)._2.isInstanceOf[DataframeMessageDef])
+    val dfResultId3 = runResult3.results(0)._2.asInstanceOf[DataframeMessageDef].dfId
     val dfResult3 = requestDf("df/get", dfResultId3.toString)
     assert(count(dfResult3) > 0)
     assert(dfResult3.schema.size === dfIn.schema.size - 2)

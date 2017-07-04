@@ -11,7 +11,7 @@
  */
 package io.cebes.pipeline
 
-import io.cebes.pipeline.json.{PipelineDef, PipelineMessageDef, PipelineRunDef, StageOutputDef}
+import io.cebes.pipeline.json._
 import io.cebes.pipeline.models.Pipeline
 import io.cebes.tag.TagService
 
@@ -36,5 +36,5 @@ trait PipelineService extends TagService[Pipeline] {
     * @return A map containing the results of the pipeline.
     *         Will only contain the results of stages requested in the request.
     */
-  def run(runRequest: PipelineRunDef)(implicit ec: ExecutionContext): Map[StageOutputDef, PipelineMessageDef]
+  def run(runRequest: PipelineRunDef)(implicit ec: ExecutionContext): PipelineRunResultDef
 }

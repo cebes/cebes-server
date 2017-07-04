@@ -19,7 +19,5 @@ libraryDependencies ++= Seq(
 
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.22",
 
-  "com.google.inject" % "guice" % Common.guiceVersion,
-
-  "mysql" % "mysql-connector-java" % Common.mySqlConnectorVersion
+  "com.google.inject" % "guice" % Common.guiceVersion
 )

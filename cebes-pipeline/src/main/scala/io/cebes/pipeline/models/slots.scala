@@ -44,12 +44,12 @@ abstract class Slot[+T](val name: String, val doc: String,
     * then call the validator to check if the given value is valid.
     */
   def checkValue[U >: T](value: U): Unit = {
-    // it's quite tricky to do the type check here, especially for primitive types
+    // it's quite tricky to do type-check here, especially for primitive types
     // because `tag.runtimeClass` will be the low-level types, while the `value` is normally
     // in the scala type system. For instance when `value` is `Int` (or `java.lang.Interger`), i.e. non-primitive,
     // the `tag.runtimeClass` will likely be the primitive type `int`
-    // Therefore the most reliable way to check the type of `value` is to based
-    // on the `defaultValue`, when it is specified of course.
+    // Therefore one trick to check the type of `value` is to based
+    // on the `defaultValue`, when it is specified.
     defaultValue match {
       case Some(dv) =>
         require(dv.getClass.isAssignableFrom(value.getClass),

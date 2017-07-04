@@ -19,7 +19,7 @@ ENV http_proxy=$PROXY_SERVER \
     
 # mysql
 # libc6-compat is needed for alpine: https://github.com/grpc/grpc/issues/6126
-RUN apk add --update curl bash libc6-compat mysql mysql-client && rm -f /var/cache/apk/*
+RUN apk add --update curl bash libc6-compat mariadb mariadb-client && rm -f /var/cache/apk/*
 
 # Spark
 ENV SPARK_FILE_NAME "spark-${SPARK_VERSION}-bin-hadoop2.7"
@@ -35,10 +35,10 @@ RUN \
 
 # cebes
 ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
-ADD docker/configure_mysql.sh /cebes/
+ADD docker/configure_mariadb.sh /cebes/
 ADD docker/start_cebes.sh /cebes/
 
-RUN sh /cebes/configure_mysql.sh && rm /cebes/configure_mysql.sh
+RUN sh /cebes/configure_mariadb.sh && rm /cebes/configure_mariadb.sh
 
 WORKDIR /cebes
 
