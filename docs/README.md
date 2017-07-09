@@ -4,7 +4,7 @@ Our documentation uses extended Markdown, as implemented by MkDocs.
 
 ## Building the documentation
 
-- install MkDocs: `pip install mkdocs`
+- install MkDocs and themes: `pip install mkdocs mkdocs-bootswatch`
 - `cd` to the `docs/` folder and run:
 
         $ mkdocs serve # Starts a local webserver: localhost:8000

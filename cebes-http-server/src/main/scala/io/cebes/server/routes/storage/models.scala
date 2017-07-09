@@ -38,7 +38,8 @@ case class ReadRequest(localFs: Option[LocalFsReadRequest],
                        s3: Option[S3ReadRequest],
                        hdfs: Option[HdfsReadRequest],
                        jdbc: Option[JdbcReadRequest],
-                       hive: Option[HiveReadRequest])
+                       hive: Option[HiveReadRequest],
+                       readOptions: Map[String, String] = Map.empty)
 
 case class UploadResponse(path: String, size: Int)
 
@@ -49,7 +50,7 @@ trait HttpStorageJsonProtocol {
   implicit val hdfsReadRequestFormat: RootJsonFormat[HdfsReadRequest] = jsonFormat3(HdfsReadRequest)
   implicit val jdbcReadRequestFormat: RootJsonFormat[JdbcReadRequest] = jsonFormat5(JdbcReadRequest)
   implicit val hiveReadRequestFormat: RootJsonFormat[HiveReadRequest] = jsonFormat1(HiveReadRequest)
-  implicit val readRequestFormat: RootJsonFormat[ReadRequest] = jsonFormat5(ReadRequest)
+  implicit val readRequestFormat: RootJsonFormat[ReadRequest] = jsonFormat6(ReadRequest)
 
   implicit val uploadResponseFormat: RootJsonFormat[UploadResponse] = jsonFormat2(UploadResponse)
 
