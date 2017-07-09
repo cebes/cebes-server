@@ -84,7 +84,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
     * @param dataSource source to read data from
     * @return a new Dataframe
     */
-  override def read(dataSource: DataSource): Dataframe = {
+  override def read(dataSource: DataSource, options: Map[String, String]): Dataframe = {
     val sparkDf = dataSource match {
       case jdbcSource: JdbcDataSource =>
         sparkSession.read.jdbc(jdbcSource.url, jdbcSource.tableName, jdbcSource.sparkProperties())
@@ -101,12 +101,12 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
             s3Source.fullUrl
         }
         dataSource.format match {
-          case DataFormats.CSV => sparkSession.read.csv(srcPath)
-          case DataFormats.JSON => sparkSession.read.json(srcPath)
-          case DataFormats.ORC => sparkSession.read.orc(srcPath)
-          case DataFormats.PARQUET => sparkSession.read.parquet(srcPath)
-          case DataFormats.TEXT => sparkSession.read.text(srcPath)
-          case DataFormats.UNKNOWN => sparkSession.read.load(srcPath)
+          case DataFormats.CSV => sparkSession.read.options(options).csv(srcPath)
+          case DataFormats.JSON => sparkSession.read.options(options).json(srcPath)
+          case DataFormats.ORC => sparkSession.read.options(options).orc(srcPath)
+          case DataFormats.PARQUET => sparkSession.read.options(options).parquet(srcPath)
+          case DataFormats.TEXT => sparkSession.read.options(options).text(srcPath)
+          case DataFormats.UNKNOWN => sparkSession.read.options(options).load(srcPath)
         }
     }
     dfStore.add(dfFactory.df(sparkDf))

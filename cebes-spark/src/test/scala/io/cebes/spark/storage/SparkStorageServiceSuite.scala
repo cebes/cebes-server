@@ -40,14 +40,14 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll
   test("Read CSV from S3", S3TestsEnabled) {
     val s3ReadSrc = new S3DataSource(properties.awsAccessKey, properties.awsSecretKey,
       Some("us-west-1"), "cebes-data-test", "read/cylinder_bands.csv", DataFormats.CSV)
-    val df = sparkStorageService.read(s3ReadSrc)
+    val df = sparkStorageService.read(s3ReadSrc, Map.empty)
     assert(df.numCols === 40)
     assert(df.numRows === 540)
   }
 
   test("Read/write data from/to local storage") {
     val file = ResourceUtil.getResourceAsFile("/data/cylinder_bands.csv")
-    val df = sparkStorageService.read(new LocalFsDataSource(file.getAbsolutePath, DataFormats.CSV))
+    val df = sparkStorageService.read(new LocalFsDataSource(file.getAbsolutePath, DataFormats.CSV), Map.empty)
     assert(df.numCols === 40)
     assert(df.numRows === 540)
 
@@ -70,7 +70,7 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll
   }
 
   test("Read/write data from/to Hive") {
-    val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
+    val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName), Map.empty)
     assert(df.numCols === 40)
     assert(df.numRows === 540)
 
@@ -80,7 +80,7 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll
     sparkStorageService.write(df, new HiveDataSource(newTableName))
     assert(sparkDataframeService.sql(s"SHOW TABLES LIKE '$newTableName'").numRows === 1)
 
-    val dfNew = sparkStorageService.read(new HiveDataSource(newTableName))
+    val dfNew = sparkStorageService.read(new HiveDataSource(newTableName), Map.empty)
     assert(dfNew.numCols === 40)
     assert(dfNew.numRows === 540)
     sparkDataframeService.sql(s"DROP TABLE IF EXISTS $newTableName")
@@ -91,11 +91,11 @@ class SparkStorageServiceSuite extends FunSuite with BeforeAndAfterAll
     val jdbcSrc = JdbcDataSource(properties.url, "cylinder_bands_test_table",
       properties.userName, properties.password, Option(properties.driver))
 
-    val tryVal = Try(sparkStorageService.read(jdbcSrc)).recoverWith {
+    val tryVal = Try(sparkStorageService.read(jdbcSrc, Map.empty)).recoverWith {
       case ex: Exception =>
         logger.error("Exception when reading from JDBC", ex)
 
-        val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName))
+        val df = sparkStorageService.read(new HiveDataSource(cylinderBandsTableName), Map.empty)
         assert(df.numCols === 40)
         assert(df.numRows === 540)
 

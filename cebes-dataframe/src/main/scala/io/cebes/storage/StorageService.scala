@@ -23,7 +23,7 @@ trait StorageService {
     *
     * This is an internal API, designed mainly for cebes servers, not for end-users.
     *
-    * @param dataframe data frame to be written
+    * @param dataframe  data frame to be written
     * @param dataSource data storage to store the given data frame
     */
   def write(dataframe: Dataframe, dataSource: DataSource): Unit
@@ -34,7 +34,8 @@ trait StorageService {
     * This is end-user API.
     *
     * @param dataSource source to read data from
+    * @param options    : additional options to be used while reading the datasource
     * @return a new Dataframe
     */
-  def read(dataSource: DataSource): Dataframe
+  def read(dataSource: DataSource, options: Map[String, String]): Dataframe
 }

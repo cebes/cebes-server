@@ -37,20 +37,19 @@ class Read @Inject()(storageService: StorageService, override val resultStorage:
   override def runImpl(requestEntity: ReadRequest)(implicit ec: ExecutionContext): Future[Dataframe] = Future {
 
     val dataSrc = requestEntity match {
-      case ReadRequest(Some(localFs), None, None, None, None) =>
+      case ReadRequest(Some(localFs), None, None, None, None, _) =>
         new LocalFsDataSource(localFs.path, localFs.format)
-      case ReadRequest(None, Some(s3), None, None, None) =>
-        new S3DataSource(s3.accessKey, s3.secretKey, s3.regionName,
-          s3.bucketName, s3.key, s3.format)
-      case ReadRequest(None, None, Some(hdfs), None, None) =>
+      case ReadRequest(None, Some(s3), None, None, None, _) =>
+        new S3DataSource(s3.accessKey, s3.secretKey, s3.regionName, s3.bucketName, s3.key, s3.format)
+      case ReadRequest(None, None, Some(hdfs), None, None, _) =>
         new HdfsDataSource(hdfs.path, hdfs.uri, hdfs.format)
-      case ReadRequest(None, None, None, Some(jdbc), None) =>
+      case ReadRequest(None, None, None, Some(jdbc), None, _) =>
         val jdbcPwd = new String(Base64.getUrlDecoder.decode(jdbc.passwordBase64), "UTF-8")
         JdbcDataSource(jdbc.url, jdbc.tableName, jdbc.userName, jdbcPwd, jdbc.driver)
-      case ReadRequest(None, None, None, None, Some(hive)) =>
+      case ReadRequest(None, None, None, None, Some(hive), _) =>
         new HiveDataSource(hive.tableName)
       case _ => throw new IllegalArgumentException("Invalid read request")
     }
-    storageService.read(dataSrc)
+    storageService.read(dataSrc, requestEntity.readOptions)
   }
 }

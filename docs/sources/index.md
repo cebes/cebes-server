@@ -3,7 +3,7 @@
 ## Meet Cebes - your new Data Science buddy
 
 Cebes' mission is to _simplify_ Data Science, hopefully improve the productivity of Data Scientists, help them
-to focus on modeling and visualizing, instead of the dreary nitty-gritty.
+to focus on modeling and visualizing, instead of the dreary nitty-gritties.
 
 Cebes does so by:
 
@@ -17,7 +17,7 @@ Cebes does so by:
     Besides the rich collections of models in `Spark ML`, any Python Machine Learning library is also supported. 
     Support for R will be considered depending on community's interests.
 
-- Hiding the nitty-gritty of data transfering between different tools
+- Hiding the nitty-gritty of data transferring between different tools
 
     Your model written in Python will be able to consume data processed by `Spark`,
     without you being involved. Cebes has that covered for you!
@@ -38,7 +38,7 @@ Cebes does so by:
     
     That means you can deploy your newly trained model in literally a few lines of code. 
 
-If that sounds excited to you, let's check it out by a few examples!
+If that sounds exciting to you, let's check it out by a few examples!
 
 ## Cebes in 30 seconds
 
@@ -47,3 +47,9 @@ If that sounds excited to you, let's check it out by a few examples!
 ## Getting support
 
 ## Why this name, Cebes?
+
+**Cebes** (_c._ 430 – 350 BC) was an Ancient Greek philosopher from Thebes, remembered as a disciple of Socrates. 
+He is one of the speakers in the _Phaedo_ of Plato, in which he is represented as an earnest seeker after 
+virtue and truth, keen in argument and cautious in decision. 
+
+We are with you on your journey making faster and better data-driven decisions! 
