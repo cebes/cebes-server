@@ -2,11 +2,19 @@ name := "cebes-http-server"
 
 scalastyleConfig := baseDirectory.value / "../build/scalastyle-config.xml"
 
+mainClass in assembly := Some("io.cebes.server.Main")
+
+// this is just to help IntelliJ determine the
+// correct scalatest. It is not included in the assembly anyway.
+dependencyOverrides += "org.scalatest" %% "scalatest" % Common.scalaTestVersion
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % Common.akkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-spray-json" % Common.akkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-testkit" % Common.akkaHttpVersion % "test",
   "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
+
+  "com.google.inject" % "guice" % Common.guiceVersion,
 
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("org.apache.hadoop", "hadoop-client")
@@ -14,15 +22,13 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-mllib" % Common.sparkVersion % "provided"
     exclude("org.scalatest", "scalatest_2.11"),
   "org.apache.spark" %% "spark-sql" % Common.sparkVersion % "provided"
-    exclude("mysql", "mysql-connector-java")
     exclude("org.scalatest", "scalatest_2.11"),
-  "org.apache.spark" %% "spark-hive" % Common.sparkVersion % "provided",
-
-  "com.google.inject" % "guice" % Common.guiceVersion
+  "org.apache.spark" %% "spark-hive" % Common.sparkVersion % "provided"
 )
 
-mainClass in assembly := Some("io.cebes.server.Main")
-
-// this is just to help IntelliJ determine the
-// correct scalatest. It is not included in the assembly anyway.
-dependencyOverrides += "org.scalatest" %% "scalatest" % Common.scalaTestVersion
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("org.apache.commons.**" -> "shadedcommonsbeanutils.@1").
+    inLibrary("commons-beanutils" % "commons-beanutils" % "1.7.0"),
+  ShadeRule.rename("org.apache.commons.**" -> "shadedcommonsbeanutilscore.@1").
+    inLibrary("commons-beanutils" % "commons-beanutils-core" % "1.8.0")
+)
