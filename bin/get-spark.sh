@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-SPARK_VERSION="${SPARK_VERSION:-2.1.0}"
+SPARK_VERSION="${SPARK_VERSION:-2.2.0}"
 CEBES_PATH="$(cd "$(dirname "$0")/../"; pwd)"
 SPARK_FILE_NAME="spark-${SPARK_VERSION}-bin-hadoop2.7"
 

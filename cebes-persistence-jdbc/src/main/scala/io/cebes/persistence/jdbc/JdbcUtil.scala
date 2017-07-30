@@ -28,7 +28,7 @@ object JdbcUtil extends LazyLogging {
       driverLoaded = true
     } catch {
       case e: Exception =>
-        logger.error("Driver not available: " + e.getMessage)
+        logger.error("Driver not available: " + e.getMessage, e)
         throw e
     }
   }
