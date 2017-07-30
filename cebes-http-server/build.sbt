@@ -9,13 +9,12 @@ libraryDependencies ++= Seq(
   "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
 
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
-    exclude("com.google.inject", "guice")
+    exclude("org.apache.hadoop", "hadoop-client")
     exclude("org.scalatest", "scalatest_2.11"),
   "org.apache.spark" %% "spark-mllib" % Common.sparkVersion % "provided"
-    exclude("com.google.inject", "guice")
     exclude("org.scalatest", "scalatest_2.11"),
   "org.apache.spark" %% "spark-sql" % Common.sparkVersion % "provided"
-    exclude("com.google.inject", "guice")
+    exclude("mysql", "mysql-connector-java")
     exclude("org.scalatest", "scalatest_2.11"),
   "org.apache.spark" %% "spark-hive" % Common.sparkVersion % "provided",
 
@@ -26,4 +25,4 @@ mainClass in assembly := Some("io.cebes.server.Main")
 
 // this is just to help IntelliJ determine the
 // correct scalatest. It is not included in the assembly anyway.
-dependencyOverrides += "org.scalatest" %% "scalatest" % "3.0.0"
+dependencyOverrides += "org.scalatest" %% "scalatest" % Common.scalaTestVersion

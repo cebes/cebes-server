@@ -32,6 +32,7 @@ lazy val cebesPersistenceJdbc = project.in(file("cebes-persistence-jdbc")).
   dependsOn(cebesProperties, cebesDataframe)
 
 lazy val cebesPipeline = project.in(file("cebes-pipeline")).
+  disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
   dependsOn(cebesDataframe, cebesProperties)
 
