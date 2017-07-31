@@ -2,14 +2,14 @@
 
 MYSQL_ROOT_PASSWORD="root_P@ssw0rd"
 
-if [ -d /run/mysqld ]; then
-    # already configure
-    /usr/share/mysql/mysql.server restart --user=root
-else
-    mkdir /run/mysqld
-    mysql_install_db --user=root
+MARIADB_DATA_DIR=${1:-"/cebes/data/mysql"}
 
-    /usr/share/mysql/mysql.server start --user=root
+if [ -f ${MARIADB_DATA_DIR}/initialized ]; then
+    # already configure
+    /usr/share/mysql/mysql.server start --datadir=${MARIADB_DATA_DIR} --user=root
+else
+    mysql_install_db --datadir=${MARIADB_DATA_DIR} --user=root
+    /usr/share/mysql/mysql.server start --datadir=${MARIADB_DATA_DIR} --user=root
     echo -ne '\nn\n\n\n' | mysql_secure_installation
     mysqladmin -u root password ${MYSQL_ROOT_PASSWORD}
 
@@ -39,6 +39,8 @@ EOF
 
     mysql --user=root -p${MYSQL_ROOT_PASSWORD} < ${TMP_FILE}
     rm -f ${TMP_FILE} hive-schema-1.2.0.mysql.sql hive-txn-schema-0.13.0.mysql.sql
+
+    touch ${MARIADB_DATA_DIR}/initialized
 fi
 
 
