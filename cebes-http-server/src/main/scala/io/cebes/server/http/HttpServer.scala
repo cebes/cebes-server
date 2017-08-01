@@ -25,7 +25,7 @@ import io.cebes.server.routes.Routes
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
-import scala.io.StdIn
+
 
 class HttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) val httpInterface: String,
                            @Prop(Property.HTTP_PORT) val httpPort: Int) extends Routes {
@@ -54,8 +54,8 @@ class HttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) val httpInterface: Str
   }
 
   def waitServer(): Unit = {
-    //Await.result(actorSystem.whenTerminated, Duration.Inf)
-    logger.info("Press enter to stop")
-    StdIn.readLine()
+    Await.result(actorSystem.whenTerminated, Duration.Inf)
+    //logger.info("Press enter to stop")
+    //StdIn.readLine()
   }
 }
