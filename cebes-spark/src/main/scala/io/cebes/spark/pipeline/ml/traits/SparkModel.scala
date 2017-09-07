@@ -48,25 +48,18 @@ trait SparkModel extends Model with CebesSparkUtil with SparkSchemaUtils {
     dfFactory.df(sparkDf, getSchema(sparkDf, data.schema, Seq.empty[String]: _*))
   }
 
-  /**
-    * Serialize this model into [[ModelDef]]
-    *
-    * @param msgSerializer   the [[PipelineMessageSerializer]] instance
-    * @param modelStorageDir the directory where the underlying model should be serialized (if needed)
-    * @return [[ModelDef]] instance
-    */
   def toModelDef(msgSerializer: PipelineMessageSerializer, modelStorageDir: String): ModelDef = {
     val sparkModelPath = SparkModel.getStoragePath(modelStorageDir, id)
     sparkTransformer.write.overwrite().save(sparkModelPath)
 
     val metaData = Map(SparkModel.METADATA_CLASSNAME -> sparkTransformer.getClass.getName)
-    ModelDef(id, getClass.getName, toPipelineMessages(msgSerializer), metaData)
+    ModelDef(id, getClass.getName, getInputs(msgSerializer), metaData)
   }
 }
 
 object SparkModel {
 
-  private val METADATA_CLASSNAME = "className"
+  private val METADATA_CLASSNAME = s"${getClass.getName}/sparkClassName"
 
   private def getStoragePath(modelStorageDir: String, id: UUID) = Paths.get(modelStorageDir, id.toString).toString
 
@@ -99,7 +92,7 @@ object SparkModel {
     Try(constructorMirror.apply(modelDef.id, sparkTransformer, dfFactory)) match {
       case Success(v) =>
         v match {
-          case sparkModel: SparkModel => sparkModel.fromPipelineMessages(modelDef.inputs, msgSerializer)
+          case sparkModel: SparkModel => sparkModel.setInputs(modelDef.inputs, msgSerializer)
         }
       case Failure(f) =>
         throw new IllegalArgumentException(s"Failed to run constructor for class ${modelDef.modelClass}", f)

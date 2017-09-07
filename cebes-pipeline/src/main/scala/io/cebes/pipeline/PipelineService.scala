@@ -25,7 +25,7 @@ trait PipelineService extends TagService[Pipeline] {
     *
     * @param pipelineDef definition of the pipeline
     */
-  def create(pipelineDef: PipelineDef): PipelineDef
+  def create(pipelineDef: PipelineDef)(implicit ec: ExecutionContext): PipelineDef
 
   /**
     * Run the given pipeline with the given inputs, return the results

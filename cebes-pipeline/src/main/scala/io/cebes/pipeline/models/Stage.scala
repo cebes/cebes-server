@@ -14,6 +14,9 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
+import io.cebes.pipeline.json.{PipelineMessageDef, StageDef}
+import io.cebes.pipeline.ml.Model
+
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -160,6 +163,54 @@ trait Stage extends Inputs with HasOutputSlots {
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
+  // Serialization
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Serialize this stage into a [[StageDef]] instance,
+    * including the values of all input slots and all stateful output slots
+    * Stateless output slots won't be included
+    *
+    * @param msgSerializer The [[PipelineMessageSerializer]] instance to be used
+    */
+  def toStageDef(msgSerializer: PipelineMessageSerializer)(implicit ec: ExecutionContext): Future[StageDef] = {
+    try {
+      outputLock.readLock().lock()
+
+      val statefulOutputs = _outputs.filter(s => s.stateful && cachedOutput.contains(s)).map { s =>
+        cachedOutput(s).map(v => (s.name, v))
+      }
+      Future.sequence(statefulOutputs.toList).map { arr =>
+        val outputMap = arr.map { case (slotName, value) =>
+          slotName -> msgSerializer.serialize(value)
+        }.toMap
+        StageDef(getName, getClass.getSimpleName, getInputs(msgSerializer, onlyStatefulInput = true), outputMap)
+      }
+    } finally {
+      outputLock.readLock().unlock()
+    }
+  }
+
+  /**
+    * Deserialize and set the value for the output slots of this stage
+    *
+    * @param jsData        map containing slot name -> serialized message def
+    * @param msgSerializer a [[PipelineMessageSerializer]] instance
+    */
+  def setOutputs(jsData: Map[String, PipelineMessageDef],
+                 msgSerializer: PipelineMessageSerializer)
+                (implicit ec: ExecutionContext): this.type = {
+    jsData.foreach { case (slotName, msgDef) =>
+      require(hasOutput(slotName), s"Output slot $slotName not found in $toString")
+      val slot = getOutput(slotName)
+      val deserializedValue = msgSerializer.deserialize(msgDef)
+      getOutput(slotName).checkValue(deserializedValue)
+      setOutputValue(slot, Future(deserializedValue))
+    }
+    this
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
   // Helpers
   ////////////////////////////////////////////////////////////////////////////////////
 
@@ -242,9 +293,14 @@ trait Stage extends Inputs with HasOutputSlots {
 
     // update cachedOutput and outputMap "new" status
     newOutputs.foreach { case (s, fv) =>
-      cachedOutput.put(s, fv)
-      outputMap(s).setNewOutput(true)
+      setOutputValue(s, fv)
     }
+  }
+
+  private def setOutputValue[T](slot: OutputSlot[T], value: Future[T]): this.type = {
+    cachedOutput.put(slot, value)
+    outputMap(slot).setNewOutput(true)
+    this
   }
 
   override def toString: String = s"${getClass.getSimpleName}(name=${Try(getName).getOrElse("<unknown>")})"

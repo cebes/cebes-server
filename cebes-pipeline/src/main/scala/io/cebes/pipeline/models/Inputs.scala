@@ -121,8 +121,15 @@ trait Inputs extends HasInputSlots {
     * @param msgSerializer the [[PipelineMessageSerializer]] instance
     * @return a map from slot name to [[PipelineMessageDef]]
     */
-  def toPipelineMessages(msgSerializer: PipelineMessageSerializer): Map[String, PipelineMessageDef] = {
-    _inputs.flatMap { slot =>
+  def getInputs(msgSerializer: PipelineMessageSerializer,
+                onlyStatefulInput: Boolean = false): Map[String, PipelineMessageDef] = {
+    val slots = if (onlyStatefulInput) {
+      _inputs.filter(_.stateful)
+    } else {
+      _inputs
+    }
+
+    slots.flatMap { slot =>
       inputOption(slot).map {
         case stageOut: StageOutput[_] =>
           slot.name -> StageOutputDef(stageOut.stage.getName, stageOut.outputName)
@@ -140,8 +147,8 @@ trait Inputs extends HasInputSlots {
     * @param msgSerializer the [[PipelineMessageSerializer]] instance
     * @return this instance
     */
-  def fromPipelineMessages(jsData: Map[String, PipelineMessageDef],
-                           msgSerializer: PipelineMessageSerializer): this.type = {
+  def setInputs(jsData: Map[String, PipelineMessageDef],
+                msgSerializer: PipelineMessageSerializer): this.type = {
     jsData.foreach { case (inpName, inpMessage) =>
       require(hasInput(inpName), s"Input name $inpName not found in stage $toString")
       msgSerializer.deserialize(inpMessage) match {

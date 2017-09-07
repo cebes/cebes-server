@@ -1,4 +1,4 @@
-/* Copyright 2017 The Cebes Authors. All Rights Reserved.
+/* Copyright 2016 The Cebes Authors. All Rights Reserved.
  *
  * Licensed under the Apache License, version 2.0 (the "License").
  * You may not use this work except in compliance with the License,
@@ -9,16 +9,13 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.pipeline.factory
+package io.cebes.pipeline.inject
 
+import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.pipeline.json.ModelDef
 import io.cebes.pipeline.ml.Model
 
-/**
-  * Generic trait for a factory of [[Model]]s
-  */
-trait ModelFactory {
-
+class DummyModelFactory extends ModelFactory {
   /**
     * Create a model from the given [[ModelDef]]
     *
@@ -27,7 +24,7 @@ trait ModelFactory {
     *                   If not specified, use system-wide default value
     * @return a [[Model]] object
     */
-  def create(modelDef: ModelDef, storageDir: Option[String] = None): Model
+  override def create(modelDef: ModelDef, storageDir: Option[String]) = ???
 
   /**
     * Serialize a [[Model]] into a [[ModelDef]]
@@ -36,5 +33,5 @@ trait ModelFactory {
     * @param storageDir the storage directory to read auxiliary data from, if needed.
     *                   If not specified, use system-wide default value
     */
-  def save(model: Model, storageDir: Option[String] = None): ModelDef
+  override def save(model: Model, storageDir: Option[String]) = ???
 }

@@ -41,7 +41,8 @@ class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactor
     *
     * @param pipelineDef definition of the pipeline
     */
-  override def create(pipelineDef: PipelineDef): PipelineDef = fromPipelineDef(pipelineDef).pipelineDef
+  override def create(pipelineDef: PipelineDef)(implicit ec: ExecutionContext): PipelineDef =
+    fromPipelineDef(pipelineDef).pipelineDef
 
   /**
     * Run the given pipeline with the given inputs, return the results
@@ -91,5 +92,6 @@ class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactor
     * Utility to create a pipeline object and add it to the store.
     * Return the newly created pipeline
     */
-  private def fromPipelineDef(pplDef: PipelineDef): Pipeline = cachedStore.add(pipelineFactory.create(pplDef))
+  private def fromPipelineDef(pplDef: PipelineDef)(implicit ec: ExecutionContext): Pipeline =
+    cachedStore.add(pipelineFactory.create(pplDef))
 }
