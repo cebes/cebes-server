@@ -10,7 +10,6 @@
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
 package io.cebes.pipeline.models
-import java.util.UUID
 
 class StageFoo extends Stage {
 
