@@ -11,6 +11,7 @@
  */
 package io.cebes.spark.helpers
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import io.cebes.df.Dataframe
@@ -34,5 +35,13 @@ trait TestPipelineHelper {
     val r = result(waitable)
     assert(r.isInstanceOf[Dataframe])
     r
+  }
+
+  /** Delete a file or a directory recursively */
+  protected def deleteRecursively(file: File): Unit = {
+    if (file.isDirectory)
+      file.listFiles.foreach(deleteRecursively)
+    if (file.exists && !file.delete)
+      throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
   }
 }

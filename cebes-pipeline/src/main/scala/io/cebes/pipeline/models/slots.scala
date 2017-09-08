@@ -159,7 +159,7 @@ class SlotMap {
     */
   def get[T](slot: Slot[T]): Option[StageInput[T]] = {
     map.get(slot.asInstanceOf[Slot[Any]]).asInstanceOf[Option[StageInput[T]]]
-      .orElse(slot.defaultValue.map(v => StageInput(v)))
+      .orElse(slot.defaultValue.map(v => OrdinaryInput(v)))
   }
 
   /**

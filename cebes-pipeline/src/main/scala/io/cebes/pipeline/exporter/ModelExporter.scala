@@ -43,12 +43,9 @@ class ModelExporter @Inject()(private val modelFactory: ModelFactory) {
   def imports(modelDefFilePath: String)(implicit jsonReader: JsonReader[ModelDef]): Model = {
     val modelDef = Files.readAllLines(Paths.get(modelDefFilePath), StandardCharsets.UTF_8)
       .toArray.mkString("\n").parseJson.convertTo[ModelDef]
-    val storageDir = modelDef.metaData.get(ModelExporter.METADATA_STORAGE_DIR) match {
-      case None =>
-        throw new IllegalArgumentException(s"Could not find storageDir for model ${modelDef.id}")
-      case Some(p) => p
-    }
-    modelFactory.create(modelDef, Some(storageDir))
+    require(modelDef.metaData.contains(ModelExporter.METADATA_STORAGE_DIR),
+      s"Could not find storageDir for model ${modelDef.id}")
+    modelFactory.create(modelDef, modelDef.metaData.get(ModelExporter.METADATA_STORAGE_DIR))
   }
 }
 

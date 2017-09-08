@@ -33,15 +33,15 @@ class StageFactory @Inject()(private val injector: Injector,
     val stage = constructStage(stageDef.stageClass, stageDef.name)
 
     // set the inputs and outputs
-    stage.setInputs(stageDef.inputs, msgSerializer)
-      .setOutputs(stageDef.outputs, msgSerializer)
+    stage.setInputs(stageDef.inputs.mapValues(msgSerializer.deserialize))
+      .setOutputs(stageDef.outputs.mapValues(msgSerializer.deserialize))
   }
 
 
   /**
     * Construct a new [[Stage]] instance, of the given stageClass and give it the given name
     */
-  private def constructStage(stageClass: String, stageName: String): Stage = {
+  def constructStage(stageClass: String, stageName: String): Stage = {
     // find the class
     val cls = stageNamespacesList.map { ns =>
       Try(Class.forName(s"$ns.$stageClass"))

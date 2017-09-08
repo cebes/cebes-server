@@ -53,7 +53,8 @@ trait SparkModel extends Model with CebesSparkUtil with SparkSchemaUtils {
     sparkTransformer.write.overwrite().save(sparkModelPath)
 
     val metaData = Map(SparkModel.METADATA_CLASSNAME -> sparkTransformer.getClass.getName)
-    ModelDef(id, getClass.getName, getInputs(msgSerializer), metaData)
+    val inputs = getInputs(onlyStatefulInput = true).mapValues(msgSerializer.serialize)
+    ModelDef(id, getClass.getName, inputs, metaData)
   }
 }
 
@@ -92,7 +93,8 @@ object SparkModel {
     Try(constructorMirror.apply(modelDef.id, sparkTransformer, dfFactory)) match {
       case Success(v) =>
         v match {
-          case sparkModel: SparkModel => sparkModel.setInputs(modelDef.inputs, msgSerializer)
+          case sparkModel: SparkModel =>
+            sparkModel.setInputs(modelDef.inputs.mapValues(msgSerializer.deserialize))
         }
       case Failure(f) =>
         throw new IllegalArgumentException(s"Failed to run constructor for class ${modelDef.modelClass}", f)

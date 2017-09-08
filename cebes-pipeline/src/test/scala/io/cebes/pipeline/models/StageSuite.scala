@@ -13,13 +13,11 @@ package io.cebes.pipeline.models
 
 import java.util.concurrent.TimeUnit
 
-import io.cebes.pipeline.inject.DummyPipelineMessageSerializer
-import io.cebes.pipeline.json.ValueDef
 import io.cebes.pipeline.stages.ValuePlaceholder
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, ExecutionException}
+import scala.concurrent.{ExecutionContext, ExecutionException}
 
 class StageSuite extends FunSuite {
 
@@ -320,72 +318,5 @@ class StageSuite extends FunSuite {
     s.input(s.inputVal, "this is my string")
     val r = f.output(f.out).getResult()
     assert(r.isInstanceOf[Array[_]])
-  }
-
-  test("toStageDef") {
-    val msgSerializer = new DummyPipelineMessageSerializer()
-
-    val s = new StageFoo().setName("s1")
-    s.input(s.strIn, "input string")
-
-    val stageDef = Await.result(s.toStageDef(msgSerializer), TEST_WAIT_TIME)
-    assert(stageDef.name === "s1")
-    assert(stageDef.stageClass === "StageFoo")
-    assert(stageDef.inputs.size === 1)
-    assert(stageDef.inputs("strIn") === ValueDef("input string"))
-    assert(stageDef.outputs.isEmpty)
-
-    // stateless output slot, and the output map is empty
-    s.output(s.out).getResult(TEST_WAIT_TIME)
-    val stageDef1 = Await.result(s.toStageDef(msgSerializer), TEST_WAIT_TIME)
-    assert(stageDef1.name === "s1")
-    assert(stageDef1.stageClass === "StageFoo")
-    assert(stageDef1.outputs.isEmpty)
-
-    // stage with stateful output slot
-    val s2 = new StageFooStateful().setName("s2")
-    s2.input(s2.strIn, "input string 2")
-
-    val stageDef2 = Await.result(s2.toStageDef(msgSerializer), TEST_WAIT_TIME)
-    assert(stageDef2.name === "s2")
-    assert(stageDef2.stageClass === "StageFooStateful")
-    assert(stageDef2.inputs.isEmpty)
-    assert(stageDef2.outputs.isEmpty)
-
-    // stateless output slot, and the output map is empty
-    s2.output(s2.out).getResult(TEST_WAIT_TIME)
-    val stageDef2b = Await.result(s2.toStageDef(msgSerializer), TEST_WAIT_TIME)
-    assert(stageDef2b.name === "s2")
-    assert(stageDef2b.stageClass === "StageFooStateful")
-    assert(stageDef2b.outputs.size === 1)
-    assert(stageDef2b.outputs.contains("out"))
-  }
-
-  test("setOutputs") {
-    val msgSerializer = new DummyPipelineMessageSerializer()
-
-    val s = new StageFooStateful().setName("s1")
-    s.input(s.strIn, "input string")
-
-    val out1 = s.output(s.out).getResult(TEST_WAIT_TIME)
-    assert(out1 === Array(10, 20))
-
-    s.setOutputs(Map("out" -> ValueDef(Array(1000, 11))), msgSerializer)
-    val out2 = s.output(s.out).getResult(TEST_WAIT_TIME)
-    assert(out2 === Array(1000, 11))
-
-    val stageDef1 = Await.result(s.toStageDef(msgSerializer), TEST_WAIT_TIME)
-    assert(stageDef1.outputs("out").asInstanceOf[ValueDef].value === Array(1000, 11))
-
-    // fail
-    val ex1 = intercept[IllegalArgumentException] {
-      s.setOutputs(Map("out" -> ValueDef(200.0f)), msgSerializer)
-    }
-    assert(ex1.getMessage === "requirement failed: Invalid type at slot out, expected a int[], got Float")
-
-    val ex2 = intercept[IllegalArgumentException] {
-      s.setOutputs(Map("out_slot" -> ValueDef(Array(100))), msgSerializer)
-    }
-    assert(ex2.getMessage === "requirement failed: Output slot out_slot not found in StageFooStateful(name=s1)")
   }
 }
