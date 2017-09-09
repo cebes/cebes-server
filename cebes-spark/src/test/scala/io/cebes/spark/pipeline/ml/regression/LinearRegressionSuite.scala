@@ -11,6 +11,7 @@
  */
 package io.cebes.spark.pipeline.ml.regression
 
+import java.io.File
 import java.nio.file.Files
 
 import io.cebes.df.types.StorageTypes
@@ -176,6 +177,28 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(lrOutputs.contains("model"))
     assert(lrOutputs("model").isInstanceOf[LinearRegressionModel])
 
+    // move to another location, imports again
+    val testCopyDir = Files.createTempDirectory("test-ppl-moved-")
+    moveDirectory(new File(exportedDir2), testCopyDir.toFile)
+
+    // import at the previous location should fail
+    val ex = intercept[IllegalArgumentException] {
+      exporter.imports(exportedDir2)
+    }
+    assert(ex.getMessage.startsWith("requirement failed: A file named pipeline.json is required under"))
+
+    // import at the new location
+    val ppl4 = exporter.imports(testCopyDir.toString)
+    assert(ppl4.id === ppl.id)
+    assert(ppl4.stages.size === 2)
+    assert(ppl4.stages.contains("s1") && ppl4.stages.contains("s2"))
+    assert(ppl4.stages("s1").isInstanceOf[VectorAssembler])
+    assert(ppl4.stages("s2").isInstanceOf[LinearRegression])
+    val lrOutputs4 = result(ppl4.stages("s2").getOutputs())
+    assert(lrOutputs4.contains("model"))
+    assert(lrOutputs4("model").isInstanceOf[LinearRegressionModel])
+
     deleteRecursively(testDir.toFile)
+    deleteRecursively(testCopyDir.toFile)
   }
 }
