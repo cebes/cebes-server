@@ -160,6 +160,51 @@ trait Stage extends Inputs with HasOutputSlots {
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
+  // Serialization
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Get all available output values of this instance
+    * Returns as a map from slot name to the value
+    *
+    * @param onlyStatefulSlot Whether only consider stateful output slots
+    */
+  def getOutputs(onlyStatefulSlot: Boolean = true)(implicit ec: ExecutionContext): Future[Map[String, Any]] = {
+    try {
+      outputLock.readLock().lock()
+
+      val availableOutputs = _outputs.filter { s =>
+        cachedOutput.contains(s) && (s.stateful || !onlyStatefulSlot)
+      } map { s =>
+        cachedOutput(s).map { v =>
+          s.name -> v
+        }
+      }
+      Future.sequence(availableOutputs.toList).map { ls =>
+        ls.toMap
+      }
+    } finally {
+      outputLock.readLock().unlock()
+    }
+  }
+
+  /**
+    * Set values to the output slots of this stage
+    * Values will be type-checked.
+    *
+    * @param data map containing slot name -> actual value
+    */
+  def setOutputs(data: Map[String, Any])(implicit ec: ExecutionContext): this.type = {
+    data.foreach { case (slotName, value) =>
+      require(hasOutput(slotName), s"Output slot $slotName not found in $toString")
+      val slot = getOutput(slotName)
+      getOutput(slotName).checkValue(value)
+      setOutputValue(slot, Future(value))
+    }
+    this
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
   // Helpers
   ////////////////////////////////////////////////////////////////////////////////////
 
@@ -242,9 +287,14 @@ trait Stage extends Inputs with HasOutputSlots {
 
     // update cachedOutput and outputMap "new" status
     newOutputs.foreach { case (s, fv) =>
-      cachedOutput.put(s, fv)
-      outputMap(s).setNewOutput(true)
+      setOutputValue(s, fv)
     }
+  }
+
+  private def setOutputValue[T](slot: OutputSlot[T], value: Future[T]): this.type = {
+    cachedOutput.put(slot, value)
+    outputMap(slot).setNewOutput(true)
+    this
   }
 
   override def toString: String = s"${getClass.getSimpleName}(name=${Try(getName).getOrElse("<unknown>")})"

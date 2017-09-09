@@ -63,6 +63,11 @@ The docker image contains everything needed by Cebes, including a MariaDB instan
 
     docker run -it -p 21000:21000 -p 4040:4040 --name cebes-server cebes
     
+The docker image exposes a data volume at `/cebes/data` containing Cebes logs, MariaDB databases and 
+Hive warehouse used in Spark. If you want to keep the data persisted, mount it to a local directory:
+
+    docker run -it -p 21000:21000 -p 4040:4040 -v $HOME/cebes-data:/cebes/data --name cebes-server cebes
+    
 To check if the Cebes server is up and running:
 
     curl localhost:21000/version

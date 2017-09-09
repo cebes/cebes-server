@@ -75,6 +75,14 @@ case class ModelRunDef(model: ModelMessageDef, inputDf: DataframeMessageDef)
 case class PipelineDef(id: Option[UUID], stages: Array[StageDef])
 
 /**
+  * Export of a Pipeline, mainly used by [[io.cebes.pipeline.exports.PipelineExporter]]
+  *
+  * @param version  version of the exporter
+  * @param pipeline the actual pipeline definition
+  */
+case class PipelineExportDef(version: String, pipeline: PipelineDef)
+
+/**
   * request running a pipeline given the input in feeds, and requesting output at slots specified in outputs
   *
   * @param pipeline the pipeline to be run, can be a full pipeline definition

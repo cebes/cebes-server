@@ -17,15 +17,18 @@ import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.models.{Pipeline, Stage}
 
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext
 
 class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
 
   /**
-    * Create the pipeline object from the given definition
+    * Create the pipeline object from the given definition.
+    * This is normally used to create a new Pipeline from user's definition.
+    *
     * Note that this will not wire the inputs of stages. That will only be done when
     * [[Pipeline.run()]] is called.
     */
-  def create(pipelineDef: PipelineDef): Pipeline = {
+  def create(pipelineDef: PipelineDef)(implicit ec: ExecutionContext): Pipeline = {
     val id = pipelineDef.id.getOrElse(HasId.randomId)
 
     val stageMap = mutable.Map.empty[String, Stage]

@@ -26,12 +26,6 @@ private[pipeline] trait StageInput[+T] {
 
 }
 
-private[pipeline] object StageInput {
-
-  def apply[T](value: T): StageInput[T] = OrdinaryInput(value)
-
-}
-
 private[pipeline] case class OrdinaryInput[+T](private val value: T) extends StageInput[T] {
 
   override def get: T = value

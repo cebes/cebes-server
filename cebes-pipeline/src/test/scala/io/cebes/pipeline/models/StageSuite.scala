@@ -17,7 +17,7 @@ import io.cebes.pipeline.stages.ValuePlaceholder
 import org.scalatest.FunSuite
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, ExecutionException}
+import scala.concurrent.{Await, ExecutionContext, ExecutionException}
 
 class StageSuite extends FunSuite {
 
@@ -318,5 +318,89 @@ class StageSuite extends FunSuite {
     s.input(s.inputVal, "this is my string")
     val r = f.output(f.out).getResult()
     assert(r.isInstanceOf[Array[_]])
+  }
+
+  test("getInputs and setInputs") {
+    val s = new StageStatefulComplicated().setName("s1")
+
+    s.input(s.inStateful, "stateful in")
+      .input(s.inStateless, "stateless in")
+
+    val inputs1 = s.getInputs(onlyStatefulInput = true)
+    assert(inputs1.size === 1)
+    assert(inputs1("inStateful") == "stateful in")
+
+    val inputs2 = s.getInputs()
+    assert(inputs2.size == 3)
+    assert(inputs2("inStateful") == "stateful in")
+    assert(inputs2("inStateless") == "stateless in")
+    assert(inputs2("name") == "s1")
+
+    s.setInputs(Map("inStateful" -> "stateful in 2"))
+    val inputs3 = s.getInputs(onlyStatefulInput = true)
+    assert(inputs3.size === 1)
+    assert(inputs3("inStateful") == "stateful in 2")
+
+    val ex1 = intercept[IllegalArgumentException] {
+      s.setInputs(Map("nonExist" -> "random"))
+    }
+    assert(ex1.getMessage === "requirement failed: " +
+      "Input name nonExist not found in stage StageStatefulComplicated(name=s1)")
+  }
+
+  test("getOutputs and setOutputs") {
+    val s = new StageStatefulComplicated().setName("s1")
+    s.input(s.inStateful, "stateful in")
+      .input(s.inStateless, "stateless in")
+
+    val outputs1 = Await.result(s.getOutputs(), TEST_WAIT_TIME)
+    assert(outputs1.isEmpty)
+
+    // compute output, now everything should works
+    s.output(s.outStateful).getResult()
+    s.output(s.outStateless).getResult()
+
+    s.getOutputs()
+    val outputs2 = Await.result(s.getOutputs(), TEST_WAIT_TIME)
+    assert(outputs2.size === 1)
+    assert(outputs2("outStateful") === "stateful in stateful output")
+
+    val outputs3 = Await.result(s.getOutputs(onlyStatefulSlot = false), TEST_WAIT_TIME)
+    assert(outputs3.size === 2)
+    assert(outputs3("outStateful") === "stateful in stateful output")
+    assert(outputs3("outStateless") === "stateful in stateless in stateless output")
+
+    s.setOutputs(Map("outStateful" -> "new stateful output"))
+    val outputs4 = Await.result(s.getOutputs(), TEST_WAIT_TIME)
+    assert(outputs4.size === 1)
+    assert(outputs4("outStateful") === "new stateful output")
+
+    // re-compute the stateful output, the value we set above still valid
+    s.output(s.outStateful).getResult()
+    val outputs5 = Await.result(s.getOutputs(), TEST_WAIT_TIME)
+    assert(outputs5.size === 1)
+    assert(outputs5("outStateful") === "new stateful output")
+
+    // clear the stateful output, getOutputs should return empty
+    s.clearOutput(s.outStateful)
+    assert(Await.result(s.getOutputs(), TEST_WAIT_TIME).isEmpty)
+
+    // re-compute, it should take the original value
+    s.output(s.outStateful).getResult()
+    val outputs6 = Await.result(s.getOutputs(), TEST_WAIT_TIME)
+    assert(outputs6.size === 1)
+    assert(outputs6("outStateful") === "stateful in stateful output")
+
+    // re-compute the stateless output, its value is reset to the original value
+    s.output(s.outStateless).getResult()
+    val outputs7 = Await.result(s.getOutputs(onlyStatefulSlot = false), TEST_WAIT_TIME)
+    assert(outputs7.size === 2)
+    assert(outputs7("outStateless") === "stateful in stateless in stateless output")
+
+    val ex1 = intercept[IllegalArgumentException] {
+      s.setOutputs(Map("nonExists" -> "random value"))
+    }
+    assert(ex1.getMessage === "requirement failed: " +
+      "Output slot nonExists not found in StageStatefulComplicated(name=s1)")
   }
 }

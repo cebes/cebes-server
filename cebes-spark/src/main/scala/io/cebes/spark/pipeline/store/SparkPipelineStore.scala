@@ -25,6 +25,8 @@ import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.store.{CachedStore, TagStore}
 import spray.json._
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 /**
   * An implementation of [[CachedStore[Pipeline]]] for Spark,
   * using guava's LoadingCache with JDBC persistence backend

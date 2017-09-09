@@ -11,9 +11,15 @@
  */
 package io.cebes.spark.pipeline.ml.regression
 
+import java.nio.file.Files
+
 import io.cebes.df.types.StorageTypes
+import io.cebes.pipeline.exporter.PipelineExporter
 import io.cebes.pipeline.factory.ModelFactory
+import io.cebes.pipeline.json._
+import io.cebes.pipeline.models.SlotDescriptor
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
+import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.spark.pipeline.features.VectorAssembler
 import org.scalatest.FunSuite
 
@@ -119,4 +125,57 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(v2.asInstanceOf[String] === "caliper")
   }
 
+  test("Import and export") {
+    val df = getCylinderBands.limit(200).na.drop()
+    assert(df.numRows > 1)
+
+    val pplDef = PipelineDef(None, Array(
+      StageDef("s1", "VectorAssembler", Map(
+        "inputCols" -> ValueDef(Array("viscosity", "proof_cut")),
+        "outputCol" -> ValueDef("features"))),
+      StageDef("s2", "LinearRegression", Map(
+        "featuresCol" -> ValueDef("features"),
+        "labelCol" -> ValueDef("caliper"),
+        "predictionCol" -> ValueDef("caliper_predict"),
+        "inputDf" -> StageOutputDef("s1", "outputDf")))))
+
+    val ppl = pipelineFactory.create(pplDef)
+    assert(ppl.stages.size === 2)
+    assert(ppl.stages.contains("s1") && ppl.stages.contains("s2"))
+    assert(ppl.stages("s1").isInstanceOf[VectorAssembler])
+    assert(ppl.stages("s2").isInstanceOf[LinearRegression])
+
+    val exporter = getInstance[PipelineExporter]
+
+    val testDir = Files.createTempDirectory("test-ppl-")
+
+    // without models
+    val exportedDir = result(exporter.export(ppl, testDir.toString))
+
+    // re-import
+    val ppl2 = exporter.imports(exportedDir)
+    assert(ppl2.id === ppl.id)
+    assert(ppl2.stages.size === 2)
+    assert(ppl2.stages.contains("s1") && ppl2.stages.contains("s2"))
+    assert(ppl2.stages("s1").isInstanceOf[VectorAssembler])
+    assert(ppl2.stages("s2").isInstanceOf[LinearRegression])
+
+    // train the model
+    result(ppl.run(Seq(SlotDescriptor("s2", "model")), Map(SlotDescriptor("s1", "inputDf") -> df)))
+
+    // export again, with models
+    val exportedDir2 = result(exporter.export(ppl, testDir.toString))
+    assert(exportedDir2 !== exportedDir)
+    val ppl3 = exporter.imports(exportedDir2)
+    assert(ppl3.id === ppl.id)
+    assert(ppl3.stages.size === 2)
+    assert(ppl3.stages.contains("s1") && ppl3.stages.contains("s2"))
+    assert(ppl3.stages("s1").isInstanceOf[VectorAssembler])
+    assert(ppl3.stages("s2").isInstanceOf[LinearRegression])
+    val lrOutputs = result(ppl3.stages("s2").getOutputs())
+    assert(lrOutputs.contains("model"))
+    assert(lrOutputs("model").isInstanceOf[LinearRegressionModel])
+
+    deleteRecursively(testDir.toFile)
+  }
 }

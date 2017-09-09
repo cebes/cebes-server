@@ -14,8 +14,6 @@ package io.cebes.pipeline.models
 import java.lang.reflect.Modifier
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 
-import io.cebes.pipeline.json.{PipelineMessageDef, StageOutputDef}
-
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -80,10 +78,10 @@ trait Inputs extends HasInputSlots {
 
   /**
     * Conveniently set a present value for the given input slot
-    * calling `input(s, v: T)` is equivalent to `input(s, StageInput(v))`
+    * calling `input(s, v: T)` is equivalent to `input(s, OrdinaryInput(v))`
     */
   final def input[T](slot: InputSlot[T], value: T): this.type = {
-    input(slot, StageInput(value))
+    input(slot, OrdinaryInput(value))
   }
 
   /////////////////////////////////
@@ -116,35 +114,45 @@ trait Inputs extends HasInputSlots {
   /////////////////////////////////
 
   /**
-    * Serialize all the input slot into a map of slot name -> [[PipelineMessageDef]]
+    * Returns all the input values of this instance, along with the name of the input slot
     *
-    * @param msgSerializer the [[PipelineMessageSerializer]] instance
-    * @return a map from slot name to [[PipelineMessageDef]]
+    * @param onlyStatefulInput whether to only consider stateful input slot
+    * @return a map from slot name -> value
     */
-  def toPipelineMessages(msgSerializer: PipelineMessageSerializer): Map[String, PipelineMessageDef] = {
-    _inputs.flatMap { slot =>
-      inputOption(slot).map {
-        case stageOut: StageOutput[_] =>
-          slot.name -> StageOutputDef(stageOut.stage.getName, stageOut.outputName)
-        case ordinary: OrdinaryInput[_] =>
-          slot.name -> msgSerializer.serialize(ordinary.get)
+  def getInputs(onlyStatefulInput: Boolean = false): Map[String, Any] = {
+    try {
+      inputLock.readLock().lock()
+
+      val slots = if (onlyStatefulInput) {
+        _inputs.filter(_.stateful)
+      } else {
+        _inputs
       }
-    }.toMap
+
+      slots.flatMap { slot =>
+        inputOption(slot).map {
+          case stageOut: StageOutput[_] =>
+            slot.name -> SlotDescriptor(parent = stageOut.stage.getName, name = stageOut.outputName)
+          case ordinary: OrdinaryInput[_] =>
+            slot.name -> ordinary.get
+        }
+      }.toMap
+    } finally {
+      inputLock.readLock().unlock()
+    }
+
   }
 
   /**
-    * Read the message in the given JSON data to this [[Inputs]] instance
-    * This function will NOT consider [[StageOutputDef]] messages. Those should only be considered in the [[Pipeline]]
+    * Set the input slots for this instance
+    * This function will ignore any input that are [[SlotDescriptor]]. Those should be considered in the [[Pipeline]]
     *
-    * @param jsData        JSON data to read from
-    * @param msgSerializer the [[PipelineMessageSerializer]] instance
-    * @return this instance
+    * @param data a map from slot name to the actual value
     */
-  def fromPipelineMessages(jsData: Map[String, PipelineMessageDef],
-                           msgSerializer: PipelineMessageSerializer): this.type = {
-    jsData.foreach { case (inpName, inpMessage) =>
+  def setInputs(data: Map[String, Any]): this.type = {
+    data.foreach { case (inpName, value) =>
       require(hasInput(inpName), s"Input name $inpName not found in stage $toString")
-      msgSerializer.deserialize(inpMessage) match {
+      value match {
         case _: SlotDescriptor => // will be connected later
         case v => input(getInput(inpName), v)
       }

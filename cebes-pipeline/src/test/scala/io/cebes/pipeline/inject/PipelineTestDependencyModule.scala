@@ -12,11 +12,13 @@
 package io.cebes.pipeline.inject
 
 import com.google.inject.AbstractModule
+import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.pipeline.models.PipelineMessageSerializer
 
 class PipelineTestDependencyModule extends AbstractModule {
 
   protected def configure(): Unit = {
     bind(classOf[PipelineMessageSerializer]).to(classOf[DummyPipelineMessageSerializer])
+    bind(classOf[ModelFactory]).to(classOf[DummyModelFactory])
   }
 }

@@ -2,23 +2,12 @@
 
 FROM openjdk:8-alpine
 
-ARG SPARK_VERSION=2.1.0
-ARG PROXY_SERVER=""
-ARG NO_PROXY=""
+ARG CEBES_DATA_DIR=/cebes/data
+ARG SPARK_VERSION=2.2.0
 
-ENV http_proxy=$PROXY_SERVER \
-    https_proxy=$PROXY_SERVER \
-    ftp_proxy=$PROXY_SERVER \
-    all_proxy=$PROXY_SERVER \
-    HTTP_PROXY=$PROXY_SERVER \
-    HTTPS_PROXY=$PROXY_SERVER \
-    FTP_PROXY=$PROXY_SERVER \
-    ALL_PROXY=$PROXY_SERVER \
-    no_proxy=${NO_PROXY} \
-    NO_PROXY=${NO_PROXY}
-    
-# mysql
+# mariadb
 # libc6-compat is needed for alpine: https://github.com/grpc/grpc/issues/6126
+# also include openblas and lapack (for com.github.fommil.netlib in Spark)
 RUN apk add --update curl bash libc6-compat mariadb mariadb-client && rm -f /var/cache/apk/*
 
 # Spark
@@ -38,11 +27,11 @@ ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
 ADD docker/configure_mariadb.sh /cebes/
 ADD docker/start_cebes.sh /cebes/
 
-RUN sh /cebes/configure_mariadb.sh && rm /cebes/configure_mariadb.sh
-
 WORKDIR /cebes
 
 EXPOSE 4040
 EXPOSE 21000
+
+VOLUME $CEBES_DATA_DIR
 
 ENTRYPOINT ["/cebes/start_cebes.sh"]
