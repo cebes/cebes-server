@@ -12,6 +12,7 @@
 package io.cebes.spark.helpers
 
 import java.io.File
+import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
 
 import io.cebes.df.Dataframe
@@ -43,5 +44,18 @@ trait TestPipelineHelper {
       file.listFiles.foreach(deleteRecursively)
     if (file.exists && !file.delete)
       throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
+  }
+
+  protected def moveDirectory(source: File, dest: File): Unit = {
+    if (source.isDirectory) {
+      if (!Files.exists(dest.toPath)) {
+        Files.createDirectories(dest.toPath)
+      }
+      source.listFiles().foreach(f => moveDirectory(f, new File(dest, f.getName)))
+      Files.deleteIfExists(source.toPath)
+    }
+    if (source.isFile) {
+      Files.move(source.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
+    }
   }
 }

@@ -28,12 +28,17 @@ class ModelExporter @Inject()(private val modelFactory: ModelFactory) {
     */
   def export(model: Model, storageDir: String, modelDefFilePath: String)
             (implicit jsonWriter: JsonWriter[ModelDef]): String = {
-    val modelDef = modelFactory.save(model, Some(storageDir))
-    val modelDefUpdated = modelDef.copy(metaData = modelDef.metaData
-      ++ Map(ModelExporter.METADATA_STORAGE_DIR -> storageDir))
 
-    Files.write(Paths.get(modelDefFilePath), modelDefUpdated.toJson.compactPrint.getBytes(StandardCharsets.UTF_8))
-    modelDefFilePath
+    val storageDirAbs = Paths.get(storageDir).normalize()
+    val modelDefPathAbs = Paths.get(modelDefFilePath).normalize()
+
+    val modelDef = modelFactory.save(model, Some(storageDirAbs.toString))
+    val modelDefUpdated = modelDef.copy(metaData = modelDef.metaData
+      ++ Map(ModelExporter.METADATA_STORAGE_DIR -> modelDefPathAbs.relativize(storageDirAbs).toString))
+
+
+    Files.write(modelDefPathAbs, modelDefUpdated.toJson.compactPrint.getBytes(StandardCharsets.UTF_8))
+    modelDefPathAbs.toString
   }
 
   /**
@@ -41,11 +46,18 @@ class ModelExporter @Inject()(private val modelFactory: ModelFactory) {
     * Returns the deserialized [[Model]] object
     */
   def imports(modelDefFilePath: String)(implicit jsonReader: JsonReader[ModelDef]): Model = {
-    val modelDef = Files.readAllLines(Paths.get(modelDefFilePath), StandardCharsets.UTF_8)
+
+    val modelDefPathAbs = Paths.get(modelDefFilePath).normalize()
+
+    val modelDef = Files.readAllLines(modelDefPathAbs, StandardCharsets.UTF_8)
       .toArray.mkString("\n").parseJson.convertTo[ModelDef]
     require(modelDef.metaData.contains(ModelExporter.METADATA_STORAGE_DIR),
       s"Could not find storageDir for model ${modelDef.id}")
-    modelFactory.create(modelDef, modelDef.metaData.get(ModelExporter.METADATA_STORAGE_DIR))
+
+    val storageDir = modelDef.metaData.get(ModelExporter.METADATA_STORAGE_DIR).map(s =>
+      Paths.get(modelDefPathAbs.toString, s).normalize().toString)
+
+    modelFactory.create(modelDef, storageDir)
   }
 }
 
