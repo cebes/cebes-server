@@ -8,19 +8,13 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 07/09/16.
  */
+package io.cebes.repository.inject
 
-package io.cebes.server.routes.auth
+import com.google.inject.AbstractModule
 
-import io.cebes.server.routes.AbstractRouteSuite
+class CebesRepositoryDependencyModule extends AbstractModule {
+  override def configure(): Unit = {
 
-
-class AuthHandlerSuite extends AbstractRouteSuite {
-
-  test("login") {
-    // this is to test the login commands, but that was handled in AbstractRouteSuite already
-    assert((3 + 1) !== 2)
   }
 }

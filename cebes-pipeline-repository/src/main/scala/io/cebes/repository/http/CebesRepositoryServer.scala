@@ -20,7 +20,8 @@ import com.google.inject.Inject
 import io.cebes.http.server.HttpServer
 import io.cebes.http.server.routes.ApiErrorHandler
 import io.cebes.prop.{Prop, Property}
-import io.cebes.repository.http.CebesRepositoryJsonProtocol._
+import io.cebes.repository.CebesRepositoryJsonProtocol._
+import io.cebes.repository.VersionResponse
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -32,14 +33,30 @@ class CebesRepositoryServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) overr
   override protected val serverSecret: String =
     "v8Km83QULVYHVgx0GxJKkZ7v3uhtA3wVY3maYArW5fI1WFTpUwyXQQLwGjVfirAA5OuIVv"
 
-  protected implicit val actorSystem: ActorSystem = ActorSystem("CebesServerApp")
+  protected implicit val actorSystem: ActorSystem = ActorSystem("CebesPipelineRepository")
   protected implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
   protected implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
   override val routes: Route =
     pathPrefix(CebesRepositoryServer.API_VERSION) {
-      (path("catalog") & get) {
-        complete("ok")
+      requiredCebesSession { _ =>
+        (path("catalog") & get) {
+          // listing repository names (i.e. repositories)
+          complete("ok")
+        } ~ pathPrefix("pipelines" / Segment) { pplName =>
+          pathPrefix("tags") {
+            (path(PathEnd) & get) {
+              // list all tags of this pipeline
+              complete("SADASDASD")
+            } ~ path(Segment) { tag =>
+              get {
+                complete("download this tag")
+              } ~ put {
+                complete("upload this tag")
+              }
+            }
+          }
+        }
       }
     } ~
       (path("version") & get) {

@@ -8,19 +8,18 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 07/09/16.
  */
+package io.cebes.repository.inject
 
-package io.cebes.server.routes.auth
+import com.google.inject.{Guice, Injector}
+import io.cebes.prop.PropertyModule
 
-import io.cebes.server.routes.AbstractRouteSuite
+import scala.reflect.ClassTag
 
+object CebesRepositoryInjector {
 
-class AuthHandlerSuite extends AbstractRouteSuite {
+  private val injector: Injector = Guice.createInjector(new PropertyModule(false),
+    new CebesRepositoryDependencyModule)
 
-  test("login") {
-    // this is to test the login commands, but that was handled in AbstractRouteSuite already
-    assert((3 + 1) !== 2)
-  }
+  def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

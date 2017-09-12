@@ -13,4 +13,5 @@ object Common {
   val netlibVersion = "1.1.2"
   val awsJavaSdkS3 = "1.11.22"
   val hadoopClientVersion = "2.7.3"
+  val squerylVersion = "0.9.9"
 }

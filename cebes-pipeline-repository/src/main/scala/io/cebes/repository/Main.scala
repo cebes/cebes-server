@@ -11,6 +11,15 @@
  */
 package io.cebes.repository
 
+import io.cebes.repository.http.CebesRepositoryServer
+import io.cebes.repository.inject.CebesRepositoryInjector
+
 object Main {
 
+  def main(args: Array[String]) {
+    val server = CebesRepositoryInjector.instance[CebesRepositoryServer]
+    server.start()
+    server.waitServer()
+    server.stop()
+  }
 }

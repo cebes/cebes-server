@@ -9,7 +9,7 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.repository.http
+package io.cebes.repository
 
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
