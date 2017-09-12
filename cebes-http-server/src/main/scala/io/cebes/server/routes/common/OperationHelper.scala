@@ -11,30 +11,23 @@
  */
 package io.cebes.server.routes.common
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.server.Directives.{as, entity, path, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{RequestContext, Route}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import akka.stream.Materializer
+import io.cebes.http.server.HttpJsonProtocol._
+import io.cebes.http.server.operations.AsyncOperation
+import io.cebes.http.server.routes.AkkaImplicits
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.routes.DataframeResponse
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import spray.json.JsonFormat
 
-import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 /**
   * Convenient functions for working with generic operations
   */
-trait OperationHelper {
-
-  implicit def actorSystem: ActorSystem
-
-  implicit def actorExecutor: ExecutionContext
-
-  implicit def actorMaterializer: Materializer
+trait OperationHelper extends AkkaImplicits {
 
   /**
     * An operation done by class [[W]] (subclass of [[AsyncDataframeOperation]],

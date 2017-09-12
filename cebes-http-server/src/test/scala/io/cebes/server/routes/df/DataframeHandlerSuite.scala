@@ -22,10 +22,11 @@ import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, functions}
+import io.cebes.http.client.ServerException
 import io.cebes.json.CebesCoreJsonProtocol._
-import io.cebes.server.client.{RemoteDataframe, ServerException}
+import io.cebes.server.client.RemoteDataframe
 import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TaggedDataframeResponse, TagsGetRequest}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._

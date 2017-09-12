@@ -18,7 +18,7 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.server.RequestContext
 import akka.util.ByteString
 import com.google.inject.Inject
-import io.cebes.server.routes.common.SyncOperation
+import io.cebes.http.server.operations.SyncOperation
 import io.cebes.storage.DataWriter
 
 import scala.concurrent.{ExecutionContext, Future}

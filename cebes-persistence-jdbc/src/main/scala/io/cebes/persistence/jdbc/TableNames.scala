@@ -31,4 +31,6 @@ object TableNames {
 
   val MODEL_STORE = "model_store"
   val MODEL_TAG_STORE = "model_tag_store"
+
+  val REPOSITORY_REFRESH_TOKENS = "repo_refresh_tokens"
 }

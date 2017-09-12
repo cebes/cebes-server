@@ -12,11 +12,11 @@
 package io.cebes.server.routes.model
 
 import com.google.inject.Inject
+import io.cebes.http.server.result.ResultStorage
 import io.cebes.pipeline.ModelService
 import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.pipeline.json.ModelDef
 import io.cebes.pipeline.ml.Model
-import io.cebes.server.result.ResultStorage
 import io.cebes.server.routes.common._
 import io.cebes.store.TagEntry
 import io.cebes.tag.Tag

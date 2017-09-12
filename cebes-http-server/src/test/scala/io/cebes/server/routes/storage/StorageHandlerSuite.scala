@@ -17,7 +17,7 @@ package io.cebes.server.routes.storage
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.server.helpers.TestPropertyHelper
 import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
 import io.cebes.storage.DataFormats
 

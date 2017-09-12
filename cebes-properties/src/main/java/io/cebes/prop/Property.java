@@ -83,7 +83,14 @@ public enum Property {
     TEST_JDBC_USERNAME("CEBES_TEST_JDBC_USERNAME", "cebes.test.jdbc.username", "",
             "Username for JDBC data source for tests", true),
     TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password", "",
-            "Password for JDBC data source for tests", true);
+            "Password for JDBC data source for tests", true),
+
+    // For pipeline repository
+
+    REPOSITORY_INTERFACE("CEBES_REPOSITORY_INTERFACE", "cebes.repository.interface", "localhost",
+                           "The interface on which the HTTP service will be listening"),
+    REPOSITORY_PORT("CEBES_REPOSITORY_PORT", "cebes.repository.port", "22000",
+                      "The port on which the HTTP service will be listening, to be combined with REPOSITORY_INTERFACE");
 
     private String environmentVar;
     private String propertyKey;

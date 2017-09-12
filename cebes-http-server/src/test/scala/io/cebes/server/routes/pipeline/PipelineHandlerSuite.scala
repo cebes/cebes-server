@@ -15,10 +15,10 @@ import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import io.cebes.df.functions
+import io.cebes.http.client.ServerException
 import io.cebes.pipeline.json._
-import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TaggedPipelineResponse, TagsGetRequest}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
@@ -290,7 +290,7 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
 
     // overwrite the value placeholder with feeds
     val runDef3 = PipelineRunDef(pplDef, Map("df:inputVal" -> DataframeMessageDef(dfIn.id),
-    "s0:inputVal" -> ValueDef(Array[String]("hardener", "customer"))),
+      "s0:inputVal" -> ValueDef(Array[String]("hardener", "customer"))),
       Array(StageOutputDef("s1", "outputDf")))
     val runResult3 = request[PipelineRunDef, PipelineRunResultDef]("pipeline/run", runDef3)
     assert(runResult3.results.length === 1)

@@ -57,6 +57,15 @@ class TagSuite extends FunSuite {
     assert(tag5.version === "latest")
     assert(tag5.toString === "simple-tag:9000:latest")
 
+    // another fuzzy case
+    val tag6 = Tag.fromString("simple-tag:9000:200")
+    assert(tag6.name === "simple-tag:9000")
+    assert(tag6.host === Some("simple-tag"))
+    assert(tag6.port === Some(9000))
+    assert(tag6.server === Some("simple-tag:9000"))
+    assert(tag6.version === "200")
+    assert(tag6.toString === "simple-tag:9000:200")
+
     val ex2 = intercept[IllegalArgumentException] {
       Tag.fromString("simple-tag:500/:v2")
     }

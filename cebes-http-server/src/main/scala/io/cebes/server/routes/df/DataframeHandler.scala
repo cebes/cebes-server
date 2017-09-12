@@ -17,25 +17,22 @@ package io.cebes.server.routes.df
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import com.typesafe.scalalogging.LazyLogging
-import io.cebes.df.Dataframe
 import io.cebes.df.sample.DataSample
+import io.cebes.http.server.routes.SecuredSession
 import io.cebes.json.CebesCoreJsonProtocol._
-import io.cebes.server.http.SecuredSession
-import io.cebes.server.routes.DataframeResponse
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common._
+import io.cebes.server.routes.common.{OperationHelper, _}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import spray.json.DefaultJsonProtocol._
 
 /**
   * Handle all requests related to dataframe
   */
-trait DataframeHandler extends SecuredSession with OperationHelper with LazyLogging {
+trait DataframeHandler extends SecuredSession with OperationHelper {
 
   val dataframeApi: Route = pathPrefix("df") {
-    myRequiredSession { _ =>
+    requiredCebesSession { _ =>
       concat(
         operationDf[Sql, String],
 

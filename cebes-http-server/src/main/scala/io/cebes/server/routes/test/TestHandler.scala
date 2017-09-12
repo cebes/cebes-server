@@ -17,14 +17,14 @@ package io.cebes.server.routes.test
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.http.SecuredSession
+import io.cebes.http.server.routes.SecuredSession
 import io.cebes.server.routes.common.OperationHelper
 import io.cebes.server.routes.test.HttpTestJsonProtocol._
 
 trait TestHandler extends SecuredSession with OperationHelper {
 
   val testApi: Route = pathPrefix("test") {
-    myRequiredSession { _ =>
+    requiredCebesSession { _ =>
       operation[LoadData, LoadDataRequest, LoadDataResponse]
     }
   }

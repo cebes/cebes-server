@@ -15,10 +15,10 @@
 package io.cebes.server.routes.pipeline
 
 import com.google.inject.Inject
+import io.cebes.http.server.operations.AsyncSerializableOperation
+import io.cebes.http.server.result.ResultStorage
 import io.cebes.pipeline.PipelineService
 import io.cebes.pipeline.json._
-import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncSerializableOperation
 
 import scala.concurrent.{ExecutionContext, Future}
 

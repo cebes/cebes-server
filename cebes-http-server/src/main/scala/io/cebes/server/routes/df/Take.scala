@@ -17,8 +17,8 @@ package io.cebes.server.routes.df
 import com.google.inject.Inject
 import io.cebes.df.DataframeService
 import io.cebes.df.sample.DataSample
-import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.common.AsyncSerializableOperation
+import io.cebes.http.server.operations.AsyncSerializableOperation
+import io.cebes.http.server.result.ResultStorage
 
 import scala.concurrent.{ExecutionContext, Future}
 

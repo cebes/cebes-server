@@ -19,17 +19,20 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import io.cebes.http.Retries
+import io.cebes.http.client.ServerException
+import io.cebes.http.server.HttpJsonProtocol._
+import io.cebes.http.server._
+import io.cebes.http.server.auth.HttpAuthJsonProtocol._
+import io.cebes.http.server.auth.LoginRequest
 import io.cebes.pipeline.json.{ModelDef, PipelineDef}
-import io.cebes.server.client.{RemoteDataframe, ServerException}
+import io.cebes.server.client.RemoteDataframe
 import io.cebes.server.helpers.CebesHttpServerTestInjector
-import io.cebes.server.http.HttpServer
-import io.cebes.server.routes.HttpJsonProtocol._
-import io.cebes.server.routes.auth.HttpAuthJsonProtocol._
-import io.cebes.server.routes.auth.LoginRequest
+import io.cebes.server.http.CebesHttpServer
+import io.cebes.server.routes.common.DataframeResponse
 import io.cebes.server.routes.df.DataframeRequest
 import io.cebes.server.routes.test.HttpTestJsonProtocol._
 import io.cebes.server.routes.test.{LoadDataRequest, LoadDataResponse}
-import io.cebes.server.util.Retries
 import org.scalatest.FunSuite
 import spray.json.DefaultJsonProtocol.LongJsonFormat
 import spray.json._
@@ -44,7 +47,7 @@ import scala.util.{Failure, Success, Try}
   */
 abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
 
-  protected val server: HttpServer = CebesHttpServerTestInjector.instance[HttpServer]
+  protected val server: CebesHttpServer = CebesHttpServerTestInjector.instance[CebesHttpServer]
   private val authHeaders = login()
 
   implicit val scheduler: Scheduler = system.scheduler
@@ -60,7 +63,7 @@ abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
   ////////////////////////////////////////////////////////////////////
 
   def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
-    Post(s"/${Routes.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> server.routes ~> check {
+    Post(s"/${CebesHttpServer.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> server.routes ~> check {
       op
     }
 
@@ -108,7 +111,7 @@ abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
   ////////////////////////////////////////////////////////////////////
 
   private def login() = {
-    Post(s"/${Routes.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> server.routes ~> check {
+    Post(s"/${CebesHttpServer.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> server.routes ~> check {
       assert(status === StatusCodes.OK)
       val responseCookies = headers.filter(_.name().startsWith("Set-"))
       assert(responseCookies.nonEmpty)
@@ -151,7 +154,7 @@ abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
   }
 
   protected def requestModel[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
-                                                           jsDfr: JsonFormat[ModelDef]): ModelDef = {
+                                                        jsDfr: JsonFormat[ModelDef]): ModelDef = {
     wait(postAsync[E, ModelDef](url, entity))
   }
 

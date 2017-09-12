@@ -14,10 +14,10 @@ package io.cebes.server.routes.model
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.http.client.ServerException
 import io.cebes.pipeline.json._
-import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common._
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
@@ -25,7 +25,6 @@ import io.cebes.server.routes.df.{DropNARequest, LimitRequest, SampleRequest}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol._
-
 
 /**
   * Test suite for [[ModelHandler]]
