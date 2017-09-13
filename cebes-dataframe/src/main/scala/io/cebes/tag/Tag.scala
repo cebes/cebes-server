@@ -20,8 +20,8 @@ import scala.util.matching.Regex
   * Tag of an object, represented as a name and an optional version
   * The serialized form would be name:version
   *
-  * @param name Name of the object, can have multiple slashes: part1/part2/part3
-  *             or with host name and host port: abc.com:500/abc-d/efgh_ijklm
+  * @param name    Name of the object, can have multiple slashes: part1/part2/part3
+  *                or with host name and host port: abc.com:500/abc-d/efgh_ijklm
   * @param version version. If user doesn't specify, default will be "latest"
   */
 case class Tag private(name: String, version: String = Tag.DEFAULT_VERSION) {
@@ -48,10 +48,11 @@ case class Tag private(name: String, version: String = Tag.DEFAULT_VERSION) {
 
 object Tag {
 
-  val DEFAULT_VERSION = "latest"
+  val DEFAULT_VERSION = "default"
 
-  val tagExpr = new Regex("""^((([a-z][a-z0-9-_\.]*)(:([0-9]+))?)(/[a-z0-9-_]+)*)(:([a-z0-9-_]+))?$""",
-    "name", "server", "host", "", "port", "path", "", "version")
+  val tagExpr = new Regex(
+    """^((([a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/)?([a-z0-9]+([-_\.\/][a-z0-9]+)*))(:([a-z0-9-_]+))?$""",
+    "name", "server", "host", "", "", "", "", "port", "path", "", "", "version")
 
   private def extract(str: String, groupName: String): Option[String] = {
     tagExpr.findFirstMatchIn(str).flatMap(t => Option(t.group(groupName)))

@@ -39,7 +39,7 @@ trait SecuredSession extends AkkaImplicits {
 
   protected def setCebesCsrfToken(): Directive0 =  setNewCsrfToken(checkHeader)
 
-  protected lazy val requiredCebesSession: Directive1[_] =
+  protected lazy val requiredCebesSession: Directive1[SessionData] =
     randomTokenCsrfProtection(checkHeader) & requiredSession(refreshable, usingHeaders)
 
   protected lazy val invalidateCebesSession: Directive0 = invalidateSession(refreshable, usingHeaders)

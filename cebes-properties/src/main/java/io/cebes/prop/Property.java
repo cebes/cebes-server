@@ -88,9 +88,11 @@ public enum Property {
     // For pipeline repository
 
     REPOSITORY_INTERFACE("CEBES_REPOSITORY_INTERFACE", "cebes.repository.interface", "localhost",
-                           "The interface on which the HTTP service will be listening"),
+            "The interface on which the HTTP service will be listening"),
     REPOSITORY_PORT("CEBES_REPOSITORY_PORT", "cebes.repository.port", "22000",
-                      "The port on which the HTTP service will be listening, to be combined with REPOSITORY_INTERFACE");
+            "The port on which the HTTP service will be listening, to be combined with REPOSITORY_INTERFACE"),
+    REPOSITORY_PATH("CEBES_REPOSITORY_PATH", "cebes.repository.path", "/tmp",
+            "Path to local disk where we store the binary files of repositories");
 
     private String environmentVar;
     private String propertyKey;

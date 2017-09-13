@@ -87,19 +87,21 @@ case class AggregateRequest(df: UUID, cols: Array[Column], aggType: AggregationT
 trait HttpDfJsonProtocol extends GenericJsonProtocol {
 
   implicit val dataframeRequestFormat: RootJsonFormat[DataframeRequest] = jsonFormat1(DataframeRequest)
-  implicit val withVariableTypesRequestFormat = jsonFormat2(WithVariableTypesRequest)
-  implicit val limitRequestFormat = jsonFormat2(LimitRequest)
-  implicit val sampleRequestFormat = jsonFormat4(SampleRequest)
-  implicit val columnNamesRequestFormat = jsonFormat2(ColumnNamesRequest)
-  implicit val columnsRequestFormat = jsonFormat2(ColumnsRequest)
-  implicit val withColumnRequestFormat = jsonFormat3(WithColumnRequest)
-  implicit val withColumnRenamedRequestFormat = jsonFormat3(WithColumnRenamedRequest)
-  implicit val aliasRequestFormat = jsonFormat2(AliasRequest)
-  implicit val joinRequestFormat = jsonFormat4(JoinRequest)
-  implicit val dataframeSetRequestFormat = jsonFormat2(DataframeSetRequest)
+  implicit val withVariableTypesRequestFormat: RootJsonFormat[WithVariableTypesRequest] =
+    jsonFormat2(WithVariableTypesRequest)
+  implicit val limitRequestFormat: RootJsonFormat[LimitRequest] = jsonFormat2(LimitRequest)
+  implicit val sampleRequestFormat: RootJsonFormat[SampleRequest] = jsonFormat4(SampleRequest)
+  implicit val columnNamesRequestFormat: RootJsonFormat[ColumnNamesRequest] = jsonFormat2(ColumnNamesRequest)
+  implicit val columnsRequestFormat: RootJsonFormat[ColumnsRequest] = jsonFormat2(ColumnsRequest)
+  implicit val withColumnRequestFormat: RootJsonFormat[WithColumnRequest] = jsonFormat3(WithColumnRequest)
+  implicit val withColumnRenamedRequestFormat: RootJsonFormat[WithColumnRenamedRequest] =
+    jsonFormat3(WithColumnRenamedRequest)
+  implicit val aliasRequestFormat: RootJsonFormat[AliasRequest] = jsonFormat2(AliasRequest)
+  implicit val joinRequestFormat: RootJsonFormat[JoinRequest] = jsonFormat4(JoinRequest)
+  implicit val dataframeSetRequestFormat: RootJsonFormat[DataframeSetRequest] = jsonFormat2(DataframeSetRequest)
 
-  implicit val dropNARequestFormat = jsonFormat3(DropNARequest)
-  implicit val fillNARequestFormat = jsonFormat3(FillNARequest)
+  implicit val dropNARequestFormat: RootJsonFormat[DropNARequest] = jsonFormat3(DropNARequest)
+  implicit val fillNARequestFormat: RootJsonFormat[FillNARequest] = jsonFormat3(FillNARequest)
 
   implicit object FillNAWithMapRequestFormat extends RootJsonFormat[FillNAWithMapRequest] {
 
@@ -136,8 +138,8 @@ trait HttpDfJsonProtocol extends GenericJsonProtocol {
     }
   }
 
-  implicit val approxQuantileRequestFormat = jsonFormat4(ApproxQuantileRequest)
-  implicit val freqItemsRequestFormat = jsonFormat3(FreqItemsRequest)
+  implicit val approxQuantileRequestFormat: RootJsonFormat[ApproxQuantileRequest] = jsonFormat4(ApproxQuantileRequest)
+  implicit val freqItemsRequestFormat: RootJsonFormat[FreqItemsRequest] = jsonFormat3(FreqItemsRequest)
 
   implicit object SampleByRequestFormat extends RootJsonFormat[SampleByRequest] {
 

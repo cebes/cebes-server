@@ -48,21 +48,21 @@ class CebesHttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) override val http
   protected implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
   override val routes: Route =
-    pathPrefix(CebesHttpServer.API_VERSION) {
-      authApi ~
-        dataframeApi ~
-        pipelineApi ~
-        modelApi ~
-        storageApi ~
-        resultApi ~
-        testApi
-    } ~
-      (path("") & get) {
+    handleExceptions(cebesDefaultExceptionHandler) {
+      pathPrefix(CebesHttpServer.API_VERSION) {
+        authApi ~
+          dataframeApi ~
+          pipelineApi ~
+          modelApi ~
+          storageApi ~
+          resultApi ~
+          testApi
+      } ~ (path("") & get) {
         getFromResource("public/index.html")
-      } ~
-      (path("version") & get) {
+      } ~ (path("version") & get) {
         complete(VersionResponse(CebesHttpServer.API_VERSION))
       }
+    }
 }
 
 object CebesHttpServer {

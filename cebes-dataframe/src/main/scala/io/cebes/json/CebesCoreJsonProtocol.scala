@@ -14,10 +14,9 @@
 
 package io.cebes.json
 
+import java.sql.Timestamp
 import java.util.UUID
 
-import io.cebes.df.Column
-import io.cebes.df.expressions.Expression
 import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{Schema, SchemaField}
 import io.cebes.df.types.VariableTypes.VariableType
@@ -42,6 +41,15 @@ trait CebesCoreJsonProtocol extends GenericJsonProtocol {
     def read(json: JsValue): UUID = json match {
       case JsString(x) => UUID.fromString(x)
       case _ => deserializationError("Expected UUID as JsString")
+    }
+  }
+
+  implicit object TimestampFormat extends JsonFormat[Timestamp] {
+    def write(obj: Timestamp): JsValue = JsNumber(obj.getTime)
+
+    def read(json: JsValue): Timestamp = json match {
+      case JsNumber(v) => new Timestamp(v.toLongExact)
+      case _ => deserializationError("Expected Timestamp as JsNumber(long)")
     }
   }
 
@@ -231,6 +239,7 @@ trait CebesCoreJsonProtocol extends GenericJsonProtocol {
       }
     }
   }
+
 }
 
 object CebesCoreJsonProtocol extends CebesCoreJsonProtocol

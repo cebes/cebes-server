@@ -11,14 +11,32 @@
  */
 package io.cebes.repository
 
+import java.sql.Timestamp
+
+import io.cebes.json.CebesCoreJsonProtocol._
+import io.cebes.repository.db.{Repository, RepositoryTag}
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
 case class VersionResponse(api: String)
 
+case class RepositoryListResponse(repositories: Array[Repository],
+                                  pageId: Long,
+                                  totalPages: Long)
+
+case class TagResponse(name: String, lastUpdate: Timestamp, repositoryName: Option[String])
+
+case class TagListResponse(repoName: String, tags: Array[TagResponse])
+
 trait CebesRepositoryJsonProtocol {
 
   implicit val versionResponse: RootJsonFormat[VersionResponse] = jsonFormat1(VersionResponse)
+  implicit val repositoryFormat: RootJsonFormat[Repository] = jsonFormat5(Repository)
+  implicit val repositoryTagFormat: RootJsonFormat[RepositoryTag] = jsonFormat4(RepositoryTag)
+  implicit val repositoryListResponseFormat: RootJsonFormat[RepositoryListResponse] =
+    jsonFormat3(RepositoryListResponse)
+  implicit val tagResponseFormat: RootJsonFormat[TagResponse] = jsonFormat3(TagResponse)
+  implicit val tagListResponseFormat: RootJsonFormat[TagListResponse] = jsonFormat2(TagListResponse)
 }
 
 object CebesRepositoryJsonProtocol extends CebesRepositoryJsonProtocol

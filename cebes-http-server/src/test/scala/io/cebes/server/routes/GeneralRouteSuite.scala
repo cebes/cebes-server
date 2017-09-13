@@ -22,14 +22,14 @@ import io.cebes.server.routes.common.VersionResponse
 class GeneralRouteSuite extends AbstractRouteSuite {
 
   test("version") {
-    Get("/version") ~> server.routes ~> check {
+    Get("/version") ~> serverRoutes ~> check {
       val v = responseAs[VersionResponse]
       assert(v.api === CebesHttpServer.API_VERSION)
     }
   }
 
   test("index") {
-    Get("/") ~> server.routes ~> check {
+    Get("/") ~> serverRoutes ~> check {
       assert(handled)
     }
   }

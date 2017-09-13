@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait ApiErrorHandler extends AkkaImplicits {
 
-  implicit def myExceptionHandler: ExceptionHandler = ExceptionHandler {
+  def cebesDefaultExceptionHandler: ExceptionHandler = ExceptionHandler {
     case e: NoSuchElementException =>
       complete(ApiErrorHandler.getHttpResponse(NotFound, s"No such element: ${e.getMessage}", e))
     case e: IllegalArgumentException =>

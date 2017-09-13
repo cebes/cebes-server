@@ -14,20 +14,12 @@
 
 package io.cebes.server.routes
 
-import akka.actor.Scheduler
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import io.cebes.http.Retries
-import io.cebes.http.client.ServerException
-import io.cebes.http.server.HttpJsonProtocol._
-import io.cebes.http.server._
-import io.cebes.http.server.auth.HttpAuthJsonProtocol._
-import io.cebes.http.server.auth.LoginRequest
+import akka.http.scaladsl.server.Route
 import io.cebes.pipeline.json.{ModelDef, PipelineDef}
 import io.cebes.server.client.RemoteDataframe
-import io.cebes.server.helpers.CebesHttpServerTestInjector
+import io.cebes.server.helpers.{CebesHttpServerTestInjector, TestClient}
 import io.cebes.server.http.CebesHttpServer
 import io.cebes.server.routes.common.DataframeResponse
 import io.cebes.server.routes.df.DataframeRequest
@@ -37,102 +29,21 @@ import org.scalatest.FunSuite
 import spray.json.DefaultJsonProtocol.LongJsonFormat
 import spray.json._
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable, Future}
-import scala.util.{Failure, Success, Try}
-
 /**
   * Mother of all Route test, with helpers for using akka test-kit,
   * logging in and storing cookies, etc...
   */
-abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
+abstract class AbstractRouteSuite extends FunSuite with TestClient {
 
-  protected val server: CebesHttpServer = CebesHttpServerTestInjector.instance[CebesHttpServer]
-  private val authHeaders = login()
+  private val server: CebesHttpServer = CebesHttpServerTestInjector.instance[CebesHttpServer]
 
-  implicit val scheduler: Scheduler = system.scheduler
+  override protected val serverRoutes: Route = server.routes
+  override protected val apiVersion: String = CebesHttpServer.API_VERSION
 
   lazy val getCylinderBands: RemoteDataframe = {
     val r = request[LoadDataRequest, LoadDataResponse]("test/loaddata", LoadDataRequest(Array("cylinder_bands")))
     val df1 = r.dataframes.head
     RemoteDataframe(df1.id, df1.schema)
-  }
-
-  ////////////////////////////////////////////////////////////////////
-  // REST APIs
-  ////////////////////////////////////////////////////////////////////
-
-  def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
-    Post(s"/${CebesHttpServer.API_VERSION}/$url", entity).withHeaders(authHeaders: _*) ~> server.routes ~> check {
-      op
-    }
-
-  /**
-    * Send an asynchronous command and wait for the result, using exponential-backoff
-    */
-  def postAsync[E, R](url: String, entity: E)
-                     (implicit emE: ToEntityMarshaller[E],
-                      jfR: JsonFormat[R]): Future[R] = {
-    post(url, entity) {
-      responseAs[FutureResult]
-    } ~> { futureResult =>
-
-      Retries.retryUntil(Retries.expBackOff(100, max_count = 6))(
-        post(s"request/${futureResult.requestId}", "")(responseAs[SerializableResult])
-      )(_.status != RequestStatuses.SCHEDULED).map { serializableResult =>
-        serializableResult.status match {
-          case RequestStatuses.FAILED =>
-            serializableResult.response match {
-              case Some(responseEntity) =>
-                Try(responseEntity.convertTo[FailResponse]) match {
-                  case Success(fr: FailResponse) =>
-                    throw ServerException(Some(serializableResult.requestId),
-                      fr.message.getOrElse(""), fr.stackTrace)
-                  case Failure(_) =>
-                    // throw it as it is
-                    throw ServerException(Some(serializableResult.requestId),
-                      responseEntity.toString(), None)
-                }
-              case None =>
-                throw ServerException(Some(serializableResult.requestId),
-                  "Unknown server error", None)
-            }
-          case RequestStatuses.FINISHED =>
-            assert(serializableResult.response.nonEmpty)
-            serializableResult.response.get.convertTo[R]
-          case s => throw new IllegalStateException(s"Invalid result status: $s")
-        }
-      }
-    }
-  }
-
-  ////////////////////////////////////////////////////////////////////
-  // Helpers
-  ////////////////////////////////////////////////////////////////////
-
-  private def login() = {
-    Post(s"/${CebesHttpServer.API_VERSION}/auth/login", LoginRequest("foo", "bar")) ~> server.routes ~> check {
-      assert(status === StatusCodes.OK)
-      val responseCookies = headers.filter(_.name().startsWith("Set-"))
-      assert(responseCookies.nonEmpty)
-
-      responseCookies.flatMap {
-        case akkaHeaders.`Set-Cookie`(c) => c.name.toUpperCase() match {
-          case "XSRF-TOKEN" =>
-            Seq(akkaHeaders.RawHeader("X-XSRF-TOKEN", c.value), akkaHeaders.Cookie(c.name, c.value))
-          case _ => Seq(akkaHeaders.Cookie(c.name, c.value))
-        }
-        case h =>
-          Seq(akkaHeaders.RawHeader(h.name().substring(4), h.value()))
-      }
-    }
-  }
-
-  private def wait[T](awaitable: Awaitable[T]): T = Await.result(awaitable, Duration.Inf)
-
-  protected def request[E, R](url: String, entity: E)
-                             (implicit emE: ToEntityMarshaller[E], jsR: JsonFormat[R]): R = {
-    wait(postAsync[E, R](url, entity))
   }
 
   protected def requestDf[E](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
@@ -157,5 +68,4 @@ abstract class AbstractRouteSuite extends FunSuite with ScalatestRouteTest {
                                                         jsDfr: JsonFormat[ModelDef]): ModelDef = {
     wait(postAsync[E, ModelDef](url, entity))
   }
-
 }

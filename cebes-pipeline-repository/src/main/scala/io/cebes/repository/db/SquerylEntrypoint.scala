@@ -9,17 +9,10 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.repository.inject
+package io.cebes.repository.db
 
-import com.google.inject.AbstractModule
-import io.cebes.auth.AuthService
-import io.cebes.auth.simple.SimpleAuthService
-import io.cebes.repository.PipelineRepositoryService
-import io.cebes.repository.db.SimplePipelineRepositoryService
+import org.squeryl.PrimitiveTypeMode
 
-class CebesRepositoryDependencyModule extends AbstractModule {
-  override def configure(): Unit = {
-    bind(classOf[AuthService]).to(classOf[SimpleAuthService])
-    bind(classOf[PipelineRepositoryService]).to(classOf[SimplePipelineRepositoryService])
-  }
+object SquerylEntrypoint extends PrimitiveTypeMode {
+
 }

@@ -11,13 +11,42 @@
  */
 package io.cebes.repository
 
-import io.cebes.repository.db.{RepositoryListResponse, TagListResponse}
+import java.nio.file.Path
+
+import io.cebes.repository.db.Repository
 
 trait PipelineRepositoryService {
 
+  /**
+    * Create a new repository of the given name
+    * Throw [[IllegalArgumentException]] if it already exists or the name is invalid
+    */
+  def createRepository(repoName: String, isPrivate: Boolean): Repository
+
+  /**
+    * Get the information for the given repository
+    * Throw [[NoSuchElementException]] if the repo doesn't exist
+    */
+  def getRepositoryInfo(repoName: String): Repository
+
   def listRepositories(pageId: Option[Long]): RepositoryListResponse
 
+  /**
+    * List all the tags of the given repo
+    * Should throw [[NoSuchElementException]] if the given repo doesn't exist
+    */
   def listTags(repoName: String): TagListResponse
 
+  /**
+    * Get the meta data of the given tag of the given repo
+    * Throw [[NoSuchElementException]] if the given repo/tag doesn't exist
+    */
+  def getTagInfo(repoName: String, tagName: String): TagResponse
 
+  /**
+    * Get the file path to the given repo and tag
+    */
+  def getPath(repoName: String, tagName: String): Path
+
+  def insertOrUpdateTag(repoName: String, tagName: String): TagResponse
 }
