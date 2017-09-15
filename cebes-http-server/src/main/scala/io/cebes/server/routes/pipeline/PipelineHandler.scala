@@ -14,18 +14,17 @@ package io.cebes.server.routes.pipeline
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import com.typesafe.scalalogging.LazyLogging
+import io.cebes.http.server.routes.SecuredSession
 import io.cebes.pipeline.json._
-import io.cebes.server.http.SecuredSession
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common._
+import io.cebes.server.routes.common.{OperationHelper, _}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat}
 
-trait PipelineHandler extends SecuredSession with OperationHelper with LazyLogging {
+trait PipelineHandler extends SecuredSession with OperationHelper {
 
   val pipelineApi: Route = pathPrefix("pipeline") {
-    myRequiredSession { _ =>
+    requiredCebesSession { _ =>
       concat(
         operation[TagAdd, TagAddRequest, PipelineDef],
         operation[TagDelete, TagDeleteRequest, PipelineDef],

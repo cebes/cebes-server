@@ -14,10 +14,10 @@ package io.cebes.server.routes.model
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import io.cebes.http.client.ServerException
 import io.cebes.pipeline.json._
-import io.cebes.server.client.ServerException
 import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common._
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
@@ -25,7 +25,6 @@ import io.cebes.server.routes.df.{DropNARequest, LimitRequest, SampleRequest}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.tag.Tag
 import spray.json.DefaultJsonProtocol._
-
 
 /**
   * Test suite for [[ModelHandler]]
@@ -83,7 +82,7 @@ class ModelHandlerSuite extends AbstractRouteSuite {
   test("create, tag and untag") {
 
     try {
-      requestModel("model/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+      requestModel("model/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
     } catch {
       case _: ServerException =>
     }
@@ -101,35 +100,35 @@ class ModelHandlerSuite extends AbstractRouteSuite {
     val ex1 = intercept[ServerException] {
       requestModel("model/tagadd", TagAddRequest(Tag.fromString("tag1"), modelId))
     }
-    assert(ex1.getMessage.startsWith("Tag tag1:latest already exists"))
+    assert(ex1.getMessage.startsWith("Tag tag1:default already exists"))
 
     // get model by tag
-    val model = requestModel("model/get", "tag1:latest")
+    val model = requestModel("model/get", "tag1:default")
     assert(model.id === modelId)
 
     // get all the tags
     val tags = request[TagsGetRequest, Array[TaggedModelResponse]]("model/tags", TagsGetRequest(None, 10))
     assert(tags.length === 1)
-    assert(tags(0).tag.toString === "tag1:latest")
+    assert(tags(0).tag.toString === "tag1:default")
 
     val tags1 = request[TagsGetRequest, Array[TaggedModelResponse]]("model/tags",
       TagsGetRequest(Some("randomstuff???"), 10))
     assert(tags1.length === 0)
 
     // delete tag
-    requestModel("model/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+    requestModel("model/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
 
     val tags2 = request[TagsGetRequest, Array[TaggedModelResponse]]("model/tags", TagsGetRequest(None, 10))
     assert(tags2.length === 0)
 
     // cannot get the tag again
-    val ex3 = intercept[ServerException](requestModel("model/get", "tag1:latest"))
-    assert(ex3.getMessage.startsWith("Tag not found: tag1:latest"))
+    val ex3 = intercept[ServerException](requestModel("model/get", "tag1:default"))
+    assert(ex3.getMessage.startsWith("Tag not found: tag1:default"))
 
     // cannot delete non-existed tag
     val ex4 = intercept[ServerException](requestModel("model/tagdelete",
-      TagDeleteRequest(Tag.fromString("tag1:latest"))))
-    assert(ex4.getMessage.startsWith("Tag not found: tag1:latest"))
+      TagDeleteRequest(Tag.fromString("tag1:default"))))
+    assert(ex4.getMessage.startsWith("Tag not found: tag1:default"))
 
     // but can get the Dataframe using its ID
     val model2 = requestModel("model/get", modelId.toString)

@@ -14,16 +14,17 @@
 
 package io.cebes.server.inject
 
-import com.google.inject.AbstractModule
+import com.google.inject.{AbstractModule, Singleton}
 import io.cebes.auth.AuthService
 import io.cebes.auth.simple.SimpleAuthService
 import io.cebes.df.DataframeService
+import io.cebes.http.server.result.ResultStorage
 import io.cebes.pipeline.PipelineService
-import io.cebes.server.result.{JdbcResultStorage, ResultStorage}
+import io.cebes.server.http.CebesJdbcResultStorage
 import io.cebes.spark.df.SparkDataframeService
 import io.cebes.spark.pipeline.SparkPipelineService
 import io.cebes.spark.storage.SparkStorageService
-import io.cebes.storage.{DataWriter, StorageService}
+import io.cebes.storage.StorageService
 
 /**
   * Guice's configuration class that is defining the interface-implementation bindings
@@ -35,7 +36,6 @@ class CebesHttpDependencyModule extends AbstractModule {
     bind(classOf[DataframeService]).to(classOf[SparkDataframeService])
     bind(classOf[PipelineService]).to(classOf[SparkPipelineService])
     bind(classOf[StorageService]).to(classOf[SparkStorageService])
-    bind(classOf[DataWriter]).toProvider(classOf[DataWriterProvider])
-    bind(classOf[ResultStorage]).to(classOf[JdbcResultStorage])
+    bind(classOf[ResultStorage]).to(classOf[CebesJdbcResultStorage]).in(classOf[Singleton])
   }
 }

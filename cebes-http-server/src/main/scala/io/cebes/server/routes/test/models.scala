@@ -11,8 +11,8 @@
  */
 package io.cebes.server.routes.test
 
-import io.cebes.server.routes.DataframeResponse
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.DataframeResponse
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 case class LoadDataRequest(datasets: Array[String])

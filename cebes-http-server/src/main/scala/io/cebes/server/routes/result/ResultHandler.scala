@@ -17,19 +17,15 @@ package io.cebes.server.routes.result
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.http.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.routes.HttpJsonProtocol._
-
-import scala.concurrent.ExecutionContext
+import io.cebes.http.server.HttpJsonProtocol._
+import io.cebes.http.server.routes.SecuredSession
 
 trait ResultHandler extends SecuredSession {
 
-  implicit def actorExecutor: ExecutionContext
-
   val resultApi: Route = pathPrefix("request") {
     (path(JavaUUID) & post) { requestId =>
-      myRequiredSession { _ =>
+      requiredCebesSession { _ =>
         implicit ctx =>
           CebesHttpServerInjector.instance[Result].run(requestId).flatMap(r => ctx.complete(r))
       }

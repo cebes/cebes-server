@@ -13,8 +13,7 @@ package io.cebes.server.routes.df
 
 import com.google.inject.Inject
 import io.cebes.df.{Dataframe, DataframeService}
-import io.cebes.server.result.ResultStorage
-import io.cebes.server.routes.DataframeResponse
+import io.cebes.http.server.result.ResultStorage
 import io.cebes.server.routes.common._
 import io.cebes.store.TagEntry
 import io.cebes.tag.Tag

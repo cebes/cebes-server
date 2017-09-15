@@ -14,14 +14,14 @@
 
 package io.cebes.server
 
-import io.cebes.server.http.HttpServer
+import io.cebes.server.http.CebesHttpServer
 import io.cebes.server.inject.CebesHttpServerInjector
 
 
 object Main {
 
   def main(args: Array[String]) {
-    val server = CebesHttpServerInjector.instance[HttpServer]
+    val server = CebesHttpServerInjector.instance[CebesHttpServer]
     server.start()
     server.waitServer()
     server.stop()

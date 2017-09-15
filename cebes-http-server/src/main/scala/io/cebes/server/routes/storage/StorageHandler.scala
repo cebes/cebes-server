@@ -18,16 +18,16 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.http.SecuredSession
+import io.cebes.http.server.HttpJsonProtocol._
+import io.cebes.http.server.routes.SecuredSession
 import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.routes.HttpJsonProtocol._
-import io.cebes.server.routes.common.OperationHelper
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
 
-trait StorageHandler extends SecuredSession with OperationHelper {
+trait StorageHandler extends SecuredSession {
 
   val storageApi: Route = pathPrefix("storage") {
-    myRequiredSession { _ =>
+    requiredCebesSession { _ =>
       (path("read") & post) {
         entity(as[ReadRequest]) { readRequest =>
           implicit ctx =>

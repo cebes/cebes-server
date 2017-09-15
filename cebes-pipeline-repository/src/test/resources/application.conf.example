@@ -1,0 +1,9 @@
+cebes {
+  mysql {
+    url = "jdbc:mysql://localhost:3306/cebes_store?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&useSSL=false"
+    username = ""
+    password = ""
+  }
+}
+
+akka.http.server.parsing.max-content-length = 512m

@@ -41,13 +41,27 @@ lazy val cebesSpark = project.in(file("cebes-spark")).
   settings(commonSettings: _*).
   dependsOn(cebesDataframe, cebesPersistenceJdbc, cebesPipeline)
 
+lazy val cebesHttpCommon = project.in(file("cebes-http-common")).
+  disablePlugins(AssemblyPlugin).
+  settings(commonSettings: _*).
+  dependsOn(cebesPersistenceJdbc, cebesAuth)
+
 lazy val cebesHttpServer = project.in(file("cebes-http-server")).
   settings(commonSettings: _*).
-  dependsOn(cebesAuth, cebesSpark)
+  dependsOn(cebesSpark, cebesHttpCommon)
+
+lazy val cebesPipelineRepository = project.in(file("cebes-pipeline-repository")).
+  settings(commonSettings: _*).
+  dependsOn(cebesPipeline, cebesHttpCommon)
+
+lazy val cebesPipelineServing = project.in(file("cebes-pipeline-serving")).
+  settings(commonSettings: _*).
+  dependsOn(cebesPipeline, cebesHttpCommon)
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).
   aggregate(cebesProperties, cebesAuth, cebesDataframe,
-    cebesPersistenceJdbc, cebesPipeline, cebesSpark, cebesHttpServer)
+    cebesPersistenceJdbc, cebesPipeline, cebesSpark, cebesHttpServer,
+    cebesPipelineRepository, cebesPipelineServing)
 
 scalastyleConfig := baseDirectory.value / "build" / "scalastyle-config.xml"

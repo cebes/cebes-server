@@ -13,20 +13,23 @@
  */
 
 package io.cebes.server.routes
+
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.http.CebesHttpServer
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
+import io.cebes.server.routes.common.VersionResponse
 
 class GeneralRouteSuite extends AbstractRouteSuite {
 
   test("version") {
-    Get("/version") ~> server.routes ~> check {
+    Get("/version") ~> serverRoutes ~> check {
       val v = responseAs[VersionResponse]
-      assert(v.api === Routes.API_VERSION)
+      assert(v.api === CebesHttpServer.API_VERSION)
     }
   }
 
   test("index") {
-    Get("/") ~> server.routes ~> check {
+    Get("/") ~> serverRoutes ~> check {
       assert(handled)
     }
   }

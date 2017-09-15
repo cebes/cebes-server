@@ -10,11 +10,12 @@ class TagSuite extends FunSuite {
   test("simple cases") {
     val tag1 = Tag.fromString("simple-tag_ab.c")
     assert(tag1.name === "simple-tag_ab.c")
-    assert(tag1.host === Some("simple-tag_ab.c"))
+    assert(tag1.host.isEmpty)
     assert(tag1.port.isEmpty)
-    assert(tag1.server === Some("simple-tag_ab.c"))
-    assert(tag1.version === "latest")
-    assert(tag1.toString === "simple-tag_ab.c:latest")
+    assert(tag1.server.isEmpty)
+    assert(tag1.path === Some("simple-tag_ab.c"))
+    assert(tag1.version === "default")
+    assert(tag1.toString === "simple-tag_ab.c:default")
 
     val ex1 = intercept[IllegalArgumentException] {
       Tag.fromString("simple-tag_ab.cTA")
@@ -24,47 +25,78 @@ class TagSuite extends FunSuite {
     // tag with version
     val tag2 = Tag.fromString("simple-tag:v1")
     assert(tag2.name === "simple-tag")
-    assert(tag2.host === Some("simple-tag"))
+    assert(tag2.host.isEmpty)
     assert(tag2.port.isEmpty)
-    assert(tag2.server === Some("simple-tag"))
+    assert(tag2.server.isEmpty)
+    assert(tag2.path === Some("simple-tag"))
     assert(tag2.version === "v1")
     assert(tag2.toString === "simple-tag:v1")
 
+    // hostname doesn't contain a dot
+    val ex2 = intercept[IllegalArgumentException] {
+      Tag.fromString("simple-tag:9000/abc-sz")
+    }
+
     // with path and host
-    val tag3 = Tag.fromString("simple-tag:9000/abc-sz")
-    assert(tag3.name === "simple-tag:9000/abc-sz")
-    assert(tag3.host === Some("simple-tag"))
+    val tag3 = Tag.fromString("simple-tag.com:9000/abc-sz")
+    assert(tag3.name === "simple-tag.com:9000/abc-sz")
+    assert(tag3.host === Some("simple-tag.com"))
     assert(tag3.port === Some(9000))
-    assert(tag3.server === Some("simple-tag:9000"))
-    assert(tag3.version === "latest")
-    assert(tag3.toString === "simple-tag:9000/abc-sz:latest")
+    assert(tag3.server === Some("simple-tag.com:9000/"))
+    assert(tag3.path === Some("abc-sz"))
+    assert(tag3.version === "default")
+    assert(tag3.toString === "simple-tag.com:9000/abc-sz:default")
 
     // with path and host and version
-    val tag4 = Tag.fromString("simple-tag:9000/abc-sz:latest")
-    assert(tag4.name === "simple-tag:9000/abc-sz")
-    assert(tag4.host === Some("simple-tag"))
+    val tag4 = Tag.fromString("simple-tag.com:9000/abc-sz:default")
+    assert(tag4.name === "simple-tag.com:9000/abc-sz")
+    assert(tag4.host === Some("simple-tag.com"))
     assert(tag4.port === Some(9000))
-    assert(tag4.server === Some("simple-tag:9000"))
-    assert(tag4.version === "latest")
-    assert(tag4.toString === "simple-tag:9000/abc-sz:latest")
+    assert(tag4.server === Some("simple-tag.com:9000/"))
+    assert(tag4.path === Some("abc-sz"))
+    assert(tag4.version === "default")
+    assert(tag4.toString === "simple-tag.com:9000/abc-sz:default")
 
     // fuzzy case
     val tag5 = Tag.fromString("simple-tag:9000")
-    assert(tag5.name === "simple-tag:9000")
-    assert(tag5.host === Some("simple-tag"))
-    assert(tag5.port === Some(9000))
-    assert(tag5.server === Some("simple-tag:9000"))
-    assert(tag5.version === "latest")
-    assert(tag5.toString === "simple-tag:9000:latest")
+    assert(tag5.name === "simple-tag")
+    assert(tag5.host.isEmpty)
+    assert(tag5.port.isEmpty)
+    assert(tag5.server.isEmpty)
+    assert(tag5.path === Some("simple-tag"))
+    assert(tag5.version === "9000")
+    assert(tag5.toString === "simple-tag:9000")
 
-    val ex2 = intercept[IllegalArgumentException] {
-      Tag.fromString("simple-tag:500/:v2")
+    // another fuzzy case
+    val ex = intercept[IllegalArgumentException] {
+      Tag.fromString("simple-tag.com:9000:200")
     }
-    assert(ex2.getMessage.startsWith("Invalid tag expression"))
+    val tag6 = Tag.fromString("simple-tag.com:9000/a:200")
+    assert(tag6.name === "simple-tag.com:9000/a")
+    assert(tag6.host === Some("simple-tag.com"))
+    assert(tag6.port === Some(9000))
+    assert(tag6.server === Some("simple-tag.com:9000/"))
+    assert(tag6.path === Some("a"))
+    assert(tag6.version === "200")
+    assert(tag6.toString === "simple-tag.com:9000/a:200")
+
+    val tag7 = Tag.fromString("abc/def/ghi:v100")
+    assert(tag7.name === "abc/def/ghi")
+    assert(tag7.host.isEmpty)
+    assert(tag7.port.isEmpty)
+    assert(tag7.server.isEmpty)
+    assert(tag7.path === Some("abc/def/ghi"))
+    assert(tag7.version === "v100")
+    assert(tag7.toString === "abc/def/ghi:v100")
 
     val ex3 = intercept[IllegalArgumentException] {
-      Tag.fromString("")
+      Tag.fromString("simple-tag:500/:v2")
     }
     assert(ex3.getMessage.startsWith("Invalid tag expression"))
+
+    val ex4 = intercept[IllegalArgumentException] {
+      Tag.fromString("")
+    }
+    assert(ex4.getMessage.startsWith("Invalid tag expression"))
   }
 }

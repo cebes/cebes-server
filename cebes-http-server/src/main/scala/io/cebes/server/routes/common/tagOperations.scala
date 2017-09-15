@@ -12,6 +12,7 @@
 package io.cebes.server.routes.common
 
 import io.cebes.common.HasId
+import io.cebes.http.server.operations.{AsyncOperation, AsyncSerializableOperation}
 import io.cebes.store.TagEntry
 import io.cebes.tag.{Tag, TagService}
 

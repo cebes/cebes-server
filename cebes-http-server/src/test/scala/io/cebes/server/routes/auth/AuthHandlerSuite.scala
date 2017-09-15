@@ -20,6 +20,7 @@ import io.cebes.server.routes.AbstractRouteSuite
 class AuthHandlerSuite extends AbstractRouteSuite {
 
   test("login") {
+    // this is to test the login commands, but that was handled in AbstractRouteSuite already
     assert((3 + 1) !== 2)
   }
 }

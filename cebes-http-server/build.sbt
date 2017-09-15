@@ -9,12 +9,7 @@ mainClass in assembly := Some("io.cebes.server.Main")
 dependencyOverrides += "org.scalatest" %% "scalatest" % Common.scalaTestVersion
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-http" % Common.akkaHttpVersion,
-  "com.typesafe.akka" %% "akka-http-spray-json" % Common.akkaHttpVersion,
   "com.typesafe.akka" %% "akka-http-testkit" % Common.akkaHttpVersion % "test",
-  "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
-
-  "com.google.inject" % "guice" % Common.guiceVersion,
 
   "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
     exclude("org.apache.hadoop", "hadoop-client")

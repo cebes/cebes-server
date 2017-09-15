@@ -22,10 +22,11 @@ import io.cebes.df.expressions._
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.{StorageTypes, VariableTypes}
 import io.cebes.df.{Column, functions}
+import io.cebes.http.client.ServerException
 import io.cebes.json.CebesCoreJsonProtocol._
-import io.cebes.server.client.{RemoteDataframe, ServerException}
+import io.cebes.server.client.RemoteDataframe
 import io.cebes.server.routes.AbstractRouteSuite
-import io.cebes.server.routes.HttpJsonProtocol._
+import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common.{TagAddRequest, TagDeleteRequest, TaggedDataframeResponse, TagsGetRequest}
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
@@ -54,7 +55,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite {
     assert(count(df) === 100)
 
     try {
-      requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+      requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
     } catch {
       case _: ServerException =>
     }
@@ -72,28 +73,28 @@ class DataframeHandlerSuite extends AbstractRouteSuite {
     val ex1 = intercept[ServerException] {
       requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1"), getCylinderBands.id))
     }
-    assert(ex1.getMessage.startsWith("Tag tag1:latest already exists"))
+    assert(ex1.getMessage.startsWith("Tag tag1:default already exists"))
 
     val ex2 = intercept[ServerException] {
-      requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1:latest"), getCylinderBands.id))
+      requestDf("df/tagadd", TagAddRequest(Tag.fromString("tag1:default"), getCylinderBands.id))
     }
-    assert(ex2.getMessage.startsWith("Tag tag1:latest already exists"))
+    assert(ex2.getMessage.startsWith("Tag tag1:default already exists"))
 
     // get tag
-    val df2 = requestDf("df/get", "tag1:latest")
+    val df2 = requestDf("df/get", "tag1:default")
     assert(df2.id === df.id)
     assert(count(df2) === 100)
 
     // delete tag
-    requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+    requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
 
     // cannot get the tag again
-    val ex3 = intercept[ServerException](requestDf("df/get", "tag1:latest"))
-    assert(ex3.getMessage.startsWith("Tag not found: tag1:latest"))
+    val ex3 = intercept[ServerException](requestDf("df/get", "tag1:default"))
+    assert(ex3.getMessage.startsWith("Tag not found: tag1:default"))
 
     // cannot delete non-existed tag
-    val ex4 = intercept[ServerException](requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest"))))
-    assert(ex4.getMessage.startsWith("Tag not found: tag1:latest"))
+    val ex4 = intercept[ServerException](requestDf("df/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default"))))
+    assert(ex4.getMessage.startsWith("Tag not found: tag1:default"))
 
     // but can get the Dataframe using its ID
     val df3 = requestDf("df/get", df.id.toString)
