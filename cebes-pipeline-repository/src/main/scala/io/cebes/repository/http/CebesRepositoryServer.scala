@@ -82,9 +82,9 @@ class CebesRepositoryServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) overr
           complete(repoService.insertOrUpdateTag(repoName, tagName))
         }
       }
-    } ~ path("tag" / Tag.REGEX_TAG_VERSION / RepositoryName) { (tagName, repoName) =>
+    } ~ (path("tag" / Tag.REGEX_TAG_VERSION / RepositoryName) & get) { (tagName, repoName) =>
       complete(repoService.getTagInfo(repoName, tagName))
-    } ~ path("tags" / RepositoryName) { repoName =>
+    } ~ (path("tags" / RepositoryName) & get) { repoName =>
       complete(repoService.listTags(repoName))
     } ~ path("repos" / RepositoryName) { repoName =>
       get {

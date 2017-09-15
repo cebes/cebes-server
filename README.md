@@ -15,6 +15,7 @@ Cebes - The integrated framework for Data Science at Scale
 * [Development guide](#development-guide)
     * [Environment variables and configurations](#environment-variables-and-configurations)
     * [Logging](#logging)
+    * [Swagger documentation](#swagger-documentation)
     
 ## Building
 
@@ -129,3 +130,12 @@ to mute them in `cebes-http-server` with the `log4j.properties` and `parquet.log
 files.
 
 It seems impossible to mute them in `cebes-spark` though.
+
+### Swagger documentation
+
+Projects that expose RESTful APIs (`cebes-http-server`, `cebes-pipeline-repository`, `cebes-pipeline-serving`) include
+swagger definitions in `src/swagger` of respective directories. Check https://swagger.io/ for tools to generate nice-looking
+UI out of that.
+
+At the moment, some APIs might not be fixed and their swagger documentation might be not there yet. Contribute if you find
+something missing!
