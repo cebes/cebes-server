@@ -31,8 +31,10 @@ case class TagListResponse(repoName: String, tags: Array[TagResponse])
 trait CebesRepositoryJsonProtocol {
 
   implicit val versionResponse: RootJsonFormat[VersionResponse] = jsonFormat1(VersionResponse)
-  implicit val repositoryFormat: RootJsonFormat[Repository] = jsonFormat5(Repository)
-  implicit val repositoryTagFormat: RootJsonFormat[RepositoryTag] = jsonFormat4(RepositoryTag)
+  implicit val repositoryFormat: RootJsonFormat[Repository] = jsonFormat(Repository,
+    "id", "name", "owner", "isPrivate", "pullCount")
+  implicit val repositoryTagFormat: RootJsonFormat[RepositoryTag] = jsonFormat(RepositoryTag,
+    "id", "repositoryId", "name", "lastUpdate")
   implicit val repositoryListResponseFormat: RootJsonFormat[RepositoryListResponse] =
     jsonFormat3(RepositoryListResponse)
   implicit val tagResponseFormat: RootJsonFormat[TagResponse] = jsonFormat3(TagResponse)

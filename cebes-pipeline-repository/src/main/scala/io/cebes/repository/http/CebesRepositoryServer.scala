@@ -11,13 +11,15 @@
  */
 package io.cebes.repository.http
 
-import java.nio.file.Files
+import java.nio.file.{Files, StandardCopyOption}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.PathMatcher.{Matched, Matching, Unmatched}
+import akka.http.scaladsl.server.{PathMatcher1, Route}
 import akka.stream.ActorMaterializer
 import com.google.inject.Inject
 import io.cebes.auth.AuthService
@@ -31,7 +33,8 @@ import io.cebes.repository.CebesRepositoryJsonProtocol._
 import io.cebes.repository.db.RepositoryDatabase
 import io.cebes.repository.inject.CebesRepositoryInjector
 import io.cebes.repository.{PipelineRepositoryService, VersionResponse}
-import org.squeryl.adapters.MySQLAdapter
+import io.cebes.tag.Tag
+import org.squeryl.adapters.MySQLInnoDBAdapter
 import org.squeryl.{Session, SessionFactory}
 
 import scala.concurrent.ExecutionContextExecutor
@@ -56,67 +59,58 @@ class CebesRepositoryServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) overr
   val repoRoutes: Route = requiredCebesSession { _ =>
     pathPrefix("catalog") {
       // listing repository names (i.e. repositories)
-      (path(PathEnd) & get) {
+      (pathEnd & get) {
         redirect("catalog/0", StatusCodes.PermanentRedirect)
 
       } ~ (path(LongNumber) & get) { pageId =>
         complete(repoService.listRepositories(Some(pageId)))
       }
+    } ~ path("blob" / Tag.REGEX_TAG_VERSION / RepositoryName) { (tagName, repoName) =>
+      get {
+        // raise exception if the tag doesn't exist
+        repoService.getTagInfo(repoName, tagName)
+        getFromFile(repoService.getPath(repoName, tagName).toFile, ContentTypes.`application/octet-stream`)
+      } ~ put {
+        // make sure the repo exist: raise exception if it doesn't
+        repoService.getRepositoryInfo(repoName)
 
-    } ~ pathPrefix("repos" / Segment) { repoName =>
-      path(PathEnd) {
-        put {
-          // create a new repo
-          complete(repoService.createRepository(repoName, isPrivate = false))
-        } ~ get {
-          // get repository information
-          complete(repoService.getRepositoryInfo(repoName))
+        // process the binary file, add a new tag
+        uploadedFile("file") { case (_, file) =>
+          val dest = repoService.getPath(repoName, tagName)
+          Files.createDirectories(dest.getParent)
+          Files.move(file.toPath, dest, StandardCopyOption.REPLACE_EXISTING)
+          complete(repoService.insertOrUpdateTag(repoName, tagName))
         }
-
-      } ~ pathPrefix("tags") {
-
-        // list all tags of this pipeline
-        (path(PathEnd) & get) {
-          complete(repoService.listTags(repoName))
-
-        } ~ pathPrefix(Segment) { tagName =>
-
-          (path("download") & get) {
-            // raise exception if the tag doesn't exist
-            repoService.getTagInfo(repoName, tagName)
-            getFromFile(repoService.getPath(repoName, tagName).toFile, ContentTypes.`application/octet-stream`)
-
-          } ~ (path("upload") & put) {
-            // make sure the repo exist: raise exception if it doesn't
-            repoService.getRepositoryInfo(repoName)
-
-            // process the binary file, add a new tag
-            uploadedFile("file") { case (_, file) =>
-              Files.move(file.toPath, repoService.getPath(repoName, tagName))
-              complete(repoService.insertOrUpdateTag(repoName, tagName))
-            }
-
-          } ~ (path("info") & get) {
-            complete(repoService.getTagInfo(repoName, tagName))
-          }
-        }
+      }
+    } ~ path("tag" / Tag.REGEX_TAG_VERSION / RepositoryName) { (tagName, repoName) =>
+      complete(repoService.getTagInfo(repoName, tagName))
+    } ~ path("tags" / RepositoryName) { repoName =>
+      complete(repoService.listTags(repoName))
+    } ~ path("repos" / RepositoryName) { repoName =>
+      get {
+        // get repository information
+        complete(repoService.getRepositoryInfo(repoName))
+      } ~ put {
+        // create a new repo
+        complete(repoService.createRepository(repoName, isPrivate = false))
+      } ~ delete {
+        // delete the given repo
+        complete(s"${repoService.deleteRepository(repoName)}")
       }
     }
   }
 
-  override val routes: Route = handleExceptions(cebesDefaultExceptionHandler) {
-    pathPrefix(CebesRepositoryServer.API_VERSION) {
-      authApi ~ repoRoutes
-    } ~ (path("version") & get) {
-      complete(VersionResponse(CebesRepositoryServer.API_VERSION))
+  override val routes: Route =
+    handleExceptions(cebesDefaultExceptionHandler) {
+      pathPrefix(CebesRepositoryServer.API_VERSION) {
+        authApi ~ repoRoutes
+      } ~ (path("version") & get) {
+        complete(VersionResponse(CebesRepositoryServer.API_VERSION))
+      }
     }
-  }
 
-  private def repoService: PipelineRepositoryService = CebesRepositoryInjector.instance[PipelineRepositoryService]
-
-  override def start(): Unit = {
-    super.start()
-  }
+  private def repoService: PipelineRepositoryService
+  = CebesRepositoryInjector.instance[PipelineRepositoryService]
 }
 
 object CebesRepositoryServer {
@@ -127,8 +121,18 @@ object CebesRepositoryServer {
     SessionFactory.concreteFactory = Some(() =>
       Session.create(JdbcUtil.getConnection(mysqlCreds.url, mysqlCreds.userName,
         mysqlCreds.password, mysqlCreds.driver),
-        new MySQLAdapter))
+        new MySQLInnoDBAdapter))
 
     RepositoryDatabase.initialize()
+  }
+}
+
+object RepositoryName extends PathMatcher1[String] {
+  def apply(path: Path): Matching[Tuple1[String]] = {
+    val sPath = path.toString()
+    Tag.REGEX_TAG_PATH.findPrefixMatchOf(sPath) match {
+      case Some(m) if m.end == sPath.length => Matched(Path.Empty, Tuple1(sPath))
+      case _ => Unmatched
+    }
   }
 }

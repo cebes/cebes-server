@@ -66,7 +66,7 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
   test("create, tag and untag") {
 
     try {
-      requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+      requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
     } catch {
       case _: ServerException =>
     }
@@ -96,41 +96,41 @@ class PipelineHandlerSuite extends AbstractRouteSuite {
     val ex1 = intercept[ServerException] {
       requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1"), pplResult2.id.get))
     }
-    assert(ex1.getMessage.startsWith("Tag tag1:latest already exists"))
+    assert(ex1.getMessage.startsWith("Tag tag1:default already exists"))
 
     val ex2 = intercept[ServerException] {
-      requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1:latest"), pplResult2.id.get))
+      requestPipeline("pipeline/tagadd", TagAddRequest(Tag.fromString("tag1:default"), pplResult2.id.get))
     }
-    assert(ex2.getMessage.startsWith("Tag tag1:latest already exists"))
+    assert(ex2.getMessage.startsWith("Tag tag1:default already exists"))
 
     // get pipeline by tag
-    val ppl2 = requestPipeline("pipeline/get", "tag1:latest")
+    val ppl2 = requestPipeline("pipeline/get", "tag1:default")
     assert(ppl2.id.get === pplResult.id.get)
     assert(ppl2.stages(0) === pplResult.stages(0))
 
     // get all the tags
     val tags = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags", TagsGetRequest(None, 10))
     assert(tags.length === 1)
-    assert(tags(0).tag.toString === "tag1:latest")
+    assert(tags(0).tag.toString === "tag1:default")
 
     val tags1 = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags",
       TagsGetRequest(Some("randomstuff???"), 10))
     assert(tags1.length === 0)
 
     // delete tag
-    requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:latest")))
+    requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
 
     val tags2 = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags", TagsGetRequest(None, 10))
     assert(tags2.length === 0)
 
     // cannot get the tag again
-    val ex3 = intercept[ServerException](requestPipeline("pipeline/get", "tag1:latest"))
-    assert(ex3.getMessage.startsWith("Tag not found: tag1:latest"))
+    val ex3 = intercept[ServerException](requestPipeline("pipeline/get", "tag1:default"))
+    assert(ex3.getMessage.startsWith("Tag not found: tag1:default"))
 
     // cannot delete non-existed tag
     val ex4 = intercept[ServerException](requestPipeline("pipeline/tagdelete",
-      TagDeleteRequest(Tag.fromString("tag1:latest"))))
-    assert(ex4.getMessage.startsWith("Tag not found: tag1:latest"))
+      TagDeleteRequest(Tag.fromString("tag1:default"))))
+    assert(ex4.getMessage.startsWith("Tag not found: tag1:default"))
 
     // but can get the Dataframe using its ID
     val ppl3 = requestPipeline("pipeline/get", pipelineId.toString)

@@ -14,24 +14,30 @@ package io.cebes.repository.db
 import java.sql.Timestamp
 
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.persistence.jdbc.TableNames
 import io.cebes.repository.db.SquerylEntrypoint._
-import org.squeryl.{KeyedEntity, Schema, SquerylSQLException, Table}
+import org.squeryl._
+import org.squeryl.dsl.{ManyToOne, OneToMany}
 
 case class Repository(id: Long,
                       name: String,
                       owner: String,
                       isPrivate: Boolean,
-                      pullCount: Long)
+                      pullCount: Long) extends KeyedEntity[Long] {
+  lazy val tags: OneToMany[RepositoryTag] = RepositoryDatabase.repoToTags.left(this)
+}
 
 case class RepositoryTag(id: Long,
                          repositoryId: Long,
                          name: String,
-                         lastUpdate: Timestamp) extends KeyedEntity[Long]
+                         lastUpdate: Timestamp) extends KeyedEntity[Long] {
+  lazy val repository: ManyToOne[Repository] = RepositoryDatabase.repoToTags.right(this)
+}
 
 object RepositoryDatabase extends Schema with LazyLogging {
 
-  val repositories: Table[Repository] = table[Repository]
-  val repositoryTags: Table[RepositoryTag] = table[RepositoryTag]
+  val repositories: Table[Repository] = table[Repository](TableNames.REPO_REPOSITORY)
+  val repositoryTags: Table[RepositoryTag] = table[RepositoryTag](TableNames.REPO_REPOSITORY_TAG)
 
   on(repositories)(r => declare(
     r.name is(indexed, unique),
@@ -39,8 +45,21 @@ object RepositoryDatabase extends Schema with LazyLogging {
   ))
 
   on(repositoryTags)(t => declare(
-    t.name is(indexed, unique)
+    columns(t.name, t.repositoryId) are(indexed, unique),
+    t.name is indexed
   ))
+
+  val repoToTags = oneToManyRelation(repositories, repositoryTags).via((r, t) => r.id === t.repositoryId)
+
+  // the default constraint for all foreign keys in this schema :
+  override def applyDefaultForeignKeyPolicy(foreignKeyDeclaration: ForeignKeyDeclaration) =
+    foreignKeyDeclaration.constrainReference
+
+  //now we will redefine some of the foreign key constraints :
+  //if we delete a repo, we want all tags to be deleted
+  repoToTags.foreignKeyDeclaration.constrainReference(onDelete.cascade)
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
 
   def initialize(): Unit = {
     // this is rather bad. Should generate the DDL separately and evolve it manually
@@ -51,8 +70,6 @@ object RepositoryDatabase extends Schema with LazyLogging {
         case ex: SquerylSQLException =>
           logger.error("Failed to select some entries from the DB. Trying to create the tables", ex)
           this.create
-        case ex =>
-          throw ex
       }
     }
   }

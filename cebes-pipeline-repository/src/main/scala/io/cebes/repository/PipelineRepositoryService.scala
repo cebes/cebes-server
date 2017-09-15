@@ -24,6 +24,11 @@ trait PipelineRepositoryService {
   def createRepository(repoName: String, isPrivate: Boolean): Repository
 
   /**
+    * Delete the given repository (and all its tag)
+    */
+  def deleteRepository(repoName: String): Int
+
+  /**
     * Get the information for the given repository
     * Throw [[NoSuchElementException]] if the repo doesn't exist
     */

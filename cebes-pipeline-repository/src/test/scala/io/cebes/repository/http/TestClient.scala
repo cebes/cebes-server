@@ -14,7 +14,7 @@ package io.cebes.repository.http
 import akka.actor.Scheduler
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.{StatusCodes, headers => akkaHeaders}
+import akka.http.scaladsl.model.{HttpMethod, HttpMethods, StatusCodes, headers => akkaHeaders}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromResponseUnmarshaller
@@ -63,9 +63,9 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
       }
     }
 
-  def put[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
-                                        emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    Put(s"/$apiVersion/$url", entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
+  def _query[E, T](url: String, entity: E, method: HttpMethod)(implicit emE: ToEntityMarshaller[E],
+                                                               emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
+    new RequestBuilder(method)(s"/$apiVersion/$url", entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
       status match {
         case StatusCodes.OK => responseAs[T]
         case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>
@@ -76,6 +76,14 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
           throw ServerException(None, response.toString(), None)
       }
     }
+
+  def put[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
+                                        emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
+    _query(url, entity, HttpMethods.PUT)
+
+  def delete[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
+                                           emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
+    _query(url, entity, HttpMethods.DELETE)
 
   /**
     * Send an asynchronous command and wait for the result, using exponential-backoff

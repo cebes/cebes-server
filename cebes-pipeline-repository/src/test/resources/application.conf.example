@@ -5,3 +5,5 @@ cebes {
     password = ""
   }
 }
+
+akka.http.server.parsing.max-content-length = 512m

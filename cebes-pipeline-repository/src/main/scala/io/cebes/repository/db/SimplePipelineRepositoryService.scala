@@ -19,6 +19,7 @@ import com.google.inject.Inject
 import io.cebes.prop.{Prop, Property}
 import io.cebes.repository.db.SquerylEntrypoint._
 import io.cebes.repository.{PipelineRepositoryService, RepositoryListResponse, TagListResponse, TagResponse}
+import org.squeryl.SquerylSQLException
 
 /**
   * A simple implementation of [[PipelineRepositoryService]] using SQL backend,
@@ -30,11 +31,26 @@ class SimplePipelineRepositoryService @Inject()(@Prop(Property.REPOSITORY_PATH) 
   private val pageLength: Int = 100
 
   override def createRepository(repoName: String, isPrivate: Boolean): Repository = {
-    RepositoryDatabase.repositories.insert(Repository(0, repoName, "owner", isPrivate, 0))
+    try {
+      transaction {
+        RepositoryDatabase.repositories.insert(Repository(0, repoName, "owner", isPrivate, 0))
+      }
+    } catch {
+      case ex: SquerylSQLException =>
+        throw new IllegalArgumentException(s"Invalid repoName '$repoName': ${ex.getMessage}", ex)
+    }
+  }
+
+  override def deleteRepository(repoName: String): Int = {
+    transaction {
+      RepositoryDatabase.repositories.deleteWhere(r => r.name === repoName)
+    }
   }
 
   override def getRepositoryInfo(repoName: String): Repository = {
-    val repos = from(RepositoryDatabase.repositories)(r => where(r.name === repoName) select r).toArray
+    val repos = transaction {
+      from(RepositoryDatabase.repositories)(r => where(r.name === repoName) select r).toArray
+    }
     if (repos.isEmpty) {
       throw new NoSuchElementException(s"Repository doesn't exist: $repoName")
     }
@@ -52,7 +68,7 @@ class SimplePipelineRepositoryService @Inject()(@Prop(Property.REPOSITORY_PATH) 
     }
   }
 
-  override def listTags(repoName: String): TagListResponse = {
+  override def listTags(repoName: String): TagListResponse = transaction {
     val repos = from(RepositoryDatabase.repositories)(r => where(r.name === repoName) select r)
     if (repos.isEmpty) {
       throw new NoSuchElementException(s"Repository doesn't exist: $repoName")
@@ -67,11 +83,13 @@ class SimplePipelineRepositoryService @Inject()(@Prop(Property.REPOSITORY_PATH) 
   }
 
   override def getTagInfo(repoName: String, tagName: String): TagResponse = {
-    val arr = from(
-      from(RepositoryDatabase.repositories)(r => where(r.name === repoName) select r),
-      from(RepositoryDatabase.repositoryTags)(t => where(t.name === tagName) select t))(
-      (r, t) => where(r.id === t.repositoryId) select t
-    ).toArray
+    val arr = transaction {
+      from(
+        from(RepositoryDatabase.repositories)(r => where(r.name === repoName) select r),
+        from(RepositoryDatabase.repositoryTags)(t => where(t.name === tagName) select t))(
+        (r, t) => where(r.id === t.repositoryId) select t
+      ).toArray
+    }
     assert(arr.length <= 1)
     if (arr.isEmpty) {
       throw new NoSuchElementException(s"Repository $repoName:$tagName not found")
@@ -87,7 +105,17 @@ class SimplePipelineRepositoryService @Inject()(@Prop(Property.REPOSITORY_PATH) 
   override def insertOrUpdateTag(repoName: String, tagName: String): TagResponse = {
     val repo = getRepositoryInfo(repoName)
     val updateTime = new Timestamp(Calendar.getInstance().getTimeInMillis)
-    RepositoryDatabase.repositoryTags.insertOrUpdate(RepositoryTag(0, repo.id, tagName, updateTime))
+    inTransaction {
+      val cnt = from(RepositoryDatabase.repositoryTags)(t =>
+        where(t.repositoryId === repo.id and t.name === tagName) compute count).head
+      if (cnt.measures > 0) {
+        update(RepositoryDatabase.repositoryTags)(t =>
+          where(t.repositoryId === repo.id and t.name === tagName)
+        set(t.lastUpdate := updateTime))
+      } else {
+        RepositoryDatabase.repositoryTags.insert(RepositoryTag(0, repo.id, tagName, updateTime))
+      }
+    }
     TagResponse(tagName, updateTime, Some(repoName))
   }
 }

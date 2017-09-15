@@ -50,8 +50,15 @@ object Tag {
 
   val DEFAULT_VERSION = "default"
 
-  val tagExpr = new Regex(
-    """^((([a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/)?([a-z0-9]+([-_\.\/][a-z0-9]+)*))(:([a-z0-9-_]+))?$""",
+  private val tagExprServer: String = """([a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/"""
+  private val tagExprPath: String = """[a-z0-9]+([-_\.\/][a-z0-9]+)*"""
+  private val tagExprVersion: String = """[a-z0-9-_]+"""
+
+  val REGEX_TAG_PATH = new Regex(tagExprPath)
+  val REGEX_TAG_VERSION = new Regex(tagExprVersion)
+
+  private val tagExpr = new Regex(
+    s"""^(($tagExprServer)?($tagExprPath))(:($tagExprVersion))?$$""",
     "name", "server", "host", "", "", "", "", "port", "path", "", "", "version")
 
   private def extract(str: String, groupName: String): Option[String] = {

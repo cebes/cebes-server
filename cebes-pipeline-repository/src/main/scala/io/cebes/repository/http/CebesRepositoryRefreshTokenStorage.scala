@@ -19,5 +19,5 @@ import io.cebes.prop.types.MySqlBackendCredentials
 class CebesRepositoryRefreshTokenStorage @Inject()
 (override protected val mySqlCreds: MySqlBackendCredentials) extends JdbcRefreshTokenStorage {
 
-  override protected val tableName: String = TableNames.REPOSITORY_REFRESH_TOKENS
+  override protected val tableName: String = TableNames.REPO_REFRESH_TOKENS
 }
