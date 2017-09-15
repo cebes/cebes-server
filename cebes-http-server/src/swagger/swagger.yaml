@@ -1,0 +1,67 @@
+swagger: '2.0'
+info:
+  description: This is API documentation for Cebes HTTP server.
+  version: 0.8.0-SNAPSHOT
+  title: Cebes Server
+  contact:
+    email: vu@cebes.io
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+basePath: /v1
+tags:
+  - name: auth
+    description: Authentication
+schemes:
+  - http
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Logs user into the system
+      parameters:
+        - name: username
+          in: query
+          description: The user name for login
+          required: true
+          type: string
+        - name: passwordHash
+          in: query
+          description: 'The password for login, after base64'
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: string
+          headers:
+            XSRF-TOKEN:
+              type: string
+              description: >-
+                XSRF token, to be re-used by clients for subsequent requests in
+                X-XSRF-TOKEN header
+            Set-Authorization:
+              type: string
+              description: >-
+                Authorization token, to be re-used by clients for subsequent
+                requests
+            Set-Refresh-Token:
+              type: string
+              description: 'Refresh-Token, to be re-used by clients for subsequent requests'
+        '400':
+          description: Invalid username/password supplied
+  /user/logout:
+    post:
+      tags:
+        - auth
+      summary: Logs out current logged in user session
+      responses:
+        default:
+          description: successful operation
+
+externalDocs:
+  description: Find out more about Cebes
+  url: 'http://cebes.io'

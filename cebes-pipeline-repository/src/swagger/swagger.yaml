@@ -1,0 +1,246 @@
+swagger: '2.0'
+info:
+  description: This is API documentation for Cebes Pipeline Repository.
+  version: 0.8.0-SNAPSHOT
+  title: Cebes Pipeline Repository
+  contact:
+    email: vu@cebes.io
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+basePath: /v1
+tags:
+  - name: catalog
+    description: Obtain list of all repositories
+  - name: repository
+    description: Create and query repositories
+    externalDocs:
+      description: Find out more
+      url: 'http://cebes.io'
+  - name: tags
+    description: Donwload and upload tags of specific repositories
+  - name: auth
+    description: Authentication
+schemes:
+  - http
+paths:
+  '/catalog/{pageId}':
+    get:
+      tags:
+        - catalog
+      summary: Get a list of repositories currently stored on the server
+      parameters:
+        - name: pageId
+          in: path
+          required: true
+          type: integer
+          format: int64
+          description: Index of the page to be retrieved. Default is 0
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/RepositoryListResponse'
+  '/repos/{repoName}':
+    put:
+      tags:
+        - repository
+      summary: Create a new repository
+      description: >-
+        Current implementation will create a new public repository with the
+        given name and a default owner. It doesn't allow users to specify the
+        definition of the new repository  yet. This will be supported in a
+        future version via a request entity.
+      operationId: createRepo
+      parameters:
+        - $ref: '#/parameters/repoNameParam'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Repository'
+    get:
+      tags:
+        - repository
+      summary: Retrieve repository information
+      parameters:
+        - $ref: '#/parameters/repoNameParam'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Repository'
+  '/tags/{repoName}':
+    get:
+      tags:
+        - tags
+      summary: List all tags of the given repository
+      parameters:
+        - $ref: '#/parameters/repoNameParam'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/TagListResponse'
+  '/tag/{tagName}/{repoName}':
+    get:
+      tags:
+        - tags
+      summary: Get information of a specific tag of the given repository
+      parameters:
+        - $ref: '#/parameters/tagNameParam'
+        - $ref: '#/parameters/repoNameParam'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/TagResponse'
+  '/blob/{tagName}/{repoName}':
+    get:
+      tags:
+        - tags
+      summary: Download the given tag of the given repository
+      parameters:
+        - $ref: '#/parameters/tagNameParam'
+        - $ref: '#/parameters/repoNameParam'
+      produces:
+        - application/octet-stream
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: file
+    put:
+      tags:
+        - tags
+      summary: Upload (and update) the given tag of the given repository
+      parameters:
+        - $ref: '#/parameters/tagNameParam'
+        - $ref: '#/parameters/repoNameParam'
+        - name: file
+          in: formData
+          type: file
+          description: The compressed package containing the serialized pipeline
+      consumes:
+        - multipart/form-data
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/TagResponse'
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Logs user into the system
+      parameters:
+        - name: username
+          in: query
+          description: The user name for login
+          required: true
+          type: string
+        - name: passwordHash
+          in: query
+          description: 'The password for login, after base64'
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            type: string
+          headers:
+            XSRF-TOKEN:
+              type: string
+              description: >-
+                XSRF token, to be re-used by clients for subsequent requests in
+                X-XSRF-TOKEN header
+            Set-Authorization:
+              type: string
+              description: >-
+                Authorization token, to be re-used by clients for subsequent
+                requests
+            Set-Refresh-Token:
+              type: string
+              description: 'Refresh-Token, to be re-used by clients for subsequent requests'
+        '400':
+          description: Invalid username/password supplied
+  /user/logout:
+    post:
+      tags:
+        - auth
+      summary: Logs out current logged in user session
+      responses:
+        default:
+          description: successful operation
+parameters:
+  repoNameParam:
+    name: repoName
+    in: path
+    description: 'Name of the repository, e.g. `peter/ubuntu-tf`'
+    required: true
+    type: string
+    format: string
+    pattern: '^[a-z0-9]+([-_\.\/][a-z0-9]+)*$'
+  tagNameParam:
+    name: tagName
+    in: path
+    description: 'Name of the tag, e.g. `v2.2`, `default`, ...'
+    required: true
+    type: string
+    format: string
+    pattern: '^[a-z0-9-_]+$'
+definitions:
+  Repository:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+        description: Name of the repository
+      owner:
+        type: string
+      isPrivate:
+        type: boolean
+      pullCount:
+        type: integer
+        format: int64
+  RepositoryListResponse:
+    type: object
+    properties:
+      repositories:
+        type: array
+        items:
+          $ref: '#/definitions/Repository'
+      pageId:
+        type: integer
+        format: int64
+      totalPages:
+        type: integer
+        format: int64
+  TagResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      lastUpdate:
+        type: integer
+        format: int64
+        example: 1505485294
+        description: Unix timestamp of the last update
+      repositoryName:
+        type: string
+  TagListResponse:
+    type: object
+    properties:
+      repoName:
+        type: string
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/TagResponse'
+externalDocs:
+  description: Find out more about Cebes
+  url: 'http://cebes.io'

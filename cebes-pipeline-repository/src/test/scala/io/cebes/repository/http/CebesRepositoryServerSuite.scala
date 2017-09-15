@@ -24,7 +24,7 @@ import io.cebes.http.client.ServerException
 import io.cebes.repository.CebesRepositoryJsonProtocol._
 import io.cebes.repository.db.Repository
 import io.cebes.repository.inject.CebesRepositoryInjector
-import io.cebes.repository.{RepositoryListResponse, TagListResponse, TagResponse}
+import io.cebes.repository.{RepositoryListResponse, TagListResponse, TagResponse, VersionResponse}
 import org.scalatest.FunSuite
 import org.scalatest.exceptions.TestFailedException
 
@@ -36,6 +36,13 @@ class CebesRepositoryServerSuite extends FunSuite with TestClient {
 
   override protected val serverRoutes: Route = server.routes
   override protected val apiVersion: String = CebesRepositoryServer.API_VERSION
+
+  test("version") {
+    Get("/version") ~> serverRoutes ~> check {
+      val v = responseAs[VersionResponse]
+      assert(v.api === CebesRepositoryServer.API_VERSION)
+    }
+  }
 
   test("full suite") {
     val ex1 = intercept[ServerException] {
