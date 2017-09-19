@@ -14,20 +14,30 @@ package io.cebes.serving.http
 import javax.inject.Inject
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import io.cebes.http.server.HttpServer
 import io.cebes.prop.{Prop, Property}
+import io.cebes.serving.CebesServingJsonProtocol._
+import io.cebes.serving.{InferenceRequest, PipelineServingService}
 
 import scala.concurrent.ExecutionContextExecutor
 
 class CebesServingServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) override val httpInterface: String,
-                                   @Prop(Property.REPOSITORY_PORT) override val httpPort: Int) extends HttpServer {
+                                   @Prop(Property.REPOSITORY_PORT) override val httpPort: Int,
+                                   private val servingService: PipelineServingService) extends HttpServer {
 
   protected implicit val actorSystem: ActorSystem = ActorSystem("CebesPipelineServing")
 
   protected implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
   protected implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
-  override protected val routes: Route = _
+  override protected val routes: Route =
+    (path("inference") & post) {
+      entity(as[InferenceRequest]) { request =>
+        complete(servingService.inference(request))
+      }
+    }
 }

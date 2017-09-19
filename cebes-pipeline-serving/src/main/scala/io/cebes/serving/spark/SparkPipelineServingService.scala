@@ -9,17 +9,13 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving
+package io.cebes.serving.spark
 
-import io.cebes.serving.http.CebesServingServer
-import io.cebes.serving.inject.CebesServingInjector
+import io.cebes.serving.{InferenceRequest, InferenceResponse, PipelineServingService}
 
-object Main {
+import scala.concurrent.Future
 
-  def main(args: Array[String]) {
-    val server = CebesServingInjector.instance[CebesServingServer]
-    server.start()
-    server.waitServer()
-    server.stop()
-  }
+class SparkPipelineServingService extends PipelineServingService {
+
+  override def inference(request: InferenceRequest): Future[InferenceResponse] = ???
 }

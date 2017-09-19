@@ -11,15 +11,9 @@
  */
 package io.cebes.serving
 
-import io.cebes.serving.http.CebesServingServer
-import io.cebes.serving.inject.CebesServingInjector
+import scala.concurrent.Future
 
-object Main {
+trait PipelineServingService {
 
-  def main(args: Array[String]) {
-    val server = CebesServingInjector.instance[CebesServingServer]
-    server.start()
-    server.waitServer()
-    server.stop()
-  }
+  def inference(request: InferenceRequest): Future[InferenceResponse]
 }

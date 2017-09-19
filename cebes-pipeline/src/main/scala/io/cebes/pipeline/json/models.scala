@@ -15,6 +15,7 @@ package io.cebes.pipeline.json
 import java.util.UUID
 
 import io.cebes.df.Column
+import io.cebes.df.schema.Schema
 
 ////////////////////////////////////////////////////////////////
 // Pipeline message
@@ -33,18 +34,6 @@ case class SampleMessageDef() extends PipelineMessageDef
 case class ModelMessageDef(modelId: UUID) extends PipelineMessageDef
 
 case class ColumnDef(col: Column) extends PipelineMessageDef
-
-/**
-  * Definition of a Stage
-  *
-  * @param name       The name given to this stage. Unique within a single PipelineDef.
-  *                   Must satisfy the regex [a-z][a-z0-9_./]*
-  * @param stageClass Class name of the stage
-  * @param inputs     map of inputs to this stage. Each entry is input_slot -> src_stage[:src_slot]
-  * @param outputs    map from the output slot name to the message
-  */
-case class StageDef(name: String, stageClass: String, inputs: Map[String, PipelineMessageDef] = Map.empty,
-                    outputs: Map[String, PipelineMessageDef] = Map.empty)
 
 /**
   * Definition of a Model, serializable so that it can be sent to clients and persisted to database
@@ -66,6 +55,23 @@ case class ModelDef(id: UUID, modelClass: String, inputs: Map[String, PipelineMe
 case class ModelRunDef(model: ModelMessageDef, inputDf: DataframeMessageDef)
 
 /**
+  * Definition of a Stage
+  *
+  * @param name       The name given to this stage. Unique within a single PipelineDef.
+  *                   Must satisfy the regex [a-z][a-z0-9_./]*
+  * @param stageClass Class name of the stage
+  * @param inputs     map of inputs to this stage
+  * @param outputs    map from the output slot name to the message
+  * @param models     map from a slot name to the model definition [[ModelDef]], if that slot contains a model
+  * @param schemas    map from slot names to the [[Schema]] if that slot contains a [[io.cebes.df.Dataframe]]
+  */
+case class StageDef(name: String, stageClass: String,
+                    inputs: Map[String, PipelineMessageDef] = Map.empty,
+                    outputs: Map[String, PipelineMessageDef] = Map.empty,
+                    models: Map[String, ModelDef] = Map.empty,
+                    schemas: Map[String, Schema] = Map.empty)
+
+/**
   * Definition of a Pipeline
   *
   * @param id     The unique ID of this Pipeline.
@@ -75,7 +81,7 @@ case class ModelRunDef(model: ModelMessageDef, inputDf: DataframeMessageDef)
 case class PipelineDef(id: Option[UUID], stages: Array[StageDef])
 
 /**
-  * Export of a Pipeline, mainly used by [[io.cebes.pipeline.exports.PipelineExporter]]
+  * Export of a Pipeline, mainly used by [[io.cebes.pipeline.exporter.PipelineExporter]]
   *
   * @param version  version of the exporter
   * @param pipeline the actual pipeline definition

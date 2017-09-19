@@ -11,16 +11,15 @@
  */
 package io.cebes.pipeline.exporter
 
-import java.nio.file.Paths
-import java.util.UUID
-
 import com.google.inject.Inject
-import io.cebes.pipeline.factory.StageFactory
+import io.cebes.df.Dataframe
+import io.cebes.df.schema.Schema
+import io.cebes.pipeline.factory.{ModelFactory, StageFactory}
 import io.cebes.pipeline.json.{ModelDef, ModelMessageDef, PipelineMessageDef, StageDef}
 import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.{PipelineMessageSerializer, Stage}
-import spray.json.{JsonReader, JsonWriter}
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -28,70 +27,76 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 class StageExporter @Inject()(private val msgSerializer: PipelineMessageSerializer,
                               private val stageFactory: StageFactory,
-                              private val modelExporter: ModelExporter) {
+                              private val modelFactory: ModelFactory) {
 
   /**
-    * Export the [[Stage]] into a downloadable format, saved [[Model]] in storageDir if there is any
+    * Export the [[Stage]] into a downloadable format, saved [[Model]] in modelStorageDir if there is any
     */
-  def export(stage: Stage, storageDir: String)(implicit jsModelDef: JsonWriter[ModelDef],
-                                               ec: ExecutionContext): Future[StageDef] = {
-    val modelStorageDir = getModelSubDir(storageDir)
+  def export(stage: Stage, modelStorageDir: Option[String])(implicit ec: ExecutionContext): Future[StageDef] = {
+    val modelDefs = mutable.Map.empty[String, ModelDef]
+    val schemas = mutable.Map.empty[String, Schema]
 
-    val serializedInputs = serializePipelineMessages(stage.getInputs(true), modelStorageDir, msgSerializer)
+    val serializedInputs = serializePipelineMessages(stage.getInputs(true),
+      modelStorageDir, msgSerializer, modelDefs, schemas)
+
     stage.getOutputs().map { outputs =>
-      val serializedOutputs = serializePipelineMessages(outputs, modelStorageDir, msgSerializer)
-      StageDef(stage.getName, stage.getClass.getSimpleName, serializedInputs, serializedOutputs)
+      val serializedOutputs = serializePipelineMessages(outputs, modelStorageDir, msgSerializer, modelDefs, schemas)
+      StageDef(stage.getName, stage.getClass.getSimpleName, serializedInputs, serializedOutputs,
+        models = modelDefs.toMap, schemas = schemas.toMap)
     }
   }
 
   /**
     * Import the [[Stage]] that is described by the given [[StageDef]] instance
     */
-  def imports(stageDef: StageDef, storageDir: String)(implicit jsModelDef: JsonReader[ModelDef],
-                                                      ec: ExecutionContext): Stage = {
+  def imports(stageDef: StageDef, modelStorageDir: Option[String])(implicit ec: ExecutionContext): Stage = {
     val stage = stageFactory.constructStage(stageDef.stageClass, stageDef.name)
 
-    val modelStorageDir = getModelSubDir(storageDir)
-    stage.setInputs(deserializePipelineMessages(stageDef.inputs, modelStorageDir, msgSerializer))
-      .setOutputs(deserializePipelineMessages(stageDef.outputs, modelStorageDir, msgSerializer))
+    stage.setInputs(deserializePipelineMessages(stageDef.inputs, modelStorageDir, msgSerializer, stageDef.models))
+      .setOutputs(deserializePipelineMessages(stageDef.outputs, modelStorageDir, msgSerializer, stageDef.models))
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
   // Private helpers
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  private def getModelSubDir(storageDir: String) = Paths.get(storageDir, "models").toString
-
-  private def getModelDefFile(modelStorageDir: String, modelId: UUID): String =
-    Paths.get(modelStorageDir, s"${modelId.toString}.json").toString
-
   /**
     * Serialize the pipeline messages, also serialize the [[Model]] instances if there is any
     */
-  private def serializePipelineMessages(data: Map[String, Any], modelStorageDir: String,
-                                        msgSerializer: PipelineMessageSerializer)
-                                       (implicit jsModelDef: JsonWriter[ModelDef]): Map[String, PipelineMessageDef] = {
-    data.mapValues {
-      case model: Model =>
-        // serialize the model
-        modelExporter.export(model, modelStorageDir, getModelDefFile(modelStorageDir, model.id))
-        msgSerializer.serialize(model)
-      case v => msgSerializer.serialize(v)
+  private def serializePipelineMessages(data: Map[String, Any], modelStorageDir: Option[String],
+                                        msgSerializer: PipelineMessageSerializer,
+                                        models: mutable.Map[String, ModelDef],
+                                        schemas: mutable.Map[String, Schema]): Map[String, PipelineMessageDef] = {
+    data.map { case (slotName, value) =>
+      value match {
+        case model: Model =>
+          models.put(slotName, modelFactory.save(model, modelStorageDir))
+        case df: Dataframe =>
+          schemas.put(slotName, df.schema)
+        case _ =>
+      }
+      slotName -> msgSerializer.serialize(value)
     }
   }
 
   /**
     * Deserialize the pipeline messages, with special treatment for [[ModelMessageDef]], where
-    * we load the model using the [[modelExporter]]
+    * we load the model using the [[modelFactory]]
     */
-  private def deserializePipelineMessages(data: Map[String, PipelineMessageDef], modelStorageDir: String,
-                                          msgSerializer: PipelineMessageSerializer)
-                                         (implicit jsModelDef: JsonReader[ModelDef]): Map[String, Any] = {
-    data.mapValues {
-      case modelMsgDef: ModelMessageDef =>
-        // deserialize the model
-        modelExporter.imports(getModelDefFile(modelStorageDir, modelMsgDef.modelId))
-      case v => msgSerializer.deserialize(v)
+  private def deserializePipelineMessages(data: Map[String, PipelineMessageDef], modelStorageDir: Option[String],
+                                          msgSerializer: PipelineMessageSerializer,
+                                          modelDefs: Map[String, ModelDef]): Map[String, Any] = {
+    data.map { case (slotName, msg) =>
+      val value = msg match {
+        case _: ModelMessageDef =>
+          if (modelDefs.contains(slotName)) {
+            modelFactory.create(modelDefs(slotName), modelStorageDir)
+          } else {
+            msgSerializer.deserialize(msg)
+          }
+        case _ => msgSerializer.deserialize(msg)
+      }
+      slotName -> value
     }
   }
 }
