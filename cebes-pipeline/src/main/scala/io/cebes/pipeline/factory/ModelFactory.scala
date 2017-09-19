@@ -27,7 +27,7 @@ trait ModelFactory {
     *                   If not specified, use system-wide default value
     * @return a [[Model]] object
     */
-  def create(modelDef: ModelDef, storageDir: Option[String] = None): Model
+  def imports(modelDef: ModelDef, storageDir: Option[String] = None): Model
 
   /**
     * Serialize a [[Model]] into a [[ModelDef]]
@@ -36,5 +36,5 @@ trait ModelFactory {
     * @param storageDir the storage directory to read auxiliary data from, if needed.
     *                   If not specified, use system-wide default value
     */
-  def save(model: Model, storageDir: Option[String] = None): ModelDef
+  def export(model: Model, storageDir: Option[String] = None): ModelDef
 }

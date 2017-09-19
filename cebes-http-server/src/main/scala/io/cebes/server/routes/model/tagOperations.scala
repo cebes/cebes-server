@@ -24,14 +24,14 @@ import io.cebes.tag.Tag
 class ModelTagResultTransformer(private val modelFactory: ModelFactory)
   extends TagResultTransformer[Model, ModelDef] {
 
-  override def transformItem(result: Model): Option[ModelDef] = Some(modelFactory.save(result))
+  override def transformItem(result: Model): Option[ModelDef] = Some(modelFactory.export(result))
 }
 
 class ModelTagEntryResultTransformer(private val modelFactory: ModelFactory)
   extends TagEntryResultTransformer[Model, TaggedModelResponse] {
 
   override def transformTagEntry(tag: Tag, tagEntry: TagEntry, result: Model): TaggedModelResponse = {
-    TaggedModelResponse(tag, tagEntry.objectId, tagEntry.createdAt, modelFactory.save(result))
+    TaggedModelResponse(tag, tagEntry.objectId, tagEntry.createdAt, modelFactory.export(result))
   }
 }
 

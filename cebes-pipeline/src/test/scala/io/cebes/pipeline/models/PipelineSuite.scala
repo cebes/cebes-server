@@ -25,7 +25,7 @@ class PipelineSuite extends FunSuite {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
-  private lazy val pipelineFactory = PipelineTestInjector.instance[PipelineFactory]
+  private lazy val pipelineExporter = PipelineTestInjector.instance[PipelineFactory]
 
   private def wait[T](what: Awaitable[T]): T = Await.result(what, Duration(2, TimeUnit.MINUTES))
 
@@ -45,7 +45,7 @@ class PipelineSuite extends FunSuite {
       StageDef("stage1", "StageFoo"),
       StageDef("stage2", "StageTwoInputs", Map("m" -> ValueDef("my input value")))
     ))
-    val ppl1 = pipelineFactory.create(pipelineDef1)
+    val ppl1 = pipelineExporter.imports(pipelineDef1, None)
     assert(ppl1.stages.size === 2)
     assert(ppl1.stages("stage2").isInstanceOf[StageTwoInputs])
     val stage2 = ppl1.stages("stage2").asInstanceOf[StageTwoInputs]
@@ -108,7 +108,7 @@ class PipelineSuite extends FunSuite {
         "m" -> StageOutputDef("stage3", "m"))),
       StageDef("stage3", "StageBar")
     ))
-    val ppl1 = pipelineFactory.create(pipelineDef1)
+    val ppl1 = pipelineExporter.imports(pipelineDef1, None)
     val ex1 = intercept[NoSuchElementException] {
       ppl1.run(Seq(SlotDescriptor("stage3:m"), SlotDescriptor("stage2:arrOut")))
     }
@@ -124,7 +124,7 @@ class PipelineSuite extends FunSuite {
       StageDef("stage1", "StageFoo", Map("strIn" -> StageOutputDef("stage3", "m"))),
       StageDef("stage2", "StageBar", Map("strIn" -> StageOutputDef("stage3", "m"))),
       StageDef("stage3", "StageBar", Map("strIn" -> StageOutputDef("stage2", "m")))))
-    val ppl1 = pipelineFactory.create(pipelineDef1)
+    val ppl1 = pipelineExporter.imports(pipelineDef1, None)
 
     val ex = intercept[IllegalArgumentException] {
       ppl1.run(Seq(SlotDescriptor("stage1:out")))
@@ -138,7 +138,7 @@ class PipelineSuite extends FunSuite {
         "m" -> ValueDef("my input value"),
         "valIn" -> ValueDef(Array(10.3f))))))
     val ex1 = intercept[IllegalArgumentException] {
-      pipelineFactory.create(pipelineDef1)
+      pipelineExporter.imports(pipelineDef1, None)
     }
     assert(ex1.getMessage.contains("StageTwoInputs(name=stage1): requirement failed: " +
       "Invalid type at slot valIn, expected a int[], got float[]"))
@@ -147,7 +147,7 @@ class PipelineSuite extends FunSuite {
       StageDef("stage1", "StageTwoInputs", Map(
         "m" -> ValueDef("my input value")))))
 
-    val ppl2 = pipelineFactory.create(pipelineDef2)
+    val ppl2 = pipelineExporter.imports(pipelineDef2, None)
 
     val ex2 = intercept[IllegalArgumentException] {
       ppl2.run(Seq(SlotDescriptor("stage1:arrOut")), Map(SlotDescriptor("stage1:valIn") -> Array(10.3f)))

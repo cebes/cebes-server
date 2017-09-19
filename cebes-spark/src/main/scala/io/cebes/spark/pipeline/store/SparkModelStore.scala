@@ -46,11 +46,11 @@ import spray.json._
       .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
         JdbcPersistenceColumn("model_def", "MEDIUMTEXT")))
       .withValueToSeq { model =>
-        Seq(System.currentTimeMillis(), modelFactory.save(model).toJson.compactPrint)
+        Seq(System.currentTimeMillis(), modelFactory.export(model).toJson.compactPrint)
       }
       .withSqlToValue { (_, entry) =>
         val modelDef = entry.getString(2).parseJson.convertTo[ModelDef]
-        modelFactory.create(modelDef)
+        modelFactory.imports(modelDef)
       }
       .withStrToKey(s => UUID.fromString(s))
       .build()

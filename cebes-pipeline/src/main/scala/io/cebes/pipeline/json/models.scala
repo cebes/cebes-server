@@ -81,7 +81,7 @@ case class StageDef(name: String, stageClass: String,
 case class PipelineDef(id: Option[UUID], stages: Array[StageDef])
 
 /**
-  * Export of a Pipeline, mainly used by [[io.cebes.pipeline.exporter.PipelineExporter]]
+  * Export of a Pipeline, mainly used by [[io.cebes.pipeline.factory.PipelineFactory]]
   *
   * @param version  version of the exporter
   * @param pipeline the actual pipeline definition

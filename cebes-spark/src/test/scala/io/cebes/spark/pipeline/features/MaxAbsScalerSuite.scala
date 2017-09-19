@@ -50,8 +50,8 @@ class MaxAbsScalerSuite extends FunSuite with ImplicitExecutor with TestDataHelp
     assert(scalerModel.input(scalerModel.getInput("outputCol")).get === "features_scaled")
 
     val modelFactory = getInstance[ModelFactory]
-    val scalerModelDef = modelFactory.save(scalerModel)
-    val scalerModel2 = getInstance[ModelFactory].create(scalerModelDef)
+    val scalerModelDef = modelFactory.export(scalerModel)
+    val scalerModel2 = getInstance[ModelFactory].imports(scalerModelDef)
 
     assert(scalerModel2.id === scalerModel.id)
     assert(scalerModel2.isInstanceOf[MaxAbsScalerModel])

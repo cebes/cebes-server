@@ -9,13 +9,12 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.pipeline.exporter
+package io.cebes.pipeline.factory
 
 import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeUnit
 
-import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.inject.PipelineTestInjector
 import io.cebes.pipeline.json.PipelineDefaultJsonProtocol._
 import io.cebes.pipeline.json.{PipelineDef, StageDef, ValueDef}
@@ -25,19 +24,17 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class PipelineExporterSuite extends FunSuite {
-
-  private lazy val pipelineFactory = PipelineTestInjector.instance[PipelineFactory]
+class PipelineFactorySuite extends FunSuite {
 
   test("export and import") {
-    val exporter = PipelineTestInjector.instance[PipelineExporter]
+    val exporter = PipelineTestInjector.instance[PipelineFactory]
 
     val pipelineDef1 = PipelineDef(None, Array(
       StageDef("stage1", "StageTwoInputs", Map(
         "m" -> ValueDef("my input value"),
         "valIn" -> ValueDef(Array(10))))))
 
-    val ppl1 = pipelineFactory.create(pipelineDef1)
+    val ppl1 = exporter.imports(pipelineDef1, None)
     val testDir = Files.createTempDirectory("test-ppl-export-")
     val destDir = Await.result(exporter.export(ppl1, testDir.toString), Duration(30, TimeUnit.SECONDS))
     assert(Files.isDirectory(Paths.get(destDir)))

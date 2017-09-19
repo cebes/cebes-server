@@ -16,6 +16,7 @@ import java.nio.file.Paths
 import java.util.UUID
 
 import io.cebes.df.Dataframe
+import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.pipeline.json.ModelDef
 import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.{PipelineMessageSerializer, SlotValueMap}
@@ -66,7 +67,7 @@ object SparkModel {
 
   /**
     * Create a [[SparkModel]] from a [[ModelDef]]
-    * Do not use this function directly. Use an instance of [[io.cebes.pipeline.factory.ModelFactory]] instead.
+    * Do not use this function directly. Use an instance of [[ModelFactory]] instead.
     *
     * @param modelDef  the [[ModelDef]] to create the model
     * @param dfFactory Dataframe factory

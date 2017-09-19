@@ -15,8 +15,7 @@ import java.io.File
 import java.nio.file.Files
 
 import io.cebes.df.types.StorageTypes
-import io.cebes.pipeline.exporter.PipelineExporter
-import io.cebes.pipeline.factory.ModelFactory
+import io.cebes.pipeline.factory.{ModelFactory, PipelineFactory}
 import io.cebes.pipeline.json._
 import io.cebes.pipeline.models.SlotDescriptor
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
@@ -116,8 +115,8 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(v.asInstanceOf[String] === "caliper")
 
     val modelFactory = getInstance[ModelFactory]
-    val lrModelDef = modelFactory.save(lrModel)
-    val lrModel2 = modelFactory.create(lrModelDef)
+    val lrModelDef = modelFactory.export(lrModel)
+    val lrModel2 = modelFactory.imports(lrModelDef)
 
     assert(lrModel2.isInstanceOf[LinearRegressionModel])
     assert(lrModel2.id === lrModel.id)
@@ -140,13 +139,13 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
         "predictionCol" -> ValueDef("caliper_predict"),
         "inputDf" -> StageOutputDef("s1", "outputDf")))))
 
-    val ppl = pipelineFactory.create(pplDef)
+    val ppl = pipelineExporter.imports(pplDef, None)
     assert(ppl.stages.size === 2)
     assert(ppl.stages.contains("s1") && ppl.stages.contains("s2"))
     assert(ppl.stages("s1").isInstanceOf[VectorAssembler])
     assert(ppl.stages("s2").isInstanceOf[LinearRegression])
 
-    val exporter = getInstance[PipelineExporter]
+    val exporter = getInstance[PipelineFactory]
 
     val testDir = Files.createTempDirectory("test-ppl-")
 

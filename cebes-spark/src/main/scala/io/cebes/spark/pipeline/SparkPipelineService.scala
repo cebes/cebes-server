@@ -15,11 +15,11 @@ import java.util.concurrent.TimeUnit
 
 import com.google.inject.Inject
 import io.cebes.df.{Dataframe, DataframeService}
-import io.cebes.pipeline.{ModelService, PipelineService}
 import io.cebes.pipeline.factory.PipelineFactory
 import io.cebes.pipeline.json._
 import io.cebes.pipeline.ml.Model
 import io.cebes.pipeline.models.{Pipeline, PipelineMessageSerializer, SlotDescriptor}
+import io.cebes.pipeline.{ModelService, PipelineService}
 import io.cebes.store.{CachedStore, TagStore}
 
 import scala.concurrent.duration.Duration
@@ -28,7 +28,7 @@ import scala.concurrent.{Await, ExecutionContext}
 /**
   * Implements [[PipelineService]] on Spark
   */
-class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactory,
+class SparkPipelineService @Inject()(private val pipelineExporter: PipelineFactory,
                                      private val pplMessageSerializer: PipelineMessageSerializer,
                                      private val dfService: DataframeService,
                                      private val modelService: ModelService,
@@ -93,5 +93,5 @@ class SparkPipelineService @Inject()(private val pipelineFactory: PipelineFactor
     * Return the newly created pipeline
     */
   private def fromPipelineDef(pplDef: PipelineDef)(implicit ec: ExecutionContext): Pipeline =
-    cachedStore.add(pipelineFactory.create(pplDef))
+    cachedStore.add(pipelineExporter.imports(pplDef, None))
 }
