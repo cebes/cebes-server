@@ -24,7 +24,7 @@ class DummyModelFactory extends ModelFactory {
     *                   If not specified, use system-wide default value
     * @return a [[Model]] object
     */
-  override def create(modelDef: ModelDef, storageDir: Option[String]) = ???
+  override def imports(modelDef: ModelDef, storageDir: Option[String]) = ???
 
   /**
     * Serialize a [[Model]] into a [[ModelDef]]
@@ -33,5 +33,5 @@ class DummyModelFactory extends ModelFactory {
     * @param storageDir the storage directory to read auxiliary data from, if needed.
     *                   If not specified, use system-wide default value
     */
-  override def save(model: Model, storageDir: Option[String]) = ???
+  override def export(model: Model, storageDir: Option[String]) = ???
 }

@@ -24,7 +24,7 @@ import scala.concurrent.{Await, Future}
 
 trait TestPipelineHelper {
 
-  lazy val pipelineFactory: PipelineFactory = CebesSparkTestInjector.instance[PipelineFactory]
+  lazy val pipelineExporter: PipelineFactory = CebesSparkTestInjector.instance[PipelineFactory]
 
   protected val TEST_WAIT_TIME = Duration(2, TimeUnit.MINUTES)
 

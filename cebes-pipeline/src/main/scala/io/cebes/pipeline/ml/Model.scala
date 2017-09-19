@@ -13,6 +13,7 @@ package io.cebes.pipeline.ml
 
 import io.cebes.common.HasId
 import io.cebes.df.Dataframe
+import io.cebes.pipeline.factory.ModelFactory
 import io.cebes.pipeline.json.ModelDef
 import io.cebes.pipeline.models._
 
@@ -28,7 +29,7 @@ trait Model extends HasId with Inputs {
   /**
     * Serialize this model into [[ModelDef]]
     * Normally you won't need to call this function directly.
-    * Call the save() function of [[io.cebes.pipeline.factory.ModelFactory]] instead
+    * Call the save() function of [[ModelFactory]] instead
     *
     * @param msgSerializer   the [[PipelineMessageSerializer]] instance
     * @param modelStorageDir the directory where the underlying model should be serialized (if needed)

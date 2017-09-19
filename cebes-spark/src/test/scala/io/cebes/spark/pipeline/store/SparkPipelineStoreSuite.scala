@@ -39,7 +39,7 @@ class SparkPipelineStoreSuite extends FunSuite with BeforeAndAfterAll
         "seed" -> ValueDef(169L),
         "inputDf" -> StageOutputDef("stage1", "outputDf")))))
 
-    val ppl = pipelineFactory.create(pipelineProto)
+    val ppl = pipelineExporter.imports(pipelineProto, None)
     assert(ppl.stages.size === 2)
 
     assert(ppl.stages("stage1").isInstanceOf[Join])

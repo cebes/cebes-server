@@ -16,12 +16,12 @@ import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.LazyLogging
-import io.cebes.http.server.routes.{AkkaImplicits, SecuredSession}
+import io.cebes.http.server.routes.AkkaImplicits
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-trait HttpServer extends AkkaImplicits with SecuredSession with LazyLogging {
+trait HttpServer extends AkkaImplicits with LazyLogging {
 
   val httpInterface: String
 

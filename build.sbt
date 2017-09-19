@@ -56,7 +56,7 @@ lazy val cebesPipelineRepository = project.in(file("cebes-pipeline-repository"))
 
 lazy val cebesPipelineServing = project.in(file("cebes-pipeline-serving")).
   settings(commonSettings: _*).
-  dependsOn(cebesPipeline, cebesHttpCommon)
+  dependsOn(cebesSpark, cebesHttpCommon)
 
 lazy val cebesServer = project.in(file(".")).
   settings(commonSettings: _*).

@@ -16,7 +16,7 @@ import java.util.UUID
 import com.google.inject.{Inject, Singleton}
 import io.cebes.persistence.jdbc.{JdbcPersistence, JdbcPersistenceBuilder, JdbcPersistenceColumn, TableNames}
 import io.cebes.persistence.store.JdbcCachedStore
-import io.cebes.pipeline.factory.PipelineFactory
+import io.cebes.pipeline.factory.{PipelineExportOptions, PipelineFactory}
 import io.cebes.pipeline.json.PipelineDef
 import io.cebes.pipeline.models.Pipeline
 import io.cebes.prop.types.MySqlBackendCredentials
@@ -25,7 +25,9 @@ import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.store.{CachedStore, TagStore}
 import spray.json._
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 /**
   * An implementation of [[CachedStore[Pipeline]]] for Spark,
@@ -34,7 +36,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @Singleton class SparkPipelineStore @Inject()
 (@Prop(Property.CACHESPEC_PIPELINE_STORE) val cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
- pipelineFactory: PipelineFactory,
+ pplFactory: PipelineFactory,
  tagStore: TagStore[Pipeline]) extends JdbcCachedStore[Pipeline](cacheSpec) {
 
   /**
@@ -48,11 +50,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
       .withValueSchema(Seq(JdbcPersistenceColumn("created_at", "BIGINT"),
         JdbcPersistenceColumn("proto", "MEDIUMTEXT")))
       .withValueToSeq { pipeline =>
-        Seq(System.currentTimeMillis(), pipeline.pipelineDef.toJson.compactPrint)
+        val v = pplFactory.export(pipeline,
+          PipelineExportOptions(modelStorageDir = None)).map {
+          pplExpDef =>
+            Seq(System.currentTimeMillis(), pplExpDef.pipeline.toJson.compactPrint)
+        }
+        Await.result(v, Duration.Inf)
       }
       .withSqlToValue { (_, entry) =>
-        val proto = entry.getString(2).parseJson.convertTo[PipelineDef]
-        pipelineFactory.create(proto)
+        val pplDef = entry.getString(2).parseJson.convertTo[PipelineDef]
+        pplFactory.imports(pplDef, None)
       }
       .withStrToKey(s => UUID.fromString(s))
       .build()

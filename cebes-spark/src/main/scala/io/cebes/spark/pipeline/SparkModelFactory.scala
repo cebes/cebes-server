@@ -21,21 +21,21 @@ import io.cebes.spark.df.SparkDataframeFactory
 import io.cebes.spark.pipeline.ml.traits.SparkModel
 
 /**
-  * Implementation of [[io.cebes.pipeline.factory.ModelFactory]] on Spark
+  * Implementation of [[ModelFactory]] on Spark
   */
 class SparkModelFactory @Inject()(private val msgSerializer: PipelineMessageSerializer,
                                   private val dfFactory: SparkDataframeFactory,
                                   @Prop(Property.MODEL_STORAGE_DIR) private val modelStorageDir: String)
   extends ModelFactory {
 
-  override def create(modelDef: ModelDef, storageDir: Option[String] = None): Model = {
+  override def imports(modelDef: ModelDef, storageDir: Option[String] = None): Model = {
     val cls = Class.forName(modelDef.modelClass)
     require(cls.getInterfaces.contains(classOf[SparkModel]), s"${getClass.getName} only support models " +
       s"that implement ${classOf[SparkModel].getName}. Got ${modelDef.modelClass}.")
     SparkModel.fromModelDef(modelDef, msgSerializer, dfFactory, storageDir.getOrElse(modelStorageDir))
   }
 
-  override def save(model: Model, storageDir: Option[String] = None): ModelDef = {
+  override def export(model: Model, storageDir: Option[String] = None): ModelDef = {
     val cls = model.getClass
     require(cls.getInterfaces.contains(classOf[SparkModel]), s"${getClass.getName} only support models " +
       s"that implement ${classOf[SparkModel].getName}. Got ${cls.getName}.")

@@ -27,7 +27,7 @@ metastore_db/
 spark-warehouse/
 
 # test configurations
-cebes-dataframe-spark/src/test/resources/application.conf
+cebes-spark/src/test/resources/application.conf
 cebes-http-server/src/test/resources/application.conf
 cebes-persistence-mysql/src/test/resources/application.conf
 cebes-pipeline-repository/src/test/resources/application.conf
