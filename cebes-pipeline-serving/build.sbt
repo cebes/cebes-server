@@ -7,3 +7,5 @@ mainClass in assembly := Some("io.cebes.serving.Main")
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-testkit" % Common.akkaHttpVersion % "test"
 )
+
+assemblyShadeRules in assembly := Common.apacheCommonsShadeRules

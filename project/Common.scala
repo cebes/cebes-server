@@ -1,3 +1,6 @@
+import sbt.ModuleID
+import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
+
 object Common {
   val sparkVersion = "2.2.0"
   val guiceVersion = "4.1.0"
@@ -14,4 +17,12 @@ object Common {
   val awsJavaSdkS3 = "1.11.22"
   val hadoopClientVersion = "2.7.3"
   val squerylVersion = "0.9.9"
+
+  // shade rules for Apache Commons, to resolve assembly conflicts with Spark
+  val apacheCommonsShadeRules = Seq(
+    ShadeRule.rename("org.apache.commons.**" -> "shadedcommonsbeanutils.@1").
+      inLibrary(ModuleID("commons-beanutils", "commons-beanutils", "1.7.0")),
+    ShadeRule.rename("org.apache.commons.**" -> "shadedcommonsbeanutilscore.@1").
+      inLibrary(ModuleID("commons-beanutils", "commons-beanutils-core", "1.8.0"))
+  )
 }
