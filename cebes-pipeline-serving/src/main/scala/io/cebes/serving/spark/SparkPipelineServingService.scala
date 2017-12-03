@@ -28,7 +28,7 @@ class SparkPipelineServingService @Inject()(private val servingManager: ServingM
       // deserialize the request, prepare inputs for pipeline's run()
       // TODO: take care SampleMessageDef during deserialization
       // also needs to check the sample with the stored data schema in that slot
-      val outs = request.outputs.map(s => SlotDescriptor(s))
+      val outs = request.outputs.map(s => SlotDescriptor(pplInfo.slotNamings.getOrElse(s, s)))
       val feeds = request.inputs.map { case (slotName, slotValue) =>
         val feedInputSlot = SlotDescriptor(pplInfo.slotNamings.getOrElse(slotName, slotName))
         val value = pplMessageSerializer.deserialize(slotValue)
@@ -36,8 +36,10 @@ class SparkPipelineServingService @Inject()(private val servingManager: ServingM
       }
 
       pplInfo.pipeline.run(outs, feeds).map { outputs =>
+        val reversedNamings = pplInfo.slotNamings.map(_.swap)
         val results = outputs.map { case (slotDesc, value) =>
-          s"${slotDesc.parent}:${slotDesc.name}" -> pplMessageSerializer.serialize(value)
+          val outSlotName = s"${slotDesc.parent}:${slotDesc.name}"
+          reversedNamings.getOrElse(outSlotName, outSlotName) -> pplMessageSerializer.serialize(value)
         }
         InferenceResponse(results)
       }

@@ -30,7 +30,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.http.server.HttpJsonProtocol._
 import io.cebes.http.server.auth.HttpAuthJsonProtocol._
 import io.cebes.http.server.auth.LoginRequest
-import io.cebes.http.server.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
+import io.cebes.http.server._
 import spray.json.JsonFormat
 
 import scala.collection.immutable
@@ -267,7 +267,9 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
     */
   private def getServerVersion()(implicit ec: ExecutionContext,
                                  uaFail: FromEntityUnmarshaller[FailResponse]): String = {
-    val version = sendRequest[String, String](RequestBuilding.Get("/version", "")).recoverWith {
+    val version = sendRequest[String, VersionResponse](RequestBuilding.Get("/version", "")).map { r =>
+      r.api
+    }.recoverWith {
       case serverEx: ServerException if serverEx.statusCode.contains(StatusCodes.NotFound) => Future.successful("")
     }
     Await.result(version, Duration(20, TimeUnit.SECONDS))

@@ -64,6 +64,7 @@ lazy val cebesPipelineServing = project.in(file("cebes-pipeline-serving")).
   dependsOn(cebesSpark, cebesPipelineRepositoryClient)
 
 lazy val cebesServer = project.in(file(".")).
+  disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
   aggregate(cebesProperties, cebesAuth, cebesDataframe,
     cebesPersistenceJdbc, cebesPipeline, cebesSpark, cebesHttpServer,

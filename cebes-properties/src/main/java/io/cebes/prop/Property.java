@@ -22,6 +22,9 @@ public enum Property {
             "The interface on which the HTTP service will be listening"),
     HTTP_PORT("CEBES_HTTP_PORT", "cebes.http.port", "21000",
             "The port on which the HTTP service will be listening, to be combined with HTTP_INTERFACE"),
+    HTTP_SERVER_SECRET("CEBES_HTTP_SERVER_SECRET", "cebes.http.server.secret",
+            "9MLs9gc8Axvdi1tbM1T7ZpjFMM5R5QR7b788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0",
+            "The secret string to be used in authentication of the HTTP server"),
 
     UPLOAD_PATH("CEBES_UPLOAD_PATH", "cebes.upload.path", "/tmp/upload/",
             "The directory to upload data to"),
@@ -91,6 +94,9 @@ public enum Property {
             "The interface on which the HTTP service will be listening"),
     REPOSITORY_PORT("CEBES_REPOSITORY_PORT", "cebes.repository.port", "22000",
             "The port on which the HTTP service will be listening, to be combined with REPOSITORY_INTERFACE"),
+    REPOSITORY_SERVER_SECRET("CEBES_REPOSITORY_SERVER_SECRET", "cebes.repository.server.secret",
+            "v8Km83QULVYHVgx0GxJKkZ7v3uhtA3wVY3maYArW5fI1WFTpUwyXQQLwGjVfirAA5OuIVv",
+            "The secret string to be used in authentication of the HTTP server"),
     REPOSITORY_PATH("CEBES_REPOSITORY_PATH", "cebes.repository.path", "/tmp",
             "Path to local disk where we store the binary files of repositories"),
 

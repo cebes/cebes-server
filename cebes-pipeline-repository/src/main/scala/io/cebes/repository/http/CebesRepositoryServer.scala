@@ -23,16 +23,17 @@ import akka.http.scaladsl.server.{PathMatcher1, Route}
 import akka.stream.ActorMaterializer
 import com.google.inject.Inject
 import io.cebes.auth.AuthService
-import io.cebes.http.server.HttpServer
+import io.cebes.http.server.HttpJsonProtocol._
 import io.cebes.http.server.auth.AuthHandler
 import io.cebes.http.server.routes.ApiErrorHandler
+import io.cebes.http.server.{HttpServer, VersionResponse}
 import io.cebes.persistence.jdbc.JdbcUtil
 import io.cebes.prop.types.MySqlBackendCredentials
 import io.cebes.prop.{Prop, Property}
 import io.cebes.repository.CebesRepositoryJsonProtocol._
+import io.cebes.repository.PipelineRepositoryService
 import io.cebes.repository.db.RepositoryDatabase
 import io.cebes.repository.inject.CebesRepositoryInjector
-import io.cebes.repository.{PipelineRepositoryService, VersionResponse}
 import io.cebes.tag.Tag
 import org.squeryl.adapters.MySQLInnoDBAdapter
 import org.squeryl.{Session, SessionFactory}
@@ -42,13 +43,11 @@ import scala.concurrent.ExecutionContextExecutor
 
 class CebesRepositoryServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) override val httpInterface: String,
                                       @Prop(Property.REPOSITORY_PORT) override val httpPort: Int,
+                                     @Prop(Property.REPOSITORY_SERVER_SECRET) override val serverSecret: String,
                                       override protected val refreshTokenStorage: CebesRepositoryRefreshTokenStorage,
                                       override protected val authService: AuthService,
                                       private val mysqlCreds: MySqlBackendCredentials)
   extends HttpServer with AuthHandler with ApiErrorHandler {
-
-  override protected val serverSecret: String =
-    "v8Km83QULVYHVgx0GxJKkZ7v3uhtA3wVY3maYArW5fI1WFTpUwyXQQLwGjVfirAA5OuIVv"
 
   protected implicit val actorSystem: ActorSystem = ActorSystem("CebesPipelineRepository")
   protected implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
