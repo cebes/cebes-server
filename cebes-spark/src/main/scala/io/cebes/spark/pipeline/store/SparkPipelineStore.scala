@@ -34,7 +34,7 @@ import scala.concurrent.duration.Duration
   * using guava's LoadingCache with JDBC persistence backend
   */
 @Singleton class SparkPipelineStore @Inject()
-(@Prop(Property.CACHESPEC_PIPELINE_STORE) val cacheSpec: String,
+(@Prop(Property.CACHESPEC_PIPELINE_STORE) cacheSpec: String,
  mySqlCreds: MySqlBackendCredentials,
  pplFactory: PipelineFactory,
  tagStore: TagStore[Pipeline]) extends JdbcCachedStore[Pipeline](cacheSpec) {

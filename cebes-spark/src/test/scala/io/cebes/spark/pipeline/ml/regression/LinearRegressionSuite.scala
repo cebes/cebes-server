@@ -21,6 +21,7 @@ import io.cebes.pipeline.models.SlotDescriptor
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.spark.pipeline.features.VectorAssembler
+import io.cebes.util.FileSystemHelper
 import org.scalatest.FunSuite
 
 class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
@@ -178,7 +179,7 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
 
     // move to another location, imports again
     val testCopyDir = Files.createTempDirectory("test-ppl-moved-")
-    moveDirectory(new File(exportedDir2), testCopyDir.toFile)
+    FileSystemHelper.moveDirectory(new File(exportedDir2), testCopyDir.toFile)
 
     // import at the previous location should fail
     val ex = intercept[IllegalArgumentException] {
@@ -197,7 +198,7 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(lrOutputs4.contains("model"))
     assert(lrOutputs4("model").isInstanceOf[LinearRegressionModel])
 
-    deleteRecursively(testDir.toFile)
-    deleteRecursively(testCopyDir.toFile)
+    FileSystemHelper.deleteRecursively(testDir.toFile)
+    FileSystemHelper.deleteRecursively(testCopyDir.toFile)
   }
 }

@@ -19,15 +19,16 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import io.cebes.http.server.HttpServer
-import io.cebes.prop.{Prop, Property}
 import io.cebes.serving.CebesServingJsonProtocol._
-import io.cebes.serving.{InferenceRequest, PipelineServingService}
+import io.cebes.serving.{InferenceRequest, PipelineServingService, ServingConfiguration}
 
 import scala.concurrent.ExecutionContextExecutor
 
-class CebesServingServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) override val httpInterface: String,
-                                   @Prop(Property.REPOSITORY_PORT) override val httpPort: Int,
+class CebesServingServer @Inject()(private val servingConfiguration: ServingConfiguration,
                                    private val servingService: PipelineServingService) extends HttpServer {
+
+  protected override val httpInterface: String = servingConfiguration.httpInterface
+  protected override val httpPort: Int = servingConfiguration.httpPort
 
   protected implicit val actorSystem: ActorSystem = ActorSystem("CebesPipelineServing")
 

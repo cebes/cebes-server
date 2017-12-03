@@ -17,8 +17,8 @@ package io.cebes.spark.config
 import java.util.Properties
 
 import com.google.inject.{Inject, Injector, Provider, Singleton}
-import io.cebes.prop.{Prop, Property}
 import io.cebes.prop.types.HiveMetastoreCredentials
+import io.cebes.prop.{Prop, Property}
 import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.sql.SparkSession
 

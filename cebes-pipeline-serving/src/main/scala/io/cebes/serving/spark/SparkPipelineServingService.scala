@@ -11,11 +11,36 @@
  */
 package io.cebes.serving.spark
 
+import com.google.inject.Inject
+import io.cebes.pipeline.models.{PipelineMessageSerializer, SlotDescriptor}
+import io.cebes.serving.common.ServingManager
 import io.cebes.serving.{InferenceRequest, InferenceResponse, PipelineServingService}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class SparkPipelineServingService extends PipelineServingService {
+class SparkPipelineServingService @Inject()(private val servingManager: ServingManager,
+                                            private val pplMessageSerializer: PipelineMessageSerializer)
+  extends PipelineServingService {
 
-  override def inference(request: InferenceRequest): Future[InferenceResponse] = ???
+  override def inference(request: InferenceRequest)(implicit executor: ExecutionContext): Future[InferenceResponse] = {
+    Future(servingManager.get(request.servingName)).flatMap {
+      case None => throw new IllegalArgumentException(s"Serving name not found: ${request.servingName}")
+      case Some(pplInfo) =>
+
+        // deserialize the request, prepare inputs for pipeline's run()
+        val outs = request.outputs.map(s => SlotDescriptor(s))
+        val feeds = request.inputs.map { case (slotName, slotValue) =>
+          val feedInputSlot = SlotDescriptor(pplInfo.slotNamings.getOrElse(slotName, slotName))
+          val value = pplMessageSerializer.deserialize(slotValue)
+          feedInputSlot -> value
+        }
+
+        pplInfo.pipeline.run(outs, feeds).map { outputs =>
+          val results = outputs.map { case (slotDesc, value) =>
+            s"${slotDesc.parent}:${slotDesc.name}" -> pplMessageSerializer.serialize(value)
+          }
+          InferenceResponse(results)
+        }
+    }
+  }
 }

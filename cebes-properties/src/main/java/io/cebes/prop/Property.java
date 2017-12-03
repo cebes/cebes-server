@@ -92,7 +92,11 @@ public enum Property {
     REPOSITORY_PORT("CEBES_REPOSITORY_PORT", "cebes.repository.port", "22000",
             "The port on which the HTTP service will be listening, to be combined with REPOSITORY_INTERFACE"),
     REPOSITORY_PATH("CEBES_REPOSITORY_PATH", "cebes.repository.path", "/tmp",
-            "Path to local disk where we store the binary files of repositories");
+            "Path to local disk where we store the binary files of repositories"),
+
+    // For pipeline serving
+    SERVING_CONFIG_FILE("CEBES_SERVING_CONFIG_FILE", "cebes.serving.config.file", "",
+            "Path to the JSON configuration file");
 
     private String environmentVar;
     private String propertyKey;

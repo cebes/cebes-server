@@ -22,9 +22,14 @@ case class InferenceRequest(servingName: String,
 case class InferenceResponse(outputs: Map[String, PipelineMessageDef])
 
 case class ServedPipeline(servingName: String,
-                          slotNamings: Map[String, String])
+                          slotNamings: Map[String, String],
+                          pipelineTag: String,
+                          userName: Option[String],
+                          password: Option[String])
 
-case class CebesServingConfiguration(pipelines: Array[ServedPipeline])
+case class ServingConfiguration(pipelines: Array[ServedPipeline],
+                                httpInterface: String,
+                                httpPort: Int)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Json protocols
@@ -35,6 +40,9 @@ trait CebesServingJsonProtocol {
 
   implicit val inferenceRequestFormat: RootJsonFormat[InferenceRequest] = jsonFormat3(InferenceRequest)
   implicit val inferenceResponseFormat: RootJsonFormat[InferenceResponse] = jsonFormat1(InferenceResponse)
+
+  implicit val servedPipelineFormat: RootJsonFormat[ServedPipeline] = jsonFormat5(ServedPipeline)
+  implicit val servingConfigurationFormat: RootJsonFormat[ServingConfiguration] = jsonFormat3(ServingConfiguration)
 
   /**
     * A specialized [[JsonFormat]] for [[PipelineMessageDef]]

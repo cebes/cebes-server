@@ -22,7 +22,7 @@ import scala.util.matching.Regex
   *
   * @param name    Name of the object, can have multiple slashes: part1/part2/part3
   *                or with host name and host port: abc.com:500/abc-d/efgh_ijklm
-  * @param version version. If user doesn't specify, default will be "latest"
+  * @param version version. If user doesn't specify, default will be ``Tag.DEFAULT_VERSION``
   */
 case class Tag private(name: String, version: String = Tag.DEFAULT_VERSION) {
 

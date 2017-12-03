@@ -12,8 +12,13 @@
 package io.cebes.serving.inject
 
 import com.google.inject.AbstractModule
+import io.cebes.serving.common.ServingConfigurationProvider
+import io.cebes.serving.spark.SparkPipelineServingService
+import io.cebes.serving.{PipelineServingService, ServingConfiguration}
 
 class CebesServingDependencyModule extends AbstractModule {
   override def configure(): Unit = {
+    bind(classOf[ServingConfiguration]).toProvider(classOf[ServingConfigurationProvider])
+    bind(classOf[PipelineServingService]).to(classOf[SparkPipelineServingService])
   }
 }
