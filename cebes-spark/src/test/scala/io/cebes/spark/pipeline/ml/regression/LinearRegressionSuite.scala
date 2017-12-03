@@ -200,5 +200,21 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
 
     FileSystemHelper.deleteRecursively(testDir.toFile)
     FileSystemHelper.deleteRecursively(testCopyDir.toFile)
+
+    // export package
+    val testExportZip1 = Files.createTempFile("test-ppl-export", "zip")
+    val outFile = result(exporter.exportZip(ppl, testExportZip1.toString))
+
+    val ppl5 = exporter.importZip(outFile)
+    assert(ppl5.id === ppl.id)
+    assert(ppl5.stages.size === 2)
+    assert(ppl5.stages.contains("s1") && ppl5.stages.contains("s2"))
+    assert(ppl5.stages("s1").isInstanceOf[VectorAssembler])
+    assert(ppl5.stages("s2").isInstanceOf[LinearRegression])
+    val lrOutputs5 = result(ppl5.stages("s2").getOutputs())
+    assert(lrOutputs5.contains("model"))
+    assert(lrOutputs5("model").isInstanceOf[LinearRegressionModel])
+
+    FileSystemHelper.deleteRecursively(new File(outFile))
   }
 }
