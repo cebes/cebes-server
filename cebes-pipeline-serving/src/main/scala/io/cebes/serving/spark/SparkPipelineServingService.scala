@@ -23,24 +23,24 @@ class SparkPipelineServingService @Inject()(private val servingManager: ServingM
   extends PipelineServingService {
 
   override def inference(request: InferenceRequest)(implicit executor: ExecutionContext): Future[InferenceResponse] = {
-    Future(servingManager.get(request.servingName)).flatMap {
-      case None => throw new IllegalArgumentException(s"Serving name not found: ${request.servingName}")
-      case Some(pplInfo) =>
+    servingManager.getPipeline(request.servingName).flatMap { pplInfo =>
 
-        // deserialize the request, prepare inputs for pipeline's run()
-        val outs = request.outputs.map(s => SlotDescriptor(s))
-        val feeds = request.inputs.map { case (slotName, slotValue) =>
-          val feedInputSlot = SlotDescriptor(pplInfo.slotNamings.getOrElse(slotName, slotName))
-          val value = pplMessageSerializer.deserialize(slotValue)
-          feedInputSlot -> value
-        }
+      // deserialize the request, prepare inputs for pipeline's run()
+      // TODO: take care SampleMessageDef during deserialization
+      // also needs to check the sample with the stored data schema in that slot
+      val outs = request.outputs.map(s => SlotDescriptor(s))
+      val feeds = request.inputs.map { case (slotName, slotValue) =>
+        val feedInputSlot = SlotDescriptor(pplInfo.slotNamings.getOrElse(slotName, slotName))
+        val value = pplMessageSerializer.deserialize(slotValue)
+        feedInputSlot -> value
+      }
 
-        pplInfo.pipeline.run(outs, feeds).map { outputs =>
-          val results = outputs.map { case (slotDesc, value) =>
-            s"${slotDesc.parent}:${slotDesc.name}" -> pplMessageSerializer.serialize(value)
-          }
-          InferenceResponse(results)
+      pplInfo.pipeline.run(outs, feeds).map { outputs =>
+        val results = outputs.map { case (slotDesc, value) =>
+          s"${slotDesc.parent}:${slotDesc.name}" -> pplMessageSerializer.serialize(value)
         }
+        InferenceResponse(results)
+      }
     }
   }
 }

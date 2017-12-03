@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 
 import com.google.inject.Inject
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.common.HasId
 import io.cebes.pipeline.json.{PipelineDef, PipelineExportDef}
 import io.cebes.pipeline.models.{Pipeline, Stage}
@@ -27,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Provides functions for exporting and importing [[Pipeline]]s
   */
-class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
+class PipelineFactory @Inject()(private val stageFactory: StageFactory) extends LazyLogging {
 
   /**
     * Export the given [[Pipeline]] into a [[PipelineExportDef]] message
@@ -95,7 +96,7 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
       try {
         FileSystemHelper.zipFolder(p, packageFile)
       } finally {
-        FileSystemHelper.deleteRecursively(folder.getParent.toFile)
+        FileSystemHelper.deleteRecursively(folder.getParent.toFile, silent = true)
       }
       packageFile
     }
@@ -160,7 +161,7 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
     val outDir = Files.createTempDirectory("cebes-ppl-import")
     FileSystemHelper.unzip(packageFile, outDir.toString)
     val ppl = imports(outDir.toString)
-    FileSystemHelper.deleteRecursively(outDir.toFile)
+    FileSystemHelper.deleteRecursively(outDir.toFile, silent = true)
     ppl
   }
 }

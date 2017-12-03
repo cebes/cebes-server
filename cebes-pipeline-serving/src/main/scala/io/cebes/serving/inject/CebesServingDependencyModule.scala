@@ -11,14 +11,15 @@
  */
 package io.cebes.serving.inject
 
-import com.google.inject.AbstractModule
-import io.cebes.serving.common.ServingConfigurationProvider
-import io.cebes.serving.spark.SparkPipelineServingService
+import com.google.inject.{AbstractModule, Singleton}
+import io.cebes.serving.common.{ServingConfigurationProvider, ServingManager}
+import io.cebes.serving.spark.{SparkPipelineServingService, SparkServingManager}
 import io.cebes.serving.{PipelineServingService, ServingConfiguration}
 
 class CebesServingDependencyModule extends AbstractModule {
   override def configure(): Unit = {
     bind(classOf[ServingConfiguration]).toProvider(classOf[ServingConfigurationProvider])
     bind(classOf[PipelineServingService]).to(classOf[SparkPipelineServingService])
+    bind(classOf[ServingManager]).to(classOf[SparkServingManager]).in(classOf[Singleton])
   }
 }

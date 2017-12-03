@@ -11,54 +11,52 @@
  */
 package io.cebes.serving.spark
 
-import java.util.UUID
-
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.google.inject.Inject
-import io.cebes.pipeline.factory.PipelineFactory
-import io.cebes.pipeline.models.Pipeline
-import io.cebes.prop.types.MySqlBackendCredentials
-import io.cebes.prop.{Prop, Property}
+import com.typesafe.scalalogging.LazyLogging
+import io.cebes.repository.client.RepositoryClient
 import io.cebes.serving.ServingConfiguration
-import io.cebes.serving.common.ServingManager
-import io.cebes.spark.pipeline.store.SparkPipelineStore
-import io.cebes.store.TagStore
+import io.cebes.serving.common.{ServingActor, ServingManager}
+import io.cebes.spark.json.CebesSparkJsonProtocol._
+import io.cebes.tag.Tag
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 /**
   * Implementation of [[ServingManager]] on Spark
   * Serve as a store of pipelines being served, that can be looked-up using their servingNames.
   */
-class SparkServingManager @Inject()
-(servingConfiguration: ServingConfiguration,
- @Prop(Property.CACHESPEC_PIPELINE_STORE) cacheSpec: String,
- mySqlCreds: MySqlBackendCredentials,
- pplFactory: PipelineFactory,
- tagStore: TagStore[Pipeline])
-  extends SparkPipelineStore(cacheSpec, mySqlCreds, pplFactory, tagStore) with ServingManager {
+class SparkServingManager @Inject()(servingConfiguration: ServingConfiguration,
+                                    repoClient: RepositoryClient,
+                                    servingActor: ServingActor)
+  extends ServingManager with LazyLogging {
 
-  private case class PipelineIndexInformation(id: UUID, slotNamings: Map[String, String])
+  private implicit val actorSystem: ActorSystem = servingActor.actorSystem
+  private implicit val actorExecutor: ExecutionContextExecutor = servingActor.actorExecutor
+  private implicit val actorMaterializer: ActorMaterializer = servingActor.actorMaterializer
 
-  private lazy val servings: Map[String, PipelineIndexInformation] = loadPipelines()
+  private lazy val servings: Map[String, Future[PipelineInformation]] = loadPipelines()
 
-
-  override def get(servingName: String): Option[PipelineInformation] = {
-    servings.get(servingName).flatMap { pplInfo =>
-      get(pplInfo.id).map{ ppl =>
-        PipelineInformation(ppl, pplInfo.slotNamings)
-      }
+  override def getPipeline(servingName: String): Future[PipelineInformation] = {
+    servings.get(servingName) match {
+      case None => throw new IllegalArgumentException(s"Serving name not found: $servingName")
+      case Some(futurePplInfo) => futurePplInfo
     }
   }
 
-  private def loadPipelines(): Map[String, PipelineIndexInformation]= {
-    servingConfiguration.pipelines.par.map { servingPl =>
-      val ppl = add(downloadPipeline(servingPl.pipelineTag, servingPl.userName, servingPl.password))
-      servingPl.servingName -> PipelineIndexInformation(ppl.id, servingPl.slotNamings)
-    }.seq.toMap
-  }
+  private def loadPipelines(): Map[String, Future[PipelineInformation]] = {
+    servingConfiguration.pipelines.map { servingPl =>
+      val repoTag = Tag.fromString(servingPl.pipelineTag)
 
-  private def downloadPipeline(tag: String, userName: Option[String], password: Option[String]): Pipeline = {
-    // download the package
-    // extract
-    // import using PipelineFactory
-    null
+      val futurePpl = repoClient.download(repoTag, servingPl.userName, servingPl.password)
+      futurePpl.onFailure {
+        case ex => logger.error(s"Failed to download ${servingPl.pipelineTag}", ex)
+      }
+
+      servingPl.servingName -> futurePpl.map { ppl =>
+        PipelineInformation(ppl, servingPl.slotNamings)
+      }
+    }.toMap
   }
 }

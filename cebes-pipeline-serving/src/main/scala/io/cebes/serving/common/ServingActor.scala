@@ -11,20 +11,18 @@
  */
 package io.cebes.serving.common
 
-import io.cebes.pipeline.models.Pipeline
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import com.google.inject.Singleton
 
-import scala.concurrent.Future
-
+import scala.concurrent.ExecutionContextExecutor
 
 /**
-  * Manages pipelines that are being served.
+  * Contains the instantiated objects for the actor system used in akka-http.
   */
-trait ServingManager {
+@Singleton class ServingActor {
 
-  case class PipelineInformation(pipeline: Pipeline, slotNamings: Map[String, String])
-
-  /**
-    * Optionally get the pipeline of the given serving name
-    */
-  def getPipeline(servingName: String): Future[PipelineInformation]
+  val actorSystem: ActorSystem = ActorSystem("CebesPipelineServing")
+  val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
+  val actorMaterializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 }

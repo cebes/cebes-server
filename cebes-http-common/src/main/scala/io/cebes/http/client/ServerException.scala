@@ -16,12 +16,17 @@ package io.cebes.http.client
 
 import java.util.UUID
 
+import akka.http.scaladsl.model.StatusCode
+
 case class ServerException(requestId: Option[UUID],
                            message: String,
-                           serverStacktrace: Option[String]) extends Exception(message) {
+                           serverStacktrace: Option[String],
+                           statusCode: Option[StatusCode] = None) extends Exception(message) {
 
   override def toString: String = {
-    val s = getClass.getName
+    val s = s"${getClass.getName}: ${requestId.fold("")(id => s"Request ID = ${id.toString}")}" +
+      s"${statusCode.fold("")(c => s"Status code = ${c.toString()}")}"
+
     val result = Option(getLocalizedMessage) match {
       case Some(msg) => s"$s: $msg"
       case None => s

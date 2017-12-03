@@ -63,27 +63,14 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
       }
     }
 
-  def _query[E, T](url: String, entity: E, method: HttpMethod)(implicit emE: ToEntityMarshaller[E],
-                                                               emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    new RequestBuilder(method)(s"/$apiVersion/$url", entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
-      status match {
-        case StatusCodes.OK => responseAs[T]
-        case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>
-          // handled server exceptions
-          val failResponse = responseAs[FailResponse]
-          throw ServerException(None, failResponse.message.getOrElse(""), failResponse.stackTrace)
-        case _ =>
-          throw ServerException(None, response.toString(), None)
-      }
-    }
 
   def put[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
                                         emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    _query(url, entity, HttpMethods.PUT)
+    query(url, entity, HttpMethods.PUT)
 
   def delete[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
                                            emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    _query(url, entity, HttpMethods.DELETE)
+    query(url, entity, HttpMethods.DELETE)
 
   /**
     * Send an asynchronous command and wait for the result, using exponential-backoff
@@ -127,6 +114,20 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
   ////////////////////////////////////////////////////////////////////
   // Helpers
   ////////////////////////////////////////////////////////////////////
+
+  private def query[E, T](url: String, entity: E, method: HttpMethod)
+                         (implicit emE: ToEntityMarshaller[E], emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
+    new RequestBuilder(method)(s"/$apiVersion/$url", entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
+      status match {
+        case StatusCodes.OK => responseAs[T]
+        case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>
+          // handled server exceptions
+          val failResponse = responseAs[FailResponse]
+          throw ServerException(None, failResponse.message.getOrElse(""), failResponse.stackTrace)
+        case _ =>
+          throw ServerException(None, response.toString(), None)
+      }
+    }
 
   private def login() = {
     Post(s"/$apiVersion/auth/login", LoginRequest("foo", "bar")) ~> serverRoutes ~> check {

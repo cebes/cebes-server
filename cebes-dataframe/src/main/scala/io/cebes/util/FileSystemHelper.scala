@@ -15,11 +15,13 @@ import java.io._
 import java.nio.file.{Files, Paths, StandardCopyOption}
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 
+import com.typesafe.scalalogging.LazyLogging
+
 
 /**
   * Helper with functions to archive and extract files.
   */
-trait FileSystemHelper {
+trait FileSystemHelper extends LazyLogging {
 
   /**
     * Copy all bytes from inStream to outStream, using buffer of the given size (in bytes).
@@ -114,12 +116,21 @@ trait FileSystemHelper {
   //
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  /** Delete a file or a directory recursively */
-  def deleteRecursively(file: File): Unit = {
+  /**
+    * Delete a file or a directory recursively
+    *
+    * @param file   folder to be deleted
+    * @param silent whether to raise an exception when we are failed to delete a file
+    */
+  def deleteRecursively(file: File, silent: Boolean = false): Unit = {
     if (file.isDirectory)
-      file.listFiles.foreach(deleteRecursively)
+      file.listFiles.foreach(f => deleteRecursively(f, silent))
     if (file.exists && !file.delete)
-      throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
+      if (silent) {
+        logger.error(s"Failed to delete ${file.toString}")
+      } else {
+        throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
+      }
   }
 
   /**
