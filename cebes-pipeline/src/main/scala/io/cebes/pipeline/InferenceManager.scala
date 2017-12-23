@@ -8,26 +8,23 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 23/08/16.
  */
+package io.cebes.pipeline
 
-package io.cebes.server
+import io.cebes.pipeline.models.Pipeline
 
-import io.cebes.server.http.CebesHttpServer
-import io.cebes.server.inject.CebesHttpServerInjector
+import scala.concurrent.Future
 
+/**
+  * Store a set of [[io.cebes.pipeline.models.Pipeline]]s, mostly for the purpose of serving,
+  * used in [[InferenceService]].
+  */
+trait InferenceManager {
 
-object Main {
+  case class PipelineInformation(pipeline: Pipeline, slotNamings: Map[String, String])
 
-  def main(args: Array[String]) {
-    // $COVERAGE-OFF$
-
-    val server = CebesHttpServerInjector.instance[CebesHttpServer]
-    server.start()
-    server.waitServer()
-    server.stop()
-
-    // $COVERAGE-ON$
-  }
+  /**
+    * Optionally get the pipeline of the given serving name
+    */
+  def getPipeline(servingName: String): Future[PipelineInformation]
 }

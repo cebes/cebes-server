@@ -23,8 +23,6 @@ trait HasId {
 
   val id: UUID
 
-  /** Generate a Random ID */
-  final protected def randomId: UUID = HasId.randomId
 }
 
 object HasId {

@@ -14,25 +14,22 @@ package io.cebes.server.routes.model
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.http.server.routes.SecuredSession
 import io.cebes.pipeline.json._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common.{OperationHelper, _}
+import io.cebes.server.routes.common._
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat}
 
-trait ModelHandler extends SecuredSession with OperationHelper {
+trait ModelHandler extends DataframeOperationHelper {
 
   val modelApi: Route = pathPrefix("model") {
-    requiredCebesSession { _ =>
-      concat(
-        operation[TagAdd, TagAddRequest, ModelDef],
-        operation[TagDelete, TagDeleteRequest, ModelDef],
-        operation[Tags, TagsGetRequest, Array[TaggedModelResponse]],
-        operation[Get, String, ModelDef],
+    concat(
+      operation[TagAdd, TagAddRequest, ModelDef],
+      operation[TagDelete, TagDeleteRequest, ModelDef],
+      operation[Tags, TagsGetRequest, Array[TaggedModelResponse]],
+      operation[Get, String, ModelDef],
 
-        operationDf[Run, ModelRunDef]
-      )
-    }
+      operationDf[Run, ModelRunDef]
+    )
   }
 }

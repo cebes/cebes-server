@@ -8,26 +8,15 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 23/08/16.
  */
+package io.cebes.http.server.routes
 
-package io.cebes.server
+import com.google.inject.Injector
 
-import io.cebes.server.http.CebesHttpServer
-import io.cebes.server.inject.CebesHttpServerInjector
+/**
+  * Having an [[com.google.inject.Injector]]
+  */
+trait HasInjector {
 
-
-object Main {
-
-  def main(args: Array[String]) {
-    // $COVERAGE-OFF$
-
-    val server = CebesHttpServerInjector.instance[CebesHttpServer]
-    server.start()
-    server.waitServer()
-    server.stop()
-
-    // $COVERAGE-ON$
-  }
+  protected val injector: Injector
 }

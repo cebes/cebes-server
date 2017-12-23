@@ -9,21 +9,26 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.spark
+package io.cebes.serving.common
 
 import com.google.inject.Inject
+import io.cebes.pipeline.{InferenceManager, InferenceService}
+import io.cebes.pipeline.json.{InferenceRequest, InferenceResponse}
 import io.cebes.pipeline.models.{PipelineMessageSerializer, SlotDescriptor}
-import io.cebes.serving.common.ServingManager
-import io.cebes.serving.{InferenceRequest, InferenceResponse, PipelineServingService}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SparkPipelineServingService @Inject()(private val servingManager: ServingManager,
-                                            private val pplMessageSerializer: PipelineMessageSerializer)
-  extends PipelineServingService {
+/**
+  * Default implementation of [[InferenceService]]. This doesn't depend on Spark or any particular engine.
+  */
+class DefaultInferenceService @Inject()(protected val inferenceManager: InferenceManager,
+                                        private val pplMessageSerializer: PipelineMessageSerializer)
+  extends InferenceService {
 
-  override def inference(request: InferenceRequest)(implicit executor: ExecutionContext): Future[InferenceResponse] = {
-    servingManager.getPipeline(request.servingName).flatMap { pplInfo =>
+
+  override def inference(request: InferenceRequest)
+                        (implicit executor: ExecutionContext): Future[InferenceResponse] = {
+    inferenceManager.getPipeline(request.servingName).flatMap { pplInfo =>
 
       // deserialize the request, prepare inputs for pipeline's run()
       // TODO: take care SampleMessageDef during deserialization

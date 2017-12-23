@@ -9,28 +9,28 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.spark
+package io.cebes.serving.common
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
+import io.cebes.pipeline.InferenceManager
+import io.cebes.pipeline.json.ServingConfiguration
 import io.cebes.repository.client.RepositoryClient
-import io.cebes.serving.ServingConfiguration
-import io.cebes.serving.common.{ServingActor, ServingManager}
-import io.cebes.spark.json.CebesSparkJsonProtocol._
+import io.cebes.serving.DefaultPipelineJsonProtocol._
 import io.cebes.tag.Tag
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
 /**
-  * Implementation of [[ServingManager]] on Spark
+  * Implementation of [[InferenceManager]] on Spark
   * Serve as a store of pipelines being served, that can be looked-up using their servingNames.
   */
-class SparkServingManager @Inject()(servingConfiguration: ServingConfiguration,
-                                    repoClient: RepositoryClient,
-                                    servingActor: ServingActor)
-  extends ServingManager with LazyLogging {
+class DefaultInferenceManager @Inject()(servingConfiguration: ServingConfiguration,
+                                        repoClient: RepositoryClient,
+                                        servingActor: ServingActor)
+  extends InferenceManager with LazyLogging {
 
   private implicit val actorSystem: ActorSystem = servingActor.actorSystem
   private implicit val actorExecutor: ExecutionContextExecutor = servingActor.actorExecutor

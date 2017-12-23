@@ -15,11 +15,9 @@ import java.nio.file.{Files, StandardCopyOption}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.PathMatcher.{Matched, Matching, Unmatched}
-import akka.http.scaladsl.server.{PathMatcher1, Route}
+import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.google.inject.Inject
 import io.cebes.auth.AuthService
@@ -43,7 +41,7 @@ import scala.concurrent.ExecutionContextExecutor
 
 class CebesRepositoryServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) override val httpInterface: String,
                                       @Prop(Property.REPOSITORY_PORT) override val httpPort: Int,
-                                     @Prop(Property.REPOSITORY_SERVER_SECRET) override val serverSecret: String,
+                                      @Prop(Property.REPOSITORY_SERVER_SECRET) override val serverSecret: String,
                                       override protected val refreshTokenStorage: CebesRepositoryRefreshTokenStorage,
                                       override protected val authService: AuthService,
                                       private val mysqlCreds: MySqlBackendCredentials)
@@ -123,15 +121,5 @@ object CebesRepositoryServer {
         new MySQLInnoDBAdapter))
 
     RepositoryDatabase.initialize()
-  }
-}
-
-object RepositoryName extends PathMatcher1[String] {
-  def apply(path: Path): Matching[Tuple1[String]] = {
-    val sPath = path.toString()
-    Tag.REGEX_TAG_PATH.findPrefixMatchOf(sPath) match {
-      case Some(m) if m.end == sPath.length => Matched(Path.Empty, Tuple1(sPath))
-      case _ => Unmatched
-    }
   }
 }

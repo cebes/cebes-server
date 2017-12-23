@@ -42,7 +42,7 @@ class DataframeHandlerSuite extends AbstractRouteSuite {
     val sample = request[LimitRequest, DataSample]("df/take", LimitRequest(df.id, n))
     assert(sample.schema === df.schema)
     assert(sample.data.length === sample.schema.size)
-    assert(sample.data.forall(_.length <= n))
+    assert(sample.data.forall(_.lengthCompare(n) <= 0))
     sample
   }
 

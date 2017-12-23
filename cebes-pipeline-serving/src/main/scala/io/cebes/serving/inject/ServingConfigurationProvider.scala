@@ -9,12 +9,14 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.common
+package io.cebes.serving.inject
+
+import java.io.File
 
 import com.google.inject.{Inject, Provider}
+import io.cebes.pipeline.json.ServingConfiguration
 import io.cebes.prop.{Prop, Property}
-import io.cebes.serving.CebesServingJsonProtocol._
-import io.cebes.serving.ServingConfiguration
+import io.cebes.serving.DefaultPipelineJsonProtocol.servingConfigurationFormat
 import io.cebes.util.ResourceUtil
 import spray.json._
 
@@ -28,7 +30,15 @@ class ServingConfigurationProvider @Inject()(@Prop(Property.SERVING_CONFIG_FILE)
   extends Provider[ServingConfiguration] {
 
   override def get(): ServingConfiguration = {
-    ResourceUtil.using(Source.fromFile(configFile)) { source =>
+    val realConfigFile = if (configFile.startsWith("/")) {
+      ResourceUtil.getResourceAsFile(configFile)
+    } else {
+      new File(configFile)
+    }
+    if (!realConfigFile.exists()) {
+      throw new IllegalArgumentException(s"Serving configuration file does not exist: ${realConfigFile.toString}")
+    }
+    ResourceUtil.using(Source.fromFile(realConfigFile)) { source =>
       source.mkString("").parseJson.convertTo[ServingConfiguration]
     }
   }

@@ -6,6 +6,6 @@ mainClass in assembly := Some("io.cebes.serving.Main")
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-testkit" % Common.akkaHttpVersion % "test"
-)
+) ++ Common.sparkDependencies
 
 assemblyShadeRules in assembly := Common.apacheCommonsShadeRules

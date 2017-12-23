@@ -8,26 +8,25 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 19/09/16.
  */
-
-package io.cebes.server.routes.result
+package io.cebes.http.server.routes.result
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.inject.CebesHttpServerInjector
 import io.cebes.http.server.HttpJsonProtocol._
-import io.cebes.http.server.routes.SecuredSession
+import io.cebes.http.server.routes.HasInjector
 
-trait ResultHandler extends SecuredSession {
+/**
+  * Provide API endpoint for getting results from the command UUID
+  */
+trait ResultHandler extends HasInjector {
 
   val resultApi: Route = pathPrefix("request") {
     (path(JavaUUID) & post) { requestId =>
-      requiredCebesSession { _ =>
+      extractExecutionContext { implicit executor =>
         implicit ctx =>
-          CebesHttpServerInjector.instance[Result].run(requestId).flatMap(r => ctx.complete(r))
+          injector.getInstance(classOf[Result]).run(requestId).flatMap(r => ctx.complete(r))
       }
     }
   }

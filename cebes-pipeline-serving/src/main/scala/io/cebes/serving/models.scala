@@ -12,24 +12,7 @@
 package io.cebes.serving
 
 import io.cebes.pipeline.json.{PipelineJsonProtocol, PipelineMessageDef, SampleMessageDef, ValueDef}
-import spray.json.DefaultJsonProtocol._
-import spray.json.{RootJsonFormat, _}
-
-case class InferenceRequest(servingName: String,
-                            inputs: Map[String, PipelineMessageDef],
-                            outputs: Array[String])
-
-case class InferenceResponse(outputs: Map[String, PipelineMessageDef])
-
-case class ServedPipeline(servingName: String,
-                          slotNamings: Map[String, String],
-                          pipelineTag: String,
-                          userName: Option[String],
-                          password: Option[String])
-
-case class ServingConfiguration(pipelines: Array[ServedPipeline],
-                                httpInterface: String,
-                                httpPort: Int)
+import spray.json._
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Json protocols
@@ -37,12 +20,6 @@ case class ServingConfiguration(pipelines: Array[ServedPipeline],
 object DefaultPipelineJsonProtocol extends PipelineJsonProtocol
 
 trait CebesServingJsonProtocol {
-
-  implicit val inferenceRequestFormat: RootJsonFormat[InferenceRequest] = jsonFormat3(InferenceRequest)
-  implicit val inferenceResponseFormat: RootJsonFormat[InferenceResponse] = jsonFormat1(InferenceResponse)
-
-  implicit val servedPipelineFormat: RootJsonFormat[ServedPipeline] = jsonFormat5(ServedPipeline)
-  implicit val servingConfigurationFormat: RootJsonFormat[ServingConfiguration] = jsonFormat3(ServingConfiguration)
 
   /**
     * A specialized [[JsonFormat]] for [[PipelineMessageDef]]

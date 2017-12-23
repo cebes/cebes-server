@@ -8,31 +8,31 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 05/09/16.
  */
-
-package io.cebes.server.routes.storage
+package io.cebes.serving.routes
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.routes.common.DataframeOperationHelper
-import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
+import io.cebes.http.server.operations.OperationHelper
+import io.cebes.http.server.routes.AkkaImplicits
+import io.cebes.pipeline.InferenceService
+import io.cebes.pipeline.json.{InferenceRequest, InferenceResponse}
+import io.cebes.serving.DefaultPipelineJsonProtocol._
 
-trait StorageHandler extends DataframeOperationHelper {
+trait InferenceHandler extends AkkaImplicits with OperationHelper {
 
-  val storageApi: Route = pathPrefix("storage") {
-    concat(operationDf[Read, ReadRequest],
-      (path("upload") & put) {
-        entity(as[Multipart.FormData]) { formData =>
+  protected val inferenceService: InferenceService
+
+  protected val inferenceApi: Route =
+    concat(operation[Inference, InferenceRequest, InferenceResponse],
+      (path("inferenceSync") & post) {
+        entity(as[InferenceRequest]) { formData =>
           extractExecutionContext { implicit executor =>
             implicit ctx =>
-              injector.getInstance(classOf[Upload]).run(formData).flatMap(ctx.complete(_))
+              injector.getInstance(classOf[InferenceSync]).run(formData).flatMap(ctx.complete(_))
           }
         }
       }
     )
-  }
 }

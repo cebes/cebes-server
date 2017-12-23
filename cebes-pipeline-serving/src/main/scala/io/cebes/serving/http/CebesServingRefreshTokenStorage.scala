@@ -9,11 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving
+package io.cebes.serving.http
 
-import scala.concurrent.{ExecutionContext, Future}
+import com.google.inject.Inject
+import io.cebes.http.server.jdbc.JdbcRefreshTokenStorage
+import io.cebes.persistence.jdbc.TableNames
+import io.cebes.prop.types.MySqlBackendCredentials
 
-trait PipelineServingService {
+class CebesServingRefreshTokenStorage @Inject()
+(override protected val mySqlCreds: MySqlBackendCredentials) extends JdbcRefreshTokenStorage {
 
-  def inference(request: InferenceRequest)(implicit executor: ExecutionContext): Future[InferenceResponse]
+  override protected val tableName: String = TableNames.SERVING_REFRESH_TOKENS
+
 }

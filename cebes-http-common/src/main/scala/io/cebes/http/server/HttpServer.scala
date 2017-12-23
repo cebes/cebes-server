@@ -27,7 +27,7 @@ trait HttpServer extends AkkaImplicits with LazyLogging {
 
   val httpPort: Int
 
-  protected val routes: Route
+  val routes: Route
 
   ////////////////////////////////////////////////////////////////////////////
 

@@ -18,64 +18,61 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import io.cebes.df.sample.DataSample
-import io.cebes.http.server.routes.SecuredSession
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.server.routes.common.HttpServerJsonProtocol._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common.{OperationHelper, _}
+import io.cebes.server.routes.common._
 import io.cebes.server.routes.df.HttpDfJsonProtocol._
 import spray.json.DefaultJsonProtocol._
 
 /**
   * Handle all requests related to dataframe
   */
-trait DataframeHandler extends SecuredSession with OperationHelper {
+trait DataframeHandler extends DataframeOperationHelper {
 
   val dataframeApi: Route = pathPrefix("df") {
-    requiredCebesSession { _ =>
-      concat(
-        operationDf[Sql, String],
+    concat(
+      operationDf[Sql, String],
 
-        operation[TagAdd, TagAddRequest, DataframeResponse],
-        operation[TagDelete, TagDeleteRequest, DataframeResponse],
-        operation[Tags, TagsGetRequest, Array[TaggedDataframeResponse]],
-        operation[Get, String, DataframeResponse],
+      operation[TagAdd, TagAddRequest, DataframeResponse],
+      operation[TagDelete, TagDeleteRequest, DataframeResponse],
+      operation[Tags, TagsGetRequest, Array[TaggedDataframeResponse]],
+      operation[Get, String, DataframeResponse],
 
-        operationDf[InferVariableTypes, LimitRequest],
-        operationDf[WithVariableTypes, WithVariableTypesRequest],
-        operation[Count, DataframeRequest, Long],
-        operationDf[Sample, SampleRequest],
-        operation[Take, LimitRequest, DataSample],
+      operationDf[InferVariableTypes, LimitRequest],
+      operationDf[WithVariableTypes, WithVariableTypesRequest],
+      operation[Count, DataframeRequest, Long],
+      operationDf[Sample, SampleRequest],
+      operation[Take, LimitRequest, DataSample],
 
-        operationDf[Sort, ColumnsRequest],
-        operationDf[DropColumns, ColumnNamesRequest],
-        operationDf[DropDuplicates, ColumnNamesRequest],
-        operationDf[DropNA, DropNARequest],
-        operationDf[FillNA, FillNARequest],
-        operationDf[FillNAWithMap, FillNAWithMapRequest],
-        operationDf[Replace, ReplaceRequest],
+      operationDf[Sort, ColumnsRequest],
+      operationDf[DropColumns, ColumnNamesRequest],
+      operationDf[DropDuplicates, ColumnNamesRequest],
+      operationDf[DropNA, DropNARequest],
+      operationDf[FillNA, FillNARequest],
+      operationDf[FillNAWithMap, FillNAWithMapRequest],
+      operationDf[Replace, ReplaceRequest],
 
-        operation[ApproxQuantile, ApproxQuantileRequest, Array[Double]],
-        operation[Cov, ColumnNamesRequest, Double],
-        operation[Corr, ColumnNamesRequest, Double],
-        operationDf[Crosstab, ColumnNamesRequest],
-        operationDf[FreqItems, FreqItemsRequest],
-        operationDf[SampleBy, SampleByRequest],
+      operation[ApproxQuantile, ApproxQuantileRequest, Array[Double]],
+      operation[Cov, ColumnNamesRequest, Double],
+      operation[Corr, ColumnNamesRequest, Double],
+      operationDf[Crosstab, ColumnNamesRequest],
+      operationDf[FreqItems, FreqItemsRequest],
+      operationDf[SampleBy, SampleByRequest],
 
-        operationDf[WithColumn, WithColumnRequest],
-        operationDf[WithColumnRenamed, WithColumnRenamedRequest],
-        operationDf[Select, ColumnsRequest],
-        operationDf[Where, ColumnsRequest],
-        operationDf[Alias, AliasRequest],
-        operationDf[Join, JoinRequest],
-        operationDf[Limit, LimitRequest],
-        operationDf[Union, DataframeSetRequest],
-        operationDf[Intersect, DataframeSetRequest],
-        operationDf[Except, DataframeSetRequest],
-        operationDf[Broadcast, DataframeRequest],
+      operationDf[WithColumn, WithColumnRequest],
+      operationDf[WithColumnRenamed, WithColumnRenamedRequest],
+      operationDf[Select, ColumnsRequest],
+      operationDf[Where, ColumnsRequest],
+      operationDf[Alias, AliasRequest],
+      operationDf[Join, JoinRequest],
+      operationDf[Limit, LimitRequest],
+      operationDf[Union, DataframeSetRequest],
+      operationDf[Intersect, DataframeSetRequest],
+      operationDf[Except, DataframeSetRequest],
+      operationDf[Broadcast, DataframeRequest],
 
-        operationDf[Aggregate, AggregateRequest]
-      )
-    }
+      operationDf[Aggregate, AggregateRequest]
+    )
   }
 }

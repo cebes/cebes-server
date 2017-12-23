@@ -21,17 +21,20 @@ import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
 import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.FileIO
 import io.cebes.http.client.ServerException
+import io.cebes.http.helper.SecuredTestClient
+import io.cebes.http.server.HttpJsonProtocol._
+import io.cebes.http.server.VersionResponse
 import io.cebes.repository.CebesRepositoryJsonProtocol._
 import io.cebes.repository.db.Repository
 import io.cebes.repository.inject.CebesRepositoryInjector
-import io.cebes.repository.{RepositoryListResponse, TagListResponse, TagResponse, VersionResponse}
+import io.cebes.repository.{RepositoryListResponse, TagListResponse, TagResponse}
 import org.scalatest.FunSuite
 import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class CebesRepositoryServerSuite extends FunSuite with TestClient {
+class CebesRepositoryServerSuite extends FunSuite with SecuredTestClient {
   private val server = CebesRepositoryInjector.instance[CebesRepositoryServer]
 
   override protected val serverRoutes: Route = server.routes

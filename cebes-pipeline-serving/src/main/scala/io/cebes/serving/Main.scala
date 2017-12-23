@@ -11,15 +11,19 @@
  */
 package io.cebes.serving
 
-import io.cebes.serving.http.CebesServingServer
+import io.cebes.http.server.HttpServer
 import io.cebes.serving.inject.CebesServingInjector
 
 object Main {
 
   def main(args: Array[String]) {
-    val server = CebesServingInjector.instance[CebesServingServer]
+    // $COVERAGE-OFF$
+
+    val server = CebesServingInjector.instance[HttpServer]
     server.start()
     server.waitServer()
     server.stop()
+
+    // $COVERAGE-ON$
   }
 }

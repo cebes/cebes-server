@@ -20,7 +20,6 @@ package io.cebes.persistence.jdbc
 object TableNames {
 
   val REFRESH_TOKENS = "persistence_refresh_tokens"
-
   val RESULT_STORE = "persistence_result_store"
 
   val DF_STORE = "dataframe_store"
@@ -36,4 +35,8 @@ object TableNames {
   val REPO_REFRESH_TOKENS = "repo_refresh_tokens"
   val REPO_REPOSITORY = "pipeline_repository"
   val REPO_REPOSITORY_TAG = "pipeline_repository_tag"
+
+  // for serving
+  val SERVING_REFRESH_TOKENS = "serving_refresh_tokens"
+  val SERVING_RESULT_STORE = "serving_result_store"
 }

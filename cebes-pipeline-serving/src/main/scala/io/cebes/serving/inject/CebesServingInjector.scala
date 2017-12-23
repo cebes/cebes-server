@@ -13,13 +13,15 @@ package io.cebes.serving.inject
 
 import com.google.inject.{Guice, Injector}
 import io.cebes.prop.PropertyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
 import scala.reflect.ClassTag
 
 object CebesServingInjector {
 
   private val injector: Injector = Guice.createInjector(new PropertyModule(false),
-    new CebesServingDependencyModule)
+    new CebesServingDependencyModule,
+    new CebesSparkDependencyModule)
 
   def instance[T](implicit tag: ClassTag[T]): T = injector.getInstance(tag.runtimeClass.asInstanceOf[Class[T]])
 }

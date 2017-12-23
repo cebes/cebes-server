@@ -69,4 +69,9 @@ trait PipelineJsonProtocol extends CebesExpressionJsonProtocol {
   implicit val pipelineExportDefFormat: RootJsonFormat[PipelineExportDef] = jsonFormat2(PipelineExportDef)
   implicit val pipelineRunDefFormat: RootJsonFormat[PipelineRunDef] = jsonFormat4(PipelineRunDef)
   implicit val pipelineRunResultDefFormat: RootJsonFormat[PipelineRunResultDef] = jsonFormat2(PipelineRunResultDef)
+
+  implicit val inferenceRequestFormat: RootJsonFormat[InferenceRequest] = jsonFormat3(InferenceRequest)
+  implicit val inferenceResponseFormat: RootJsonFormat[InferenceResponse] = jsonFormat1(InferenceResponse)
+  implicit val servedPipelineFormat: RootJsonFormat[ServedPipeline] = jsonFormat5(ServedPipeline)
+  implicit val servingConfigurationFormat: RootJsonFormat[ServingConfiguration] = jsonFormat4(ServingConfiguration)
 }

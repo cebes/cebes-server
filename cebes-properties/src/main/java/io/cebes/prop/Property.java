@@ -101,8 +101,11 @@ public enum Property {
             "Path to local disk where we store the binary files of repositories"),
 
     // For pipeline serving
-    SERVING_CONFIG_FILE("CEBES_SERVING_CONFIG_FILE", "cebes.serving.config.file", "",
-            "Path to the JSON configuration file");
+    SERVING_CONFIG_FILE("CEBES_SERVING_CONFIG_FILE", "cebes.serving.config.file",
+            "", "Path to the JSON configuration file"),
+    SERVING_SERVER_SECRET("CEBES_SERVING_SERVER_SECRET", "cebes.serving.server.secret",
+            "9MLs9gc8Aendfor8jvoprjnro5905788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0",
+            "The secret string to be used in authentication of the HTTP server");
 
     private String environmentVar;
     private String propertyKey;

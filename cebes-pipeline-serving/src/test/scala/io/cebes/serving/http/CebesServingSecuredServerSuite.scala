@@ -8,26 +8,14 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 23/08/16.
  */
+package io.cebes.serving.http
 
-package io.cebes.server
+import io.cebes.http.helper.SecuredTestClient
+import io.cebes.http.server.HttpServer
+import io.cebes.serving.inject.CebesServingInjector
 
-import io.cebes.server.http.CebesHttpServer
-import io.cebes.server.inject.CebesHttpServerInjector
+class CebesServingSecuredServerSuite extends CebesServingServerSuite with SecuredTestClient {
 
-
-object Main {
-
-  def main(args: Array[String]) {
-    // $COVERAGE-OFF$
-
-    val server = CebesHttpServerInjector.instance[CebesHttpServer]
-    server.start()
-    server.waitServer()
-    server.stop()
-
-    // $COVERAGE-ON$
-  }
+  override protected val server: HttpServer = CebesServingInjector.instance[CebesServingSecuredServer]
 }

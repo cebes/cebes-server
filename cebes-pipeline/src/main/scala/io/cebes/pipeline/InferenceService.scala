@@ -9,22 +9,18 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.common
+package io.cebes.pipeline
 
-import io.cebes.pipeline.models.Pipeline
+import io.cebes.pipeline.json.{InferenceRequest, InferenceResponse}
 
-import scala.concurrent.Future
-
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Manages pipelines that are being served.
+  * API for running inference on a given pipeline
   */
-trait ServingManager {
+trait InferenceService {
 
-  case class PipelineInformation(pipeline: Pipeline, slotNamings: Map[String, String])
+  protected val inferenceManager: InferenceManager
 
-  /**
-    * Optionally get the pipeline of the given serving name
-    */
-  def getPipeline(servingName: String): Future[PipelineInformation]
+  def inference(request: InferenceRequest)(implicit executor: ExecutionContext): Future[InferenceResponse]
 }
