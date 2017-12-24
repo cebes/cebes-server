@@ -30,11 +30,19 @@ class CebesServingServerSuite extends FunSuite with TestClient {
   override protected lazy val apiVersion: String = ""
 
   test("failed request") {
-    val ex = intercept[ServerException] {
-      request[InferenceRequest, InferenceResponse]("inferenceSync",
-        InferenceRequest("nonExist", Map("a" -> ValueDef(100)), Array("s1", "s2")))
+    val requestEntity = InferenceRequest("nonExist", Map("a" -> ValueDef(100)), Array("s1", "s2"))
+
+    val ex1 = intercept[ServerException] {
+      request[InferenceRequest, InferenceResponse]("inferenceSync",requestEntity )
     }
-    assert(ex.message.endsWith("Serving name not found: nonExist"))
-    assert(ex.statusCode.contains(StatusCodes.BadRequest))
+    assert(ex1.message.endsWith("Serving name not found: nonExist"))
+    assert(ex1.statusCode.contains(StatusCodes.BadRequest))
+
+    val ex2 = intercept[ServerException] {
+      request[InferenceRequest, InferenceResponse]("inference",requestEntity )
+    }
+    assert(ex2.message.endsWith("Serving name not found: nonExist"))
+    assert(ex2.statusCode.contains(StatusCodes.BadRequest))
+
   }
 }

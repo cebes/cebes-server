@@ -15,6 +15,10 @@ import io.cebes.http.helper.SecuredTestClient
 import io.cebes.http.server.HttpServer
 import io.cebes.serving.inject.CebesServingInjector
 
+/**
+  * Tests for [[CebesServingSecuredServer]].
+  * All the tests are inherited from [[CebesServingServerSuite]], but with secured server.
+  */
 class CebesServingSecuredServerSuite extends CebesServingServerSuite with SecuredTestClient {
 
   override protected val server: HttpServer = CebesServingInjector.instance[CebesServingSecuredServer]
