@@ -419,4 +419,5 @@ trait Dataframe extends HasSchema with HasId {
     * @group aggregation
     */
   def agg(expr: Column, exprs: Column*): Dataframe = groupBy().agg(expr, exprs : _*)
+
 }

@@ -2,5 +2,5 @@
   "pipelines": [],
   "secured": false,
   "httpInterface": "localhost",
-  "httpPort": 23000
+  "httpPort": 22000
 }

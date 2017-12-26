@@ -9,18 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.http
+package io.cebes.serving.inject
 
-import io.cebes.http.helper.SecuredTestClient
-import io.cebes.http.server.HttpServer
-import io.cebes.serving.inject.ServingTestInjector
+import com.google.inject.{Guice, Injector}
+import io.cebes.prop.PropertyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
-/**
-  * Tests for [[CebesServingSecuredServer]].
-  * All the tests are inherited from [[CebesServingServerSuite]], but with secured server.
-  */
-class CebesServingSecuredServerSuite extends CebesServingServerSuite with SecuredTestClient {
+object ServingTestInjector {
 
-  override protected val server: HttpServer =
-    ServingTestInjector.injector.getInstance(classOf[CebesServingSecuredServer])
+  lazy val injector: Injector = Guice.createInjector(
+    new PropertyModule(false),
+    new TestDependencyModule,
+    new CebesSparkDependencyModule)
 }

@@ -109,6 +109,34 @@ trait Inputs extends HasInputSlots {
     inputSlotMap.get(slot)
   }
 
+  /**
+    * Get the list of input slots that are "new" (having new values)
+    *
+    * @return list of input slot names
+    */
+  def getNewInputFlag: Seq[String] = {
+    inputLock.writeLock().lock()
+    try {
+      newInputs.map(_.name).toSeq
+    } finally {
+      inputLock.writeLock().unlock()
+    }
+  }
+
+  /**
+    * set the given slots to be "new", i.e. having new values assigned to them.
+    */
+  def setNewInputFlag(slotNames: Seq[String]): this.type = {
+    inputLock.writeLock().lock()
+    try {
+      newInputs.clear()
+      slotNames.map(getInput).foreach(newInputs.add)
+    } finally {
+      inputLock.writeLock().unlock()
+    }
+    this
+  }
+
   /////////////////////////////////
   // serialization
   /////////////////////////////////

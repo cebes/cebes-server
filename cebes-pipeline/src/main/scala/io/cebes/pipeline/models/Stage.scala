@@ -68,6 +68,20 @@ trait Stage extends Inputs with HasOutputSlots {
     input(name, newName)
   }
 
+  /**
+    * Get either [[InputSlot]] or [[OutputSlot]] of the given name.
+    * [[InputSlot]] will be checked before [[OutputSlot]]
+    */
+  def getSlot(slotName: String): Option[Slot[Any]] = {
+    if (hasInput(slotName)) {
+      Some(getInput(slotName))
+    } else if (hasOutput(slotName)) {
+      Some(getOutput(slotName))
+    } else {
+      None
+    }
+  }
+
   /////////////////////////////////////////////////////////////////////////////
   // outputs
   /////////////////////////////////////////////////////////////////////////////

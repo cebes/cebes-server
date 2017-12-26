@@ -38,12 +38,12 @@ class StageFactory @Inject()(private val msgSerializer: PipelineMessageSerialize
     val modelDefs = mutable.Map.empty[String, ModelDef]
     val schemas = mutable.Map.empty[String, Schema]
 
-    val serializedInputs = serializePipelineMessages(stage.getInputs(true), msgSerializer, options, modelDefs, schemas)
+    val serializedInputs = serializePipelineMessages(stage.getInputs(), msgSerializer, options, modelDefs, schemas)
 
     stage.getOutputs().map { outputs =>
       val serializedOutputs = serializePipelineMessages(outputs, msgSerializer, options, modelDefs, schemas)
       StageDef(stage.getName, stage.getClass.getSimpleName, serializedInputs, serializedOutputs,
-        models = modelDefs.toMap, schemas = schemas.toMap)
+        models = modelDefs.toMap, schemas = schemas.toMap, newInputs = stage.getNewInputFlag)
     }
   }
 
@@ -55,6 +55,7 @@ class StageFactory @Inject()(private val msgSerializer: PipelineMessageSerialize
 
     stage.setInputs(deserializePipelineMessages(stageDef.inputs, modelStorageDir, msgSerializer, stageDef.models))
       .setOutputs(deserializePipelineMessages(stageDef.outputs, modelStorageDir, msgSerializer, stageDef.models))
+      .setNewInputFlag(stageDef.newInputs)
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -91,15 +92,25 @@ class StageFactory @Inject()(private val msgSerializer: PipelineMessageSerialize
                                         options: PipelineExportOptions,
                                         models: mutable.Map[String, ModelDef],
                                         schemas: mutable.Map[String, Schema]): Map[String, PipelineMessageDef] = {
-    data.map { case (slotName, value) =>
+    data.flatMap { case (slotName, value) =>
       value match {
-        case model: Model if options.includeModels =>
-          models.put(slotName, modelFactory.export(model, options.modelStorageDir))
-        case df: Dataframe if options.includeSchemas =>
-          schemas.put(slotName, df.schema)
+        case model: Model =>
+          if (options.includeModels) {
+            models.put(slotName, modelFactory.export(model, options.modelStorageDir))
+          }
+          Some(slotName -> msgSerializer.serialize(value))
+        case df: Dataframe =>
+          if (options.includeSchemas) {
+            schemas.put(slotName, df.schema)
+          }
+          if (options.includeDataframes) {
+            Some(slotName -> msgSerializer.serialize(value))
+          } else {
+            None
+          }
         case _ =>
+          Some(slotName -> msgSerializer.serialize(value))
       }
-      slotName -> msgSerializer.serialize(value)
     }
   }
 

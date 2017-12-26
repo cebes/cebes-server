@@ -14,16 +14,24 @@
 
 package io.cebes.spark.df
 
+import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.util.UUID
 
 import com.google.inject.Inject
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.sample.DataSample
+import io.cebes.df.schema.Schema
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.df.{Column, Dataframe, DataframeService}
+import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.spark.config.HasSparkSession
+import io.cebes.spark.util.CebesSparkUtil
 import io.cebes.store.{CachedStore, TagStore}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.deploy.SparkHadoopUtil
+import spray.json._
 
 /**
   * Implements [[DataframeService]] on Spark.
@@ -33,14 +41,13 @@ import io.cebes.store.{CachedStore, TagStore}
 class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
                                       dfFactory: SparkDataframeFactory,
                                       override val cachedStore: CachedStore[Dataframe],
-                                      override val tagStore: TagStore[Dataframe]) extends DataframeService {
-
-  private val sparkSession = hasSparkSession.session
+                                      override val tagStore: TagStore[Dataframe])
+  extends DataframeService with LazyLogging {
 
   override def cache(df: Dataframe): Dataframe = cachedStore.add(df)
 
   override def sql(sqlText: String): Dataframe = cache {
-    dfFactory.df(sparkSession.sql(sqlText))
+    dfFactory.df(hasSparkSession.session.sql(sqlText))
   }
 
   override def inferVariableTypes(dfId: UUID, sampleSize: Int): Dataframe = cache {
@@ -258,6 +265,77 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
                             pivotColName: Option[String], pivotValues: Option[Seq[Any]],
                             sumColNames: Seq[String]): Dataframe = cache {
     agg(dfId, cols, aggType, pivotColName, pivotValues).sum(sumColNames: _*)
+  }
+
+  ////////////////////////////////////////////////////////
+  // JSON serialization
+  ////////////////////////////////////////////////////////
+
+  override def serialize(df: Dataframe): JsValue = {
+    val hdfsConf = SparkHadoopUtil.get.newConfiguration(hasSparkSession.session.sparkContext.getConf)
+    val hdfs = FileSystem.get(hdfsConf)
+
+    val pathTemplate = s"/tmp/${df.id.toString}"
+
+    def checkExist(i: Int): String = {
+      val path = if (i == 0) pathTemplate else s"${pathTemplate}_$i"
+      if (!hdfs.exists(new Path(path))) {
+        path
+      } else {
+        checkExist(i + 1)
+      }
+    }
+
+    val outDir = checkExist(0)
+
+    // write the Dataframe into outDir in JSON
+    CebesSparkUtil.getSparkDataframe(df).sparkDf.write.json(outDir)
+
+    // read the JSON from outDir
+    val data = hdfs.globStatus(new Path(outDir + "/*.json")).flatMap { fileStatus =>
+      val f = hdfs.open(fileStatus.getPath)
+      val reader = new BufferedReader(new InputStreamReader(f))
+
+      def readLines = Stream.cons(reader.readLine, Stream.continually(reader.readLine))
+
+      readLines.takeWhile(_ != null).map(_.parseJson)
+    }
+    val jsObject = JsObject(Map("schema" -> df.schema.toJson, "data" -> JsArray(data.toVector)))
+    try {
+      hdfs.delete(new Path(outDir), true)
+    } catch {
+      case ex: IOException =>
+        logger.error(s"Failed to remove temporary directory $outDir", ex)
+    }
+    jsObject
+  }
+
+  /**
+    * Deserialize the given JSON value into a [[Dataframe]]
+    * To go with [[serialize]]
+    */
+  def deserialize(jsValue: JsValue): Dataframe = {
+    jsValue match {
+      case jsObj: JsObject =>
+        require(jsObj.fields.contains("data"), "JsObject must contain data field")
+
+        val sparkDf = jsObj.fields("data") match {
+          case jsArr: JsArray =>
+            import hasSparkSession.session.implicits._
+
+            val df1 = hasSparkSession.session.createDataset(jsArr.elements.map(_.toString()))
+            hasSparkSession.session.read.json(df1)
+          case _ =>
+            throw new IllegalArgumentException("data must be an array of objects")
+        }
+
+        jsObj.fields.get("schema").map(_.convertTo[Schema]) match {
+          case Some(schema) => dfFactory.df(sparkDf, schema)
+          case None => dfFactory.df(sparkDf)
+        }
+      case _ =>
+        throw new IllegalArgumentException("Cannot deserialize the given JSON into Dataframe")
+    }
   }
 
   ////////////////////////

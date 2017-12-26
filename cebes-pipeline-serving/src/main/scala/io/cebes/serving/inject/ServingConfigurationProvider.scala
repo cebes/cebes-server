@@ -16,7 +16,7 @@ import java.io.File
 import com.google.inject.{Inject, Provider}
 import io.cebes.pipeline.json.ServingConfiguration
 import io.cebes.prop.{Prop, Property}
-import io.cebes.serving.DefaultPipelineJsonProtocol.servingConfigurationFormat
+import io.cebes.serving.common.DefaultPipelineJsonProtocol.servingConfigurationFormat
 import io.cebes.util.ResourceUtil
 import spray.json._
 

@@ -18,7 +18,7 @@ import io.cebes.http.server.operations.OperationHelper
 import io.cebes.http.server.routes.AkkaImplicits
 import io.cebes.pipeline.InferenceService
 import io.cebes.pipeline.json.{InferenceRequest, InferenceResponse}
-import io.cebes.serving.DefaultPipelineJsonProtocol._
+import io.cebes.serving.common.DefaultPipelineJsonProtocol._
 
 trait InferenceHandler extends AkkaImplicits with OperationHelper {
 
@@ -26,13 +26,6 @@ trait InferenceHandler extends AkkaImplicits with OperationHelper {
 
   protected val inferenceApi: Route =
     concat(operation[Inference, InferenceRequest, InferenceResponse],
-      (path("inferenceSync") & post) {
-        entity(as[InferenceRequest]) { formData =>
-          extractExecutionContext { implicit executor =>
-            implicit ctx =>
-              injector.getInstance(classOf[InferenceSync]).run(formData).flatMap(ctx.complete(_))
-          }
-        }
-      }
+      syncOperation[InferenceSync, InferenceRequest, InferenceResponse]
     )
 }

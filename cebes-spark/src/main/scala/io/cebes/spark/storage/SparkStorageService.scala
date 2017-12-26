@@ -37,7 +37,6 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
                                     dfFactory: SparkDataframeFactory)
   extends StorageService with CebesSparkUtil {
 
-  private val sparkSession = hasSparkSession.session
 
   /**
     * Write the given dataframe to the given datasource
@@ -62,7 +61,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
           case hdfsSource: HdfsDataSource =>
             hdfsSource.fullUrl
           case s3Source: S3DataSource =>
-            s3Source.setUpSparkContext(sparkSession.sparkContext)
+            s3Source.setUpSparkContext(hasSparkSession.session.sparkContext)
             s3Source.fullUrl
         }
         dataSource.format match {
@@ -85,6 +84,7 @@ class SparkStorageService @Inject()(hasSparkSession: HasSparkSession,
     * @return a new Dataframe
     */
   override def read(dataSource: DataSource, options: Map[String, String]): Dataframe = {
+    val sparkSession = hasSparkSession.session
     val sparkDf = dataSource match {
       case jdbcSource: JdbcDataSource =>
         sparkSession.read.jdbc(jdbcSource.url, jdbcSource.tableName, jdbcSource.sparkProperties())

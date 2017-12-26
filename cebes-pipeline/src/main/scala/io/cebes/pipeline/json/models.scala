@@ -16,6 +16,7 @@ import java.util.UUID
 
 import io.cebes.df.Column
 import io.cebes.df.schema.Schema
+import spray.json.{JsObject, JsValue}
 
 ////////////////////////////////////////////////////////////////
 // Pipeline message
@@ -29,7 +30,7 @@ case class StageOutputDef(stageName: String, outputName: String) extends Pipelin
 
 case class DataframeMessageDef(dfId: UUID) extends PipelineMessageDef
 
-case class SampleMessageDef() extends PipelineMessageDef
+case class SampleMessageDef(data: JsObject, schema: Option[Schema] = None) extends PipelineMessageDef
 
 case class ModelMessageDef(modelId: UUID) extends PipelineMessageDef
 
@@ -69,7 +70,8 @@ case class StageDef(name: String, stageClass: String,
                     inputs: Map[String, PipelineMessageDef] = Map.empty,
                     outputs: Map[String, PipelineMessageDef] = Map.empty,
                     models: Map[String, ModelDef] = Map.empty,
-                    schemas: Map[String, Schema] = Map.empty)
+                    schemas: Map[String, Schema] = Map.empty,
+                    newInputs: Seq[String] = Seq.empty)
 
 /**
   * Definition of a Pipeline
@@ -126,15 +128,16 @@ case class PipelineRunResultDef(pipelineId: UUID, results: Array[(StageOutputDef
   * @param outputs     list of output slots from which to take values
   */
 case class InferenceRequest(servingName: String,
-                            inputs: Map[String, PipelineMessageDef],
-                            outputs: Array[String])
+                            inputs: Map[String, JsValue],
+                            outputs: Array[String],
+                            maxDfSize: Int = 2000)
 
 /**
   * Response from server for an inference request.
   *
   * @param outputs map of output slots to the result
   */
-case class InferenceResponse(outputs: Map[String, PipelineMessageDef])
+case class InferenceResponse(outputs: Map[String, JsValue])
 
 /**
   * Describe how a pipeline will be served.

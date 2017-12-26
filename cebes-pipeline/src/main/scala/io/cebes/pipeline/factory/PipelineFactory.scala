@@ -17,7 +17,7 @@ import java.nio.file.{Files, Path, Paths}
 import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.common.HasId
-import io.cebes.pipeline.json.{PipelineDef, PipelineExportDef}
+import io.cebes.pipeline.json.{PipelineDef, PipelineExportDef, StageOutputDef}
 import io.cebes.pipeline.models.{Pipeline, Stage}
 import io.cebes.util.FileSystemHelper
 import spray.json._
@@ -70,7 +70,8 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) extends 
 
     val destDir = Files.createDirectories(checkExists(-1)).toString
     val modelDir = Files.createDirectory(Paths.get(destDir, PipelineFactory.MODEL_SUB_DIR))
-    val options = PipelineExportOptions(includeModels = true, modelStorageDir = Some(modelDir.toString),
+    val options = PipelineExportOptions(includeModels = true,
+      modelStorageDir = Some(modelDir.toString),
       includeSchemas = true)
     export(ppl, options).map { pplExp =>
       Files.write(Paths.get(destDir, PipelineFactory.ENTRY_FILE_NAME),
@@ -123,6 +124,17 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) extends 
       require(!stageMap.contains(stage.getName), s"Duplicated stage name: ${stage.getName}")
       stageMap.put(stage.getName, stage)
     }
+
+    // connect the stages
+    pplDefWithId.stages.map { s =>
+      s.inputs.collect {
+        case (slotName: String, src: StageOutputDef) =>
+          val thisStage = stageMap(s.name)
+          val srcStage = stageMap(src.stageName)
+          thisStage.input(thisStage.getInput(slotName), srcStage.output(srcStage.getOutput(src.outputName)))
+      }
+    }
+
     Pipeline(pplDefWithId.id.get, stageMap.toMap, pplDefWithId)
   }
 

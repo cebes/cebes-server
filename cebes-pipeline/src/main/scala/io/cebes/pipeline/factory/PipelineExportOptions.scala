@@ -17,13 +17,17 @@ package io.cebes.pipeline.factory
   * Normally for usual checkpointing (in cebes-http-server for example), both includeModels and includeSchemas
   * are false. They are only true when exporting the [[io.cebes.pipeline.models.Pipeline]]s for serving.
   *
-  * @param includeModels   Whether to include the [[io.cebes.pipeline.json.ModelDef]] definition into the
-  *                        [[io.cebes.pipeline.json.StageDef]] definitions.
-  * @param modelStorageDir the directory to store the models. If None, system-wide default values will be used.
-  *                        Only considered when `includeModels` is `true`.
-  * @param includeSchemas  whether to include the schemas of [[io.cebes.df.Dataframe]]
-  *                        in the [[io.cebes.pipeline.json.StageDef]] definitions.
+  * @param includeModels     Whether to include the [[io.cebes.pipeline.json.ModelDef]] definition into the
+  *                          [[io.cebes.pipeline.json.StageDef]] definitions.
+  * @param modelStorageDir   the directory to store the models. If None, system-wide default values will be used.
+  *                          Only considered when `includeModels` is `true`.
+  * @param includeSchemas    whether to include the schemas of [[io.cebes.df.Dataframe]]
+  *                          in the [[io.cebes.pipeline.json.StageDef]] definitions.
+  * @param includeDataframes whether to include the [[io.cebes.df.Dataframe]] if they are values to the stage slots.
+  *                          If yes, only the Dataframe ID will be recorded, making the exported pipeline not portable
+  *                          between servers.
   */
 case class PipelineExportOptions(includeModels: Boolean = false,
                                  modelStorageDir: Option[String] = None,
-                                 includeSchemas: Boolean = false)
+                                 includeSchemas: Boolean = false,
+                                 includeDataframes: Boolean = false)

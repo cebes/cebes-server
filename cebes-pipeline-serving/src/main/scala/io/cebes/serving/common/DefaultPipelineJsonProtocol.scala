@@ -9,18 +9,11 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.http
+package io.cebes.serving.common
 
-import io.cebes.http.helper.SecuredTestClient
-import io.cebes.http.server.HttpServer
-import io.cebes.serving.inject.ServingTestInjector
+import io.cebes.pipeline.json.PipelineJsonProtocol
 
-/**
-  * Tests for [[CebesServingSecuredServer]].
-  * All the tests are inherited from [[CebesServingServerSuite]], but with secured server.
-  */
-class CebesServingSecuredServerSuite extends CebesServingServerSuite with SecuredTestClient {
+////////////////////////////////////////////////////////////////////////////////////////////////
+// Json protocols
 
-  override protected val server: HttpServer =
-    ServingTestInjector.injector.getInstance(classOf[CebesServingSecuredServer])
-}
+object DefaultPipelineJsonProtocol extends PipelineJsonProtocol

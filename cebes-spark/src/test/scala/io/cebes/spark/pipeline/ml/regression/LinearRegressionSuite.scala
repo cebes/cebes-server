@@ -173,9 +173,19 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(ppl3.stages.contains("s1") && ppl3.stages.contains("s2"))
     assert(ppl3.stages("s1").isInstanceOf[VectorAssembler])
     assert(ppl3.stages("s2").isInstanceOf[LinearRegression])
+
     val lrOutputs = result(ppl3.stages("s2").getOutputs())
     assert(lrOutputs.contains("model"))
     assert(lrOutputs("model").isInstanceOf[LinearRegressionModel])
+
+    // run inference on another input, the model should not be re-computed
+    val result3 = result(ppl3.run(Seq(SlotDescriptor("s2", "model")), Map(SlotDescriptor("s1", "inputDf") -> df)))
+    val model3 = result3(SlotDescriptor("s2", "model")).asInstanceOf[LinearRegressionModel]
+    assert(model3.eq(lrOutputs("model").asInstanceOf[LinearRegressionModel]))
+
+    val result4 = result(ppl3.run(Seq(SlotDescriptor("s2", "model")), Map(SlotDescriptor("s1", "inputDf") -> df)))
+    val model4 = result4(SlotDescriptor("s2", "model")).asInstanceOf[LinearRegressionModel]
+    assert(model4.eq(model3))
 
     // move to another location, imports again
     val testCopyDir = Files.createTempDirectory("test-ppl-moved-")

@@ -28,7 +28,7 @@ trait PipelineJsonProtocol extends CebesExpressionJsonProtocol {
 
   implicit val stageOutputDefFormat: RootJsonFormat[StageOutputDef] = jsonFormat2(StageOutputDef)
   implicit val dataframeMessageDefFormat: RootJsonFormat[DataframeMessageDef] = jsonFormat1(DataframeMessageDef)
-  implicit val sampleMessageDefFormat: RootJsonFormat[SampleMessageDef] = jsonFormat0(SampleMessageDef)
+  implicit val sampleMessageDefFormat: RootJsonFormat[SampleMessageDef] = jsonFormat2(SampleMessageDef)
   implicit val modelMessageDefFormat: RootJsonFormat[ModelMessageDef] = jsonFormat1(ModelMessageDef)
   implicit val columnDefFormat: RootJsonFormat[ColumnDef] = jsonFormat1(ColumnDef)
 
@@ -64,13 +64,13 @@ trait PipelineJsonProtocol extends CebesExpressionJsonProtocol {
 
   implicit val modelDefFormat: RootJsonFormat[ModelDef] = jsonFormat4(ModelDef)
   implicit val modelRunDefFormat: RootJsonFormat[ModelRunDef] = jsonFormat2(ModelRunDef)
-  implicit val stageDefFormat: RootJsonFormat[StageDef] = jsonFormat6(StageDef)
+  implicit val stageDefFormat: RootJsonFormat[StageDef] = jsonFormat7(StageDef)
   implicit val pipelineDefFormat: RootJsonFormat[PipelineDef] = jsonFormat2(PipelineDef)
   implicit val pipelineExportDefFormat: RootJsonFormat[PipelineExportDef] = jsonFormat2(PipelineExportDef)
   implicit val pipelineRunDefFormat: RootJsonFormat[PipelineRunDef] = jsonFormat4(PipelineRunDef)
   implicit val pipelineRunResultDefFormat: RootJsonFormat[PipelineRunResultDef] = jsonFormat2(PipelineRunResultDef)
 
-  implicit val inferenceRequestFormat: RootJsonFormat[InferenceRequest] = jsonFormat3(InferenceRequest)
+  implicit val inferenceRequestFormat: RootJsonFormat[InferenceRequest] = jsonFormat4(InferenceRequest)
   implicit val inferenceResponseFormat: RootJsonFormat[InferenceResponse] = jsonFormat1(InferenceResponse)
   implicit val servedPipelineFormat: RootJsonFormat[ServedPipeline] = jsonFormat5(ServedPipeline)
   implicit val servingConfigurationFormat: RootJsonFormat[ServingConfiguration] = jsonFormat4(ServingConfiguration)

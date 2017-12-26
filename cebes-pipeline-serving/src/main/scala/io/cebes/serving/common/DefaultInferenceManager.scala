@@ -18,7 +18,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.cebes.pipeline.InferenceManager
 import io.cebes.pipeline.json.ServingConfiguration
 import io.cebes.repository.client.RepositoryClient
-import io.cebes.serving.DefaultPipelineJsonProtocol._
+import DefaultPipelineJsonProtocol._
 import io.cebes.tag.Tag
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -27,9 +27,9 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
   * Implementation of [[InferenceManager]] on Spark
   * Serve as a store of pipelines being served, that can be looked-up using their servingNames.
   */
-class DefaultInferenceManager @Inject()(servingConfiguration: ServingConfiguration,
-                                        repoClient: RepositoryClient,
-                                        servingActor: ServingActor)
+class DefaultInferenceManager @Inject()(private val servingConfiguration: ServingConfiguration,
+                                        private val repoClient: RepositoryClient,
+                                        private val servingActor: ServingActor)
   extends InferenceManager with LazyLogging {
 
   private implicit val actorSystem: ActorSystem = servingActor.actorSystem

@@ -56,7 +56,7 @@ class HasSparkSessionProvider @Inject()
   lazy val localSessionBuilder: SparkSession.Builder = {
     val builder = SparkSession.builder()
       .appName("Cebes service on Spark (local)")
-      .master("local[4]")
+      .master("local[*]")
       .config("spark.sql.warehouse.dir", sparkWarehouseDir)
 
     // update log4j configuration if there is some log4j.properties in the classpath

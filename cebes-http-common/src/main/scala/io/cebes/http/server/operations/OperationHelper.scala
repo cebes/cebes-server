@@ -17,7 +17,7 @@ import akka.http.scaladsl.server.{RequestContext, Route}
 import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import io.cebes.http.server.HttpJsonProtocol._
 import io.cebes.http.server.routes.{AkkaImplicits, HasInjector}
-import spray.json.JsonFormat
+import spray.json.{JsonFormat, RootJsonFormat}
 
 import scala.reflect.ClassTag
 
@@ -31,8 +31,23 @@ trait OperationHelper extends AkkaImplicits with HasInjector {
     * with entity of type [[E]] and result of type [[R]]
     */
   protected def operation[W <: AsyncOperation[E, _, R], E, R]
-  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E],
-   jfE: JsonFormat[E], jfR: JsonFormat[R]): Route = {
+  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E], jfR: JsonFormat[R]): Route = {
+    val workerClass = tag.runtimeClass.asInstanceOf[Class[W]]
+    val workerName = workerClass.getSimpleName.toLowerCase
+    (path(workerName) & post) {
+      entity(as[E]) { requestEntity =>
+        implicit ctx: RequestContext =>
+          injector.getInstance(workerClass).run(requestEntity).flatMap(ctx.complete(_))
+      }
+    }
+  }
+
+  /**
+    * A *synchronous* operation done by class [[W]] (subclass of [[SyncOperation]]),
+    * with entity of type [[E]] and result of type [[R]].
+    */
+  protected def syncOperation[W <: SyncOperation[E, R], E, R]
+  (implicit tag: ClassTag[W], umE: FromRequestUnmarshaller[E], jfE: JsonFormat[E], jfR: RootJsonFormat[R]): Route = {
     val workerClass = tag.runtimeClass.asInstanceOf[Class[W]]
     val workerName = workerClass.getSimpleName.toLowerCase
     (path(workerName) & post) {
