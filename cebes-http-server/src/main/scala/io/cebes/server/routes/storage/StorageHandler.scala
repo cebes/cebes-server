@@ -18,27 +18,21 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Multipart
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.http.server.HttpJsonProtocol._
-import io.cebes.http.server.routes.SecuredSession
-import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.server.routes.common.HttpServerJsonProtocol._
+import io.cebes.server.routes.common.DataframeOperationHelper
 import io.cebes.server.routes.storage.HttpStorageJsonProtocol._
 
-trait StorageHandler extends SecuredSession {
+trait StorageHandler extends DataframeOperationHelper {
 
   val storageApi: Route = pathPrefix("storage") {
-    requiredCebesSession { _ =>
-      (path("read") & post) {
-        entity(as[ReadRequest]) { readRequest =>
-          implicit ctx =>
-            CebesHttpServerInjector.instance[Read].run(readRequest).flatMap(ctx.complete(_))
-        }
-      } ~ (path("upload") & put) {
+    concat(operationDf[Read, ReadRequest],
+      (path("upload") & put) {
         entity(as[Multipart.FormData]) { formData =>
-          implicit ctx =>
-            CebesHttpServerInjector.instance[Upload].run(formData).flatMap(ctx.complete(_))
+          extractExecutionContext { implicit executor =>
+            implicit ctx =>
+              injector.getInstance(classOf[Upload]).run(formData).flatMap(ctx.complete(_))
+          }
         }
       }
-    }
+    )
   }
 }

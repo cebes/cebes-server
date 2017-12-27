@@ -9,16 +9,7 @@ mainClass in assembly := Some("io.cebes.server.Main")
 dependencyOverrides += "org.scalatest" %% "scalatest" % Common.scalaTestVersion
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-http-testkit" % Common.akkaHttpVersion % "test",
-
-  "org.apache.spark" %% "spark-core" % Common.sparkVersion % "provided"
-    exclude("org.apache.hadoop", "hadoop-client")
-    exclude("org.scalatest", "scalatest_2.11"),
-  "org.apache.spark" %% "spark-mllib" % Common.sparkVersion % "provided"
-    exclude("org.scalatest", "scalatest_2.11"),
-  "org.apache.spark" %% "spark-sql" % Common.sparkVersion % "provided"
-    exclude("org.scalatest", "scalatest_2.11"),
-  "org.apache.spark" %% "spark-hive" % Common.sparkVersion % "provided"
-)
+  "com.typesafe.akka" %% "akka-http-testkit" % Common.akkaHttpVersion % "test"
+) ++ Common.sparkDependencies
 
 assemblyShadeRules in assembly := Common.apacheCommonsShadeRules

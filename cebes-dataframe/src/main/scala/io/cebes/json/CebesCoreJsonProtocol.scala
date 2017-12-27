@@ -220,7 +220,7 @@ trait CebesCoreJsonProtocol extends GenericJsonProtocol {
           val schema = obj.fields("schema").convertTo[Schema]
           val data = obj.fields("data") match {
             case arr: JsArray =>
-              require(schema.size == arr.elements.length,
+              require(schema.lengthCompare(arr.elements.length) == 0,
                 s"Length of schema (${schema.size}) must equal " +
                   s"the number of columns in data (${arr.elements.length})")
               schema.fields.zip(arr.elements).map {

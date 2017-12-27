@@ -18,7 +18,6 @@ import io.cebes.repository.db.{Repository, RepositoryTag}
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
-case class VersionResponse(api: String)
 
 case class RepositoryListResponse(repositories: Array[Repository],
                                   pageId: Long,
@@ -30,7 +29,6 @@ case class TagListResponse(repoName: String, tags: Array[TagResponse])
 
 trait CebesRepositoryJsonProtocol {
 
-  implicit val versionResponse: RootJsonFormat[VersionResponse] = jsonFormat1(VersionResponse)
   implicit val repositoryFormat: RootJsonFormat[Repository] = jsonFormat(Repository,
     "id", "name", "owner", "isPrivate", "pullCount")
   implicit val repositoryTagFormat: RootJsonFormat[RepositoryTag] = jsonFormat(RepositoryTag,

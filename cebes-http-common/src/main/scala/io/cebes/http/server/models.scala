@@ -51,6 +51,8 @@ case class SerializableResult(requestId: UUID,
 // a request was failed for whatever reason
 case class FailResponse(message: Option[String], stackTrace: Option[String])
 
+case class VersionResponse(api: String)
+
 /** **************************************************************************/
 // Contains all common JsonProtocol
 /** **************************************************************************/
@@ -74,6 +76,8 @@ trait HttpJsonProtocol {
   implicit val serializableResultFormat: RootJsonFormat[SerializableResult] = jsonFormat5(SerializableResult)
 
   implicit val failResponseFormat: RootJsonFormat[FailResponse] = jsonFormat2(FailResponse)
+
+  implicit val versionResponseFormat: RootJsonFormat[VersionResponse] = jsonFormat1(VersionResponse)
 }
 
 object HttpJsonProtocol extends HttpJsonProtocol

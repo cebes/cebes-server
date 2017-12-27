@@ -14,26 +14,24 @@ package io.cebes.server.routes.pipeline
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.http.server.routes.SecuredSession
+import io.cebes.http.server.operations.OperationHelper
 import io.cebes.pipeline.json._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
-import io.cebes.server.routes.common.{OperationHelper, _}
+import io.cebes.server.routes.common._
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat}
 
-trait PipelineHandler extends SecuredSession with OperationHelper {
+trait PipelineHandler extends OperationHelper {
 
   val pipelineApi: Route = pathPrefix("pipeline") {
-    requiredCebesSession { _ =>
-      concat(
-        operation[TagAdd, TagAddRequest, PipelineDef],
-        operation[TagDelete, TagDeleteRequest, PipelineDef],
-        operation[Tags, TagsGetRequest, Array[TaggedPipelineResponse]],
-        operation[Get, String, PipelineDef],
+    concat(
+      operation[TagAdd, TagAddRequest, PipelineDef],
+      operation[TagDelete, TagDeleteRequest, PipelineDef],
+      operation[Tags, TagsGetRequest, Array[TaggedPipelineResponse]],
+      operation[Get, String, PipelineDef],
 
-        operation[Create, PipelineDef, PipelineDef],
-        operation[Run, PipelineRunDef, PipelineRunResultDef]
-      )
-    }
+      operation[Create, PipelineDef, PipelineDef],
+      operation[Run, PipelineRunDef, PipelineRunResultDef]
+    )
   }
 }

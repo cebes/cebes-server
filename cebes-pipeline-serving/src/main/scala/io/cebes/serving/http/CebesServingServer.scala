@@ -14,30 +14,35 @@ package io.cebes.serving.http
 import javax.inject.Inject
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{handleExceptions, _}
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
+import com.google.inject.Injector
 import io.cebes.http.server.HttpServer
-import io.cebes.prop.{Prop, Property}
-import io.cebes.serving.CebesServingJsonProtocol._
-import io.cebes.serving.{InferenceRequest, PipelineServingService}
+import io.cebes.http.server.routes.ApiErrorHandler
+import io.cebes.http.server.routes.result.ResultHandler
+import io.cebes.pipeline.InferenceService
+import io.cebes.pipeline.json.ServingConfiguration
+import io.cebes.serving.common.ServingActor
+import io.cebes.serving.routes.InferenceHandler
 
 import scala.concurrent.ExecutionContextExecutor
 
-class CebesServingServer @Inject()(@Prop(Property.REPOSITORY_INTERFACE) override val httpInterface: String,
-                                   @Prop(Property.REPOSITORY_PORT) override val httpPort: Int,
-                                   private val servingService: PipelineServingService) extends HttpServer {
+class CebesServingServer @Inject()(private val servingConfiguration: ServingConfiguration,
+                                   protected override val inferenceService: InferenceService,
+                                   private val servingActor: ServingActor,
+                                   override protected val injector: Injector)
+  extends HttpServer with InferenceHandler with ApiErrorHandler with ResultHandler {
 
-  protected implicit val actorSystem: ActorSystem = ActorSystem("CebesPipelineServing")
+  override val httpInterface: String = servingConfiguration.httpInterface
+  override val httpPort: Int = servingConfiguration.httpPort
 
-  protected implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
-  protected implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
+  protected implicit val actorSystem: ActorSystem = servingActor.actorSystem
+  protected implicit val actorExecutor: ExecutionContextExecutor = servingActor.actorExecutor
+  protected implicit val actorMaterializer: ActorMaterializer = servingActor.actorMaterializer
 
-  override protected val routes: Route =
-    (path("inference") & post) {
-      entity(as[InferenceRequest]) { request =>
-        complete(servingService.inference(request))
-      }
-    }
+  override val routes: Route = handleExceptions(cebesDefaultExceptionHandler) {
+    inferenceApi ~ resultApi
+  }
+
 }

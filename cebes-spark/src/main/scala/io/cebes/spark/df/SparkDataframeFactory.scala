@@ -33,7 +33,18 @@ import org.apache.spark.sql.DataFrame
     * Returns a new instance of [[Dataframe]]
     */
   def df(sparkDf: DataFrame, schema: Schema, id: UUID): Dataframe = {
-    new SparkDataframe(this, injector.getInstance(classOf[SparkExpressionParser]), sparkDf, schema, id)
+    val sparkDf2 = if (sparkDf.columns.length > 1 &&
+      sparkDf.columns.length == schema.length &&
+      sparkDf.columns.forall(s => schema.exists(_.compareName(s)) &&
+        !sparkDf.columns.zip(schema).forall(t => t._2.compareName(t._1)))) {
+      // re-arrange the columns in dataframe.
+      // This is needed after, e.g. a JSON serialization
+      val colNames = schema.fieldNames
+      sparkDf.select(colNames.head, colNames.tail: _*)
+    } else {
+      sparkDf
+    }
+    new SparkDataframe(this, injector.getInstance(classOf[SparkExpressionParser]), sparkDf2, schema, id)
   }
 
   /**

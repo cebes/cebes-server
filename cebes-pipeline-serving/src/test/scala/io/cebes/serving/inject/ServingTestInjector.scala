@@ -9,11 +9,16 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving
+package io.cebes.serving.inject
 
-import scala.concurrent.Future
+import com.google.inject.{Guice, Injector}
+import io.cebes.prop.PropertyModule
+import io.cebes.spark.CebesSparkDependencyModule
 
-trait PipelineServingService {
+object ServingTestInjector {
 
-  def inference(request: InferenceRequest): Future[InferenceResponse]
+  lazy val injector: Injector = Guice.createInjector(
+    new PropertyModule(false),
+    new TestDependencyModule,
+    new CebesSparkDependencyModule)
 }

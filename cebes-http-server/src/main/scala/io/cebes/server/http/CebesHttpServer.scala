@@ -16,18 +16,17 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import com.google.inject.Inject
+import com.google.inject.{Inject, Injector}
 import io.cebes.auth.AuthService
-import io.cebes.http.server.HttpServer
+import io.cebes.http.server.HttpJsonProtocol._
 import io.cebes.http.server.auth.AuthHandler
 import io.cebes.http.server.routes.ApiErrorHandler
+import io.cebes.http.server.routes.result.ResultHandler
+import io.cebes.http.server.{HttpServer, VersionResponse}
 import io.cebes.prop.{Prop, Property}
-import io.cebes.server.routes.common.HttpServerJsonProtocol._
-import io.cebes.server.routes.common.VersionResponse
 import io.cebes.server.routes.df.DataframeHandler
 import io.cebes.server.routes.model.ModelHandler
 import io.cebes.server.routes.pipeline.PipelineHandler
-import io.cebes.server.routes.result.ResultHandler
 import io.cebes.server.routes.storage.StorageHandler
 import io.cebes.server.routes.test.TestHandler
 
@@ -35,13 +34,12 @@ import scala.concurrent.ExecutionContextExecutor
 
 class CebesHttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) override val httpInterface: String,
                                 @Prop(Property.HTTP_PORT) override val httpPort: Int,
+                                @Prop(Property.HTTP_SERVER_SECRET) override val serverSecret: String,
                                 override protected val refreshTokenStorage: CebesHttpRefreshTokenStorage,
-                                override protected val authService: AuthService)
+                                override protected val authService: AuthService,
+                                override protected val injector: Injector)
   extends HttpServer with AuthHandler with DataframeHandler with PipelineHandler with ModelHandler
     with StorageHandler with ResultHandler with TestHandler with ApiErrorHandler {
-
-  override protected val serverSecret: String =
-    "9MLs9gc8Axvdi1tbM1T7ZpjFMM5R5QR7b788MAIdlloi5I8FmXNQuTdn9S3hnlcZPmC0sv0"
 
   protected implicit val actorSystem: ActorSystem = ActorSystem("CebesServerApp")
   protected implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
@@ -51,12 +49,14 @@ class CebesHttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) override val http
     handleExceptions(cebesDefaultExceptionHandler) {
       pathPrefix(CebesHttpServer.API_VERSION) {
         authApi ~
-          dataframeApi ~
-          pipelineApi ~
-          modelApi ~
-          storageApi ~
-          resultApi ~
-          testApi
+          requiredCebesSession { _ =>
+            dataframeApi ~
+              pipelineApi ~
+              modelApi ~
+              storageApi ~
+              resultApi ~
+              testApi
+          }
       } ~ (path("") & get) {
         getFromResource("public/index.html")
       } ~ (path("version") & get) {

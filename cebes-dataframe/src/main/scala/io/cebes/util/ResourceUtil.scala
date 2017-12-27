@@ -19,6 +19,8 @@ import java.nio.file.{Files, Paths, StandardCopyOption}
 
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.language.reflectiveCalls
+
 trait ResourceUtil extends LazyLogging {
 
   /**
@@ -46,6 +48,16 @@ trait ResourceUtil extends LazyLogging {
         throw new RuntimeException("File " + resourceName + " not found!")
     }
   }
+
+  /**
+    * Safely use a resource and close it in case of exceptions
+    */
+  def using[A <: {def close() : Unit}, B](resource: A)(f: A => B): B =
+    try {
+      f(resource)
+    } finally {
+      resource.close()
+    }
 }
 
 object ResourceUtil extends ResourceUtil

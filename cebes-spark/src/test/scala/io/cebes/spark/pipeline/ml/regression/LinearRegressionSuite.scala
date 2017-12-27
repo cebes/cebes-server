@@ -21,6 +21,7 @@ import io.cebes.pipeline.models.SlotDescriptor
 import io.cebes.spark.helpers.{ImplicitExecutor, TestDataHelper, TestPipelineHelper}
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import io.cebes.spark.pipeline.features.VectorAssembler
+import io.cebes.util.FileSystemHelper
 import org.scalatest.FunSuite
 
 class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestDataHelper with TestPipelineHelper {
@@ -172,13 +173,23 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(ppl3.stages.contains("s1") && ppl3.stages.contains("s2"))
     assert(ppl3.stages("s1").isInstanceOf[VectorAssembler])
     assert(ppl3.stages("s2").isInstanceOf[LinearRegression])
+
     val lrOutputs = result(ppl3.stages("s2").getOutputs())
     assert(lrOutputs.contains("model"))
     assert(lrOutputs("model").isInstanceOf[LinearRegressionModel])
 
+    // run inference on another input, the model should not be re-computed
+    val result3 = result(ppl3.run(Seq(SlotDescriptor("s2", "model")), Map(SlotDescriptor("s1", "inputDf") -> df)))
+    val model3 = result3(SlotDescriptor("s2", "model")).asInstanceOf[LinearRegressionModel]
+    assert(model3.eq(lrOutputs("model").asInstanceOf[LinearRegressionModel]))
+
+    val result4 = result(ppl3.run(Seq(SlotDescriptor("s2", "model")), Map(SlotDescriptor("s1", "inputDf") -> df)))
+    val model4 = result4(SlotDescriptor("s2", "model")).asInstanceOf[LinearRegressionModel]
+    assert(model4.eq(model3))
+
     // move to another location, imports again
     val testCopyDir = Files.createTempDirectory("test-ppl-moved-")
-    moveDirectory(new File(exportedDir2), testCopyDir.toFile)
+    FileSystemHelper.moveDirectory(new File(exportedDir2), testCopyDir.toFile)
 
     // import at the previous location should fail
     val ex = intercept[IllegalArgumentException] {
@@ -197,7 +208,23 @@ class LinearRegressionSuite extends FunSuite with ImplicitExecutor with TestData
     assert(lrOutputs4.contains("model"))
     assert(lrOutputs4("model").isInstanceOf[LinearRegressionModel])
 
-    deleteRecursively(testDir.toFile)
-    deleteRecursively(testCopyDir.toFile)
+    FileSystemHelper.deleteRecursively(testDir.toFile)
+    FileSystemHelper.deleteRecursively(testCopyDir.toFile)
+
+    // export package
+    val testExportZip1 = Files.createTempFile("test-ppl-export", "zip")
+    val outFile = result(exporter.exportZip(ppl, testExportZip1.toString))
+
+    val ppl5 = exporter.importZip(outFile)
+    assert(ppl5.id === ppl.id)
+    assert(ppl5.stages.size === 2)
+    assert(ppl5.stages.contains("s1") && ppl5.stages.contains("s2"))
+    assert(ppl5.stages("s1").isInstanceOf[VectorAssembler])
+    assert(ppl5.stages("s2").isInstanceOf[LinearRegression])
+    val lrOutputs5 = result(ppl5.stages("s2").getOutputs())
+    assert(lrOutputs5.contains("model"))
+    assert(lrOutputs5("model").isInstanceOf[LinearRegressionModel])
+
+    FileSystemHelper.deleteRecursively(new File(outFile))
   }
 }

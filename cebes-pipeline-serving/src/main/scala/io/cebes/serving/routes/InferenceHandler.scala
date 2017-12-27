@@ -8,27 +8,24 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 19/09/16.
  */
-
-package io.cebes.server.routes.result
+package io.cebes.serving.routes
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import io.cebes.server.inject.CebesHttpServerInjector
-import io.cebes.http.server.HttpJsonProtocol._
-import io.cebes.http.server.routes.SecuredSession
+import io.cebes.http.server.operations.OperationHelper
+import io.cebes.http.server.routes.AkkaImplicits
+import io.cebes.pipeline.InferenceService
+import io.cebes.pipeline.json.{InferenceRequest, InferenceResponse}
+import io.cebes.serving.common.DefaultPipelineJsonProtocol._
 
-trait ResultHandler extends SecuredSession {
+trait InferenceHandler extends AkkaImplicits with OperationHelper {
 
-  val resultApi: Route = pathPrefix("request") {
-    (path(JavaUUID) & post) { requestId =>
-      requiredCebesSession { _ =>
-        implicit ctx =>
-          CebesHttpServerInjector.instance[Result].run(requestId).flatMap(r => ctx.complete(r))
-      }
-    }
-  }
+  protected val inferenceService: InferenceService
+
+  protected val inferenceApi: Route =
+    concat(operation[Inference, InferenceRequest, InferenceResponse],
+      syncOperation[InferenceSync, InferenceRequest, InferenceResponse]
+    )
 }

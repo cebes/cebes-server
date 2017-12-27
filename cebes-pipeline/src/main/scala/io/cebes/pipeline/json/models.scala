@@ -16,6 +16,7 @@ import java.util.UUID
 
 import io.cebes.df.Column
 import io.cebes.df.schema.Schema
+import spray.json.{JsObject, JsValue}
 
 ////////////////////////////////////////////////////////////////
 // Pipeline message
@@ -29,7 +30,7 @@ case class StageOutputDef(stageName: String, outputName: String) extends Pipelin
 
 case class DataframeMessageDef(dfId: UUID) extends PipelineMessageDef
 
-case class SampleMessageDef() extends PipelineMessageDef
+case class SampleMessageDef(data: JsObject, schema: Option[Schema] = None) extends PipelineMessageDef
 
 case class ModelMessageDef(modelId: UUID) extends PipelineMessageDef
 
@@ -69,7 +70,8 @@ case class StageDef(name: String, stageClass: String,
                     inputs: Map[String, PipelineMessageDef] = Map.empty,
                     outputs: Map[String, PipelineMessageDef] = Map.empty,
                     models: Map[String, ModelDef] = Map.empty,
-                    schemas: Map[String, Schema] = Map.empty)
+                    schemas: Map[String, Schema] = Map.empty,
+                    newInputs: Seq[String] = Seq.empty)
 
 /**
   * Definition of a Pipeline
@@ -113,3 +115,52 @@ case class PipelineRunDef(pipeline: PipelineDef, feeds: Map[String, PipelineMess
   * @param results    The results of all the outputs requested in [[PipelineRunDef]]
   */
 case class PipelineRunResultDef(pipelineId: UUID, results: Array[(StageOutputDef, PipelineMessageDef)])
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// for inference service
+
+/**
+  * Request (sent by end-user) to run inference on a served pipeline.
+  *
+  * @param servingName name of the pipeline
+  * @param inputs      map of input values
+  * @param outputs     list of output slots from which to take values
+  */
+case class InferenceRequest(servingName: String,
+                            inputs: Map[String, JsValue],
+                            outputs: Array[String],
+                            maxDfSize: Int = 2000)
+
+/**
+  * Response from server for an inference request.
+  *
+  * @param outputs map of output slots to the result
+  */
+case class InferenceResponse(outputs: Map[String, JsValue])
+
+/**
+  * Describe how a pipeline will be served.
+  *
+  * @param servingName user-friendly name for the served pipeline, so user can use this name when they request inference.
+  * @param slotNamings map from user-friendly slot name to the actual [parent]:[name] slot name
+  * @param pipelineTag tag of the pipeline to serve (including host if needed)
+  * @param userName    username used to login to the pipeline repository, if needed
+  * @param password    password used to login to the pipeline repository, if needed
+  */
+case class ServedPipeline(servingName: String,
+                          slotNamings: Map[String, String],
+                          pipelineTag: String,
+                          userName: Option[String],
+                          password: Option[String])
+
+/**
+  * Server configuration for the serving part.
+  *
+  * @param pipelines list of [[ServedPipeline]] specifying pipelines to be served.
+  * @param secured   whether to serve the pipeline securely (only logged-in users can request inference)
+  */
+case class ServingConfiguration(pipelines: Array[ServedPipeline],
+                                secured: Boolean = false,
+                                httpInterface: String,
+                                httpPort: Int)

@@ -1,0 +1,6 @@
+{
+  "pipelines": [],
+  "secured": false,
+  "httpInterface": "localhost",
+  "httpPort": 22000
+}

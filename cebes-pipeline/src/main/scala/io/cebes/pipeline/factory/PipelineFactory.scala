@@ -15,9 +15,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 
 import com.google.inject.Inject
+import com.typesafe.scalalogging.LazyLogging
 import io.cebes.common.HasId
-import io.cebes.pipeline.json.{PipelineDef, PipelineExportDef}
+import io.cebes.pipeline.json.{PipelineDef, PipelineExportDef, StageOutputDef}
 import io.cebes.pipeline.models.{Pipeline, Stage}
+import io.cebes.util.FileSystemHelper
 import spray.json._
 
 import scala.collection.mutable
@@ -26,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Provides functions for exporting and importing [[Pipeline]]s
   */
-class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
+class PipelineFactory @Inject()(private val stageFactory: StageFactory) extends LazyLogging {
 
   /**
     * Export the given [[Pipeline]] into a [[PipelineExportDef]] message
@@ -68,12 +70,36 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
 
     val destDir = Files.createDirectories(checkExists(-1)).toString
     val modelDir = Files.createDirectory(Paths.get(destDir, PipelineFactory.MODEL_SUB_DIR))
-    val options = PipelineExportOptions(includeModels = true, modelStorageDir = Some(modelDir.toString),
+    val options = PipelineExportOptions(includeModels = true,
+      modelStorageDir = Some(modelDir.toString),
       includeSchemas = true)
     export(ppl, options).map { pplExp =>
       Files.write(Paths.get(destDir, PipelineFactory.ENTRY_FILE_NAME),
         pplExp.toJson.compactPrint.getBytes(StandardCharsets.UTF_8))
       destDir
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // pack a pipeline into a zip package
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * export the pipeline into a downloadable zip package
+    */
+  def exportZip(ppl: Pipeline, outputFile: String)(implicit jsPplExp: JsonWriter[PipelineExportDef],
+                                                   ec: ExecutionContext): Future[String] = {
+    Future(Files.createTempDirectory("cebes-ppl-export")).flatMap { p =>
+      export(ppl, p.toString)
+    }.map { p =>
+      val folder = Paths.get(p)
+      val packageFile = Files.createTempFile("cebes-ppl", s"${ppl.id.toString}.zip").toString
+      try {
+        FileSystemHelper.zipFolder(p, packageFile)
+      } finally {
+        FileSystemHelper.deleteRecursively(folder.getParent.toFile, silent = true)
+      }
+      packageFile
     }
   }
 
@@ -90,7 +116,7 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
     *                        (see [[ModelFactory]] for more information.
     */
   def imports(pplDef: PipelineDef, modelStorageDir: Option[String])(implicit ec: ExecutionContext): Pipeline = {
-    val pplDefWithId = pplDef.copy(id=pplDef.id.orElse(Some(HasId.randomId)))
+    val pplDefWithId = pplDef.copy(id = pplDef.id.orElse(Some(HasId.randomId)))
 
     val stageMap = mutable.Map.empty[String, Stage]
     pplDefWithId.stages.map { s =>
@@ -98,6 +124,17 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
       require(!stageMap.contains(stage.getName), s"Duplicated stage name: ${stage.getName}")
       stageMap.put(stage.getName, stage)
     }
+
+    // connect the stages
+    pplDefWithId.stages.map { s =>
+      s.inputs.collect {
+        case (slotName: String, src: StageOutputDef) =>
+          val thisStage = stageMap(s.name)
+          val srcStage = stageMap(src.stageName)
+          thisStage.input(thisStage.getInput(slotName), srcStage.output(srcStage.getOutput(src.outputName)))
+      }
+    }
+
     Pipeline(pplDefWithId.id.get, stageMap.toMap, pplDefWithId)
   }
 
@@ -122,6 +159,22 @@ class PipelineFactory @Inject()(private val stageFactory: StageFactory) {
       Files.createDirectory(modelDir)
     }
     imports(pplExp.pipeline, Some(modelDir.toString))
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  // import zip
+  ///////////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Import the given package and return a pipeline object
+    */
+  def importZip(packageFile: String)(implicit jsonReader: JsonReader[PipelineExportDef],
+                                     ec: ExecutionContext): Pipeline = {
+    val outDir = Files.createTempDirectory("cebes-ppl-import")
+    FileSystemHelper.unzip(packageFile, outDir.toString)
+    val ppl = imports(outDir.toString)
+    FileSystemHelper.deleteRecursively(outDir.toFile, silent = true)
+    ppl
   }
 }
 

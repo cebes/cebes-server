@@ -9,20 +9,21 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.repository.http
+package io.cebes.http.helper
+
+
+import java.util.concurrent.TimeUnit
 
 import akka.actor.Scheduler
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.model.{HttpMethod, HttpMethods, StatusCodes, headers => akkaHeaders}
+import akka.http.scaladsl.model.{HttpHeader, HttpMethod, HttpMethods, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromResponseUnmarshaller
 import io.cebes.http.Retries
 import io.cebes.http.client.ServerException
 import io.cebes.http.server.HttpJsonProtocol._
-import io.cebes.http.server.auth.HttpAuthJsonProtocol._
-import io.cebes.http.server.auth.LoginRequest
 import io.cebes.http.server.{FailResponse, FutureResult, RequestStatuses, SerializableResult}
 import org.scalatest.FunSuiteLike
 import spray.json.JsonFormat
@@ -32,12 +33,17 @@ import scala.concurrent.{Await, Awaitable, Future}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
+
+/**
+  * Simple test client without authentication (logins and stuff).
+  * For secured test client, use [[SecuredTestClient]].
+  */
 trait TestClient extends FunSuiteLike with ScalatestRouteTest {
 
   protected val serverRoutes: Route
   protected val apiVersion: String
 
-  private lazy val authHeaders = login()
+  protected lazy val authHeaders: Seq[HttpHeader] = Seq()
 
   implicit val scheduler: Scheduler = system.scheduler
 
@@ -46,12 +52,12 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
   ////////////////////////////////////////////////////////////////////
 
   def post[E, T](url: String, entity: E)(op: => T)(implicit emE: ToEntityMarshaller[E]): T =
-    Post(s"/$apiVersion/$url", entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
+    Post(getUrl(url), entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
       op
     }
 
   def get[T](url: String)(implicit emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    Get(s"/$apiVersion/$url").withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
+    Get(getUrl(url)).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
       status match {
         case StatusCodes.OK => responseAs[T]
         case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>
@@ -63,36 +69,33 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
       }
     }
 
-  def _query[E, T](url: String, entity: E, method: HttpMethod)(implicit emE: ToEntityMarshaller[E],
-                                                               emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    new RequestBuilder(method)(s"/$apiVersion/$url", entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
-      status match {
-        case StatusCodes.OK => responseAs[T]
-        case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>
-          // handled server exceptions
-          val failResponse = responseAs[FailResponse]
-          throw ServerException(None, failResponse.message.getOrElse(""), failResponse.stackTrace)
-        case _ =>
-          throw ServerException(None, response.toString(), None)
-      }
-    }
 
   def put[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
                                         emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    _query(url, entity, HttpMethods.PUT)
+    query(url, entity, HttpMethods.PUT)
 
   def delete[E, T](url: String, entity: E)(implicit emE: ToEntityMarshaller[E],
                                            emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
-    _query(url, entity, HttpMethods.DELETE)
+    query(url, entity, HttpMethods.DELETE)
 
   /**
     * Send an asynchronous command and wait for the result, using exponential-backoff
     */
   def postAsync[E, R](url: String, entity: E)
-                     (implicit emE: ToEntityMarshaller[E],
-                      jfR: JsonFormat[R]): Future[R] = {
+                     (implicit emE: ToEntityMarshaller[E], jfR: JsonFormat[R]): Future[R] = {
     post(url, entity) {
-      responseAs[FutureResult]
+      response.status match {
+        case StatusCodes.OK =>
+          implicit val timeout: Duration = Duration(5, TimeUnit.SECONDS)
+          responseAs[FutureResult]
+        case code =>
+          Try(responseAs[FailResponse]) match {
+            case Success(fr: FailResponse) =>
+              throw ServerException(None, fr.message.getOrElse(""), fr.stackTrace, Some(code))
+            case Failure(_) =>
+              throw ServerException(None, s"Failed request: ${responseEntity.toString}", None, Some(code))
+          }
+      }
     } ~> { futureResult =>
 
       Retries.retryUntil(Retries.expBackOff(100, max_count = 6))(
@@ -128,21 +131,24 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
   // Helpers
   ////////////////////////////////////////////////////////////////////
 
-  private def login() = {
-    Post(s"/$apiVersion/auth/login", LoginRequest("foo", "bar")) ~> serverRoutes ~> check {
-      assert(status == StatusCodes.OK)
-      val responseCookies = headers.filter(_.name().startsWith("Set-"))
-      assert(responseCookies.nonEmpty)
-
-      responseCookies.flatMap {
-        case akkaHeaders.`Set-Cookie`(c) => c.name.toUpperCase() match {
-          case "XSRF-TOKEN" =>
-            Seq(akkaHeaders.RawHeader("X-XSRF-TOKEN", c.value), akkaHeaders.Cookie(c.name, c.value))
-          case _ => Seq(akkaHeaders.Cookie(c.name, c.value))
-        }
-        case h =>
-          Seq(akkaHeaders.RawHeader(h.name().substring(4), h.value()))
+  private def query[E, T](url: String, entity: E, method: HttpMethod)
+                         (implicit emE: ToEntityMarshaller[E], emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
+    new RequestBuilder(method)(getUrl(url), entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
+      status match {
+        case StatusCodes.OK => responseAs[T]
+        case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>
+          // handled server exceptions
+          val failResponse = responseAs[FailResponse]
+          throw ServerException(None, failResponse.message.getOrElse(""), failResponse.stackTrace)
+        case _ =>
+          throw ServerException(None, response.toString(), None)
       }
+    }
+
+  protected def getUrl(path: String): String = {
+    apiVersion match {
+      case "" => s"/$path"
+      case s => s"/$s/$path"
     }
   }
 

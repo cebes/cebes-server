@@ -8,11 +8,8 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 07/11/2016.
  */
-
-package io.cebes.server.routes.result
+package io.cebes.http.server.routes.result
 
 import java.util.UUID
 

@@ -20,11 +20,8 @@ import spray.json.RootJsonFormat
 
 case class DataframeResponse(id: UUID, schema: Schema)
 
-case class VersionResponse(api: String)
-
 trait HttpServerJsonProtocol {
   implicit val dataframeResponseFormat: RootJsonFormat[DataframeResponse] = jsonFormat2(DataframeResponse)
-  implicit val versionResponseFormat: RootJsonFormat[VersionResponse] = jsonFormat1(VersionResponse)
 }
 
 object HttpServerJsonProtocol extends HttpServerJsonProtocol

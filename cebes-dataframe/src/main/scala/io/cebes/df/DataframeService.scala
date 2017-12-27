@@ -19,6 +19,7 @@ import java.util.UUID
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.VariableTypes.VariableType
 import io.cebes.tag.TagService
+import spray.json.JsValue
 
 
 trait DataframeService extends TagService[Dataframe] {
@@ -288,6 +289,27 @@ trait DataframeService extends TagService[Dataframe] {
   def aggregateSum(dfId: UUID, cols: Seq[Column], aggType: DataframeService.AggregationTypes.AggregationType,
                    pivotColName: Option[String], pivotValues: Option[Seq[Any]],
                    sumColNames: Seq[String]): Dataframe
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  // JSON serialization
+  ////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+    * Serialize the given [[Dataframe]] into JSON of format:
+    * {"data": [{"col1": .., "col2": ..}, {...}], "schema": ...}
+    *
+    * where `data` contains the list of rows, and `schema` is optional.
+    *
+    * This is intended to be used on small [[Dataframe]], so the whole JSON
+    * structure can be stored in-memory.
+    */
+  def serialize(df: Dataframe): JsValue
+
+  /**
+    * Deserialize the given JSON value into a [[Dataframe]]
+    * To go with [[serialize]]
+    */
+  def deserialize(jsValue: JsValue): Dataframe
 }
 
 object DataframeService {

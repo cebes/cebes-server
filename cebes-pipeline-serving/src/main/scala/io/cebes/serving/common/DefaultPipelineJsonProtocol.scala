@@ -9,13 +9,11 @@
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
  */
-package io.cebes.serving.spark
+package io.cebes.serving.common
 
-import io.cebes.serving.{InferenceRequest, InferenceResponse, PipelineServingService}
+import io.cebes.pipeline.json.PipelineJsonProtocol
 
-import scala.concurrent.Future
+////////////////////////////////////////////////////////////////////////////////////////////////
+// Json protocols
 
-class SparkPipelineServingService extends PipelineServingService {
-
-  override def inference(request: InferenceRequest): Future[InferenceResponse] = ???
-}
+object DefaultPipelineJsonProtocol extends PipelineJsonProtocol

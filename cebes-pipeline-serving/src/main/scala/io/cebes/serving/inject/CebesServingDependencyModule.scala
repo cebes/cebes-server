@@ -11,9 +11,24 @@
  */
 package io.cebes.serving.inject
 
-import com.google.inject.AbstractModule
+import com.google.inject.{AbstractModule, Singleton}
+import io.cebes.auth.AuthService
+import io.cebes.auth.simple.SimpleAuthService
+import io.cebes.http.server.HttpServer
+import io.cebes.http.server.result.ResultStorage
+import io.cebes.pipeline.json.ServingConfiguration
+import io.cebes.pipeline.{InferenceManager, InferenceService}
+import io.cebes.serving.common.{DefaultInferenceManager, DefaultInferenceService}
+import io.cebes.serving.http.CebesServingResultStorage
 
 class CebesServingDependencyModule extends AbstractModule {
   override def configure(): Unit = {
+    bind(classOf[ServingConfiguration]).toProvider(classOf[ServingConfigurationProvider])
+    bind(classOf[InferenceService]).to(classOf[DefaultInferenceService])
+    bind(classOf[InferenceManager]).to(classOf[DefaultInferenceManager]).in(classOf[Singleton])
+
+    bind(classOf[AuthService]).to(classOf[SimpleAuthService])
+    bind(classOf[ResultStorage]).to(classOf[CebesServingResultStorage]).in(classOf[Singleton])
+    bind(classOf[HttpServer]).toProvider(classOf[ServerProvider])
   }
 }

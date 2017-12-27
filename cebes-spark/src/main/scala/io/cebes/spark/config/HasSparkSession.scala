@@ -17,8 +17,8 @@ package io.cebes.spark.config
 import java.util.Properties
 
 import com.google.inject.{Inject, Injector, Provider, Singleton}
-import io.cebes.prop.{Prop, Property}
 import io.cebes.prop.types.HiveMetastoreCredentials
+import io.cebes.prop.{Prop, Property}
 import org.apache.log4j.PropertyConfigurator
 import org.apache.spark.sql.SparkSession
 
@@ -56,7 +56,7 @@ class HasSparkSessionProvider @Inject()
   lazy val localSessionBuilder: SparkSession.Builder = {
     val builder = SparkSession.builder()
       .appName("Cebes service on Spark (local)")
-      .master("local[4]")
+      .master("local[*]")
       .config("spark.sql.warehouse.dir", sparkWarehouseDir)
 
     // update log4j configuration if there is some log4j.properties in the classpath

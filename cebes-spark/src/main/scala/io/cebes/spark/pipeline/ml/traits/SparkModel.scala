@@ -88,7 +88,7 @@ object SparkModel {
     val classMirror = runtimeMirror.reflectClass(classSymbol)
     val constructorSymbol = classSymbol.primaryConstructor.asMethod
 
-    require(constructorSymbol.paramLists.length == 1,
+    require(constructorSymbol.paramLists.lengthCompare(1) == 0,
       s"Primary constructor of model class ${modelDef.modelClass} has more than 1 parameter list")
     val constructorMirror = classMirror.reflectConstructor(constructorSymbol)
     Try(constructorMirror.apply(modelDef.id, sparkTransformer, dfFactory)) match {

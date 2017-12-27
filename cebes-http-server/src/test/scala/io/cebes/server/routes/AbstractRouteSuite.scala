@@ -17,9 +17,10 @@ package io.cebes.server.routes
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Route
+import io.cebes.http.helper.SecuredTestClient
 import io.cebes.pipeline.json.{ModelDef, PipelineDef}
 import io.cebes.server.client.RemoteDataframe
-import io.cebes.server.helpers.{CebesHttpServerTestInjector, TestClient}
+import io.cebes.server.helpers.CebesHttpServerTestInjector
 import io.cebes.server.http.CebesHttpServer
 import io.cebes.server.routes.common.DataframeResponse
 import io.cebes.server.routes.df.DataframeRequest
@@ -33,7 +34,7 @@ import spray.json._
   * Mother of all Route test, with helpers for using akka test-kit,
   * logging in and storing cookies, etc...
   */
-abstract class AbstractRouteSuite extends FunSuite with TestClient {
+abstract class AbstractRouteSuite extends FunSuite with SecuredTestClient {
 
   private val server: CebesHttpServer = CebesHttpServerTestInjector.instance[CebesHttpServer]
 

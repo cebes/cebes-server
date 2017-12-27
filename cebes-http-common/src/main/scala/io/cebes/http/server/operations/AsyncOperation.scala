@@ -45,7 +45,7 @@ trait AsyncOperation[E, T, R] extends LazyLogging {
   /**
     * To be injected by the DI framework
     */
-  val resultStorage: ResultStorage
+  protected val resultStorage: ResultStorage
 
   /**
     * Name of the current executor
