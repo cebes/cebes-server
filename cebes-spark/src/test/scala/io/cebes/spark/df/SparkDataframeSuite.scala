@@ -55,6 +55,22 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df3.schema("job_number").variableType === VariableTypes.DISCRETE)
   }
 
+  test("Dataframe storage types") {
+    val df = getCylinderBands
+    assert(df.schema("job_number").storageType === StorageTypes.IntegerType)
+
+    val df2 = df.withStorageType("job_number", StorageTypes.IntegerType)
+    assert(df2.id === df.id)
+
+    val df3 = df.withStorageType("job_number", StorageTypes.LongType)
+    assert(df3.id !== df.id)
+    assert(df3.schema("job_number").storageType === StorageTypes.LongType)
+
+    val ex = intercept[IllegalArgumentException] {
+      df.withStorageType("non_eixst", StorageTypes.LongType)
+    }
+  }
+
   test("Apply schema") {
     val df = getCylinderBands
     assert(df.schema("job_number").storageType === IntegerType)

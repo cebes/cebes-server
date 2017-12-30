@@ -41,6 +41,7 @@ trait DataframeHandler extends DataframeOperationHelper {
 
       operationDf[InferVariableTypes, LimitRequest],
       operationDf[WithVariableTypes, WithVariableTypesRequest],
+      operationDf[WithStorageTypes, WithStorageTypesRequest],
       operation[Count, DataframeRequest, Long],
       operationDf[Sample, SampleRequest],
       operation[Take, LimitRequest, DataSample],

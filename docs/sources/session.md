@@ -153,14 +153,45 @@ Local datasets are convenient when you want to quickly test something, or your d
 More often, if you have a separated Spark cluster, it might already contain interesting business data.
 In that case you can load it into Cebes using the following APIs.
 
-[read_jdbc](), [read_hdfs](), [read_s3](), [read_hive]()
+A table in an RDBMS can be read with `read_jdbc`:
+
+```python
+>>> df = session.read_jdbc(url='mysql.server.com:3306', table_name='sales', 
+                           user_name='admin', password='abc')
+```
+
+Similarly, a table in Hive can be read with `read_hive`:
+
+```python
+>>> df = session.read_hive(table_name='my_data')
+```
+
+Any JSON, CSV, Parquet, ORC or text files stored in Amazon S3 can be read with `read_s3`:
+
+```python
+>>> df = session.read_s3(bucket='data', key='sales/2017/', 
+                         access_key='YOUR_S3_ACCESS_KEY', secret_key='YOUR_S3_SECRET_KEY', 
+                         fmt='csv', options=cb.CsvReadOptions())
+```
+
+More often, you might already have data files in Hadoop, in which case `read_hdfs` will come handy:
+
+```python
+>>> df = session.read_hdfs(path='/data/path', server=None, fmt='parquet', 
+                           options=cb.ParquetReadOptions())
+```
+
+`read_s3` and `read_hdfs` support data files in JSON, CSV, Parquet, ORC or text, just like `read_local`.
+
+Once you read your datasets into Cebes, it is a good idea to tag them, so they won't get evicted. 
+Keep reading to learn about _tags_ and why they matter in Cebes.
 
 ---
 
 ### Managing Dataframes, models and pipelines
 
 Cebes server keeps a list of all your dataframes, models and pipelines. Those are 3 types of first-class 
-citizens that Cebes allow you to work with.
+citizens that you work with in Cebes.
 
 #### Managing Dataframes
 
@@ -225,8 +256,19 @@ If you want to reuse a tag, you need to `untag` it first:
 
 Note how Cebes only untag `preprocessed_data:default`, while keeping `preporcessed_data:v1` unchanged. 
 This is because we did `session.dataframe.untag('preprocessed_data')`, and Cebes looks for the full 
-tag `preprocessed_data:default` to delete. To delete `preprocessed_data:v1`, we need to be specific:
-`session.dataframe.untag('preprocessed_data:v1')`.
+tag `preprocessed_data:default` to delete. 
+
+To delete `preprocessed_data:v1`, we need to be specific:
+
+```python
+>>> session.dataframe.untag('preprocessed_data:v1')
+```
+
+> **Summary**: 
+>
+>    - _Tag_ is a string given to a Dataframe, so that users can retrieve them later. 
+>    - Tagged Dataframes will be persisted in Cebes.
+>    - Tag has format `NAME:VERSION`. When unspecified, the default VERSION is `default`.
 
 ---
 

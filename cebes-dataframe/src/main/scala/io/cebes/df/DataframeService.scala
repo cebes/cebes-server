@@ -18,6 +18,7 @@ import java.util.UUID
 
 import io.cebes.df.sample.DataSample
 import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.types.storage.StorageType
 import io.cebes.tag.TagService
 import spray.json.JsValue
 
@@ -47,6 +48,11 @@ trait DataframeService extends TagService[Dataframe] {
     * Change variable types of some columns, returns a new [[Dataframe]]
     */
   def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe
+
+  /**
+    * Change storage types of some columns, returns a new [[Dataframe]]
+    */
+  def withStorageTypes(dfId: UUID, storageTypes: Map[String, StorageType]): Dataframe
 
   /**
     * Returns the number of rows in the given [[Dataframe]]

@@ -48,7 +48,7 @@ trait StackExpressionParser[T] {
       }
     }
 
-    if (results.size != 1) {
+    if (results.lengthCompare(1) != 0) {
       throw new IllegalArgumentException("There is an error when parsing the expression")
     }
     results.head
@@ -109,13 +109,13 @@ abstract class AbstractExpressionParser[T](implicit typeTag: universe.TypeTag[T]
 
   private def filterMethod(method: universe.MethodSymbol): Boolean = {
     val paramList = method.paramLists.head
-    paramList.length == 2 &&
+    paramList.lengthCompare(2) == 0 &&
       paramList.last.info =:= universe.typeOf[Seq[T]] &&
       method.returnType =:= universe.typeOf[Option[T]]
   }
 
   private def invoke(expr: Expression, method: universe.MethodMirror, results: mutable.Stack[T]): Unit = {
-    if (results.size < expr.children.size) {
+    if (results.lengthCompare(expr.children.size) < 0) {
       throw new IllegalStateException(s"Invalid expression at " +
         s"somewhere near ${expr.name}(${expr.children.map(_.name).mkString(", ")})")
     }

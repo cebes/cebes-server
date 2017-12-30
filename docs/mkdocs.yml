@@ -7,6 +7,7 @@ site_url: http://cebes.io/
 markdown_extensions:
   - fenced_code
 
+edit_uri: edit/master/docs/sources
 site_description: 'Cebes - the integrated framework for Data Science'
 
 pages:

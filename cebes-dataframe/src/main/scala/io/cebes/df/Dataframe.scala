@@ -19,6 +19,7 @@ import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.{HasSchema, Schema}
 import io.cebes.df.support.{GroupedDataframe, NAFunctions, StatFunctions}
 import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.types.storage.StorageType
 
 /**
   * Cebes Dataframe
@@ -57,13 +58,23 @@ trait Dataframe extends HasSchema with HasId {
     * Sanity checks will be performed. If new variable type doesn't conform with its storage type,
     * an exception will be thrown.
     *
-    * @param colName column name
+    * @param colName      column name
     * @param variableType new variable type
     * @return a new [[Dataframe]]
     * @group Schema manipulation
     */
   def withVariableType(colName: String, variableType: VariableType): Dataframe =
-  withVariableTypes(Map(colName -> variableType))
+    withVariableTypes(Map(colName -> variableType))
+
+  /**
+    * Cast the given column into the given storage type. Column names are case-insensitive.
+    *
+    * @param colName     column name
+    * @param storageType new storage type
+    * @return a new [[Dataframe]]
+    * @group Schema manipulation
+    */
+  def withStorageType(colName: String, storageType: StorageType): Dataframe
 
   /**
     * Apply a new schema to this data frame
@@ -393,7 +404,7 @@ trait Dataframe extends HasSchema with HasId {
     * @group aggregation
     */
   def agg(aggExpr: (String, String), aggExprs: (String, String)*): Dataframe = {
-    groupBy().agg(aggExpr, aggExprs : _*)
+    groupBy().agg(aggExpr, aggExprs: _*)
   }
 
   /**
@@ -418,6 +429,6 @@ trait Dataframe extends HasSchema with HasId {
     *
     * @group aggregation
     */
-  def agg(expr: Column, exprs: Column*): Dataframe = groupBy().agg(expr, exprs : _*)
+  def agg(expr: Column, exprs: Column*): Dataframe = groupBy().agg(expr, exprs: _*)
 
 }
