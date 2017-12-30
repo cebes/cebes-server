@@ -1,16 +1,21 @@
 site_name: Cebes Documentation
-theme: simplex
+theme:
+  name: readthedocs
 docs_dir: sources
 repo_url: http://github.com/phvu/cebes-server
 site_url: http://cebes.io/
+markdown_extensions:
+  - fenced_code
 
-site_description: 'Documentation for Cebes, the integrated framework for Data Science at Scale'
+site_description: 'Cebes - the integrated framework for Data Science'
 
 pages:
 - Home:
   - Overview: index.md
-  - Architecture overview: architecture_overview.md
-  - Getting Started: getting_started.md
-- Features: features.md
-- Deployment: deployment.md
-- About: about.md
+  - Installation: installation.md
+- Data processing with Cebes:
+  - Session: session.md
+  - Dataframe: dataframe.md
+- Machine Learning pipelines: pipelines.md
+- Serving pipelines: serving.md
+- Contributing: contributing.md
