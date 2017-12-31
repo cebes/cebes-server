@@ -81,7 +81,7 @@ To delete `preprocessed_data:v1`, we need to be specific:
 ---
 ## Managing Models and Pipelines
 
-All [pipelines and models](pipelines.md) share the same management principles as Dataframes.
+All [pipelines and models](pipelines_concepts.md) share the same management principles as Dataframes.
 
 - For pipelines:
     - use `Session.pipeline.list`, `Session.pipeline.get`, `Session.pipeline.tag` and `Session.pipeline.untag`

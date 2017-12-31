@@ -23,6 +23,10 @@ pages:
   - User guide: dataframe_guide.md
   - Dataframe API Reference: dataframe_reference.md
   - Functional API Reference: dataframe_functions.md
-- Machine Learning pipelines: pipelines.md
+- Machine Learning pipelines:
+  - Key concepts: pipelines_concepts.md
+  - ETL stages: pipelines_etl.md
+  - Machine Learning states: pipelines_ml.md
+  - Pipeline repository: pipelines_repo.md
 - Serving pipelines: serving.md
 - Contributing: contributing.md

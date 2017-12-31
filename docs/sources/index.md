@@ -11,7 +11,7 @@ It does so by:
     Cebes provides a client with _pandas_-like APIs for working on big [Dataframes](dataframe_concepts.md), 
     so you don't need to connect directly to the Spark cluster to run Spark jobs.
 
-- Providing unified APIs for processing data and training models in [pipelines](pipelines.md)  
+- Providing unified APIs for processing data and training models in [pipelines](pipelines_concepts.md)  
     ETL stages and Machine Learning algorithms can be connected to form flexible 
     and powerful data processing pipelines.
     

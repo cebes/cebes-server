@@ -26,6 +26,8 @@ import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
+import org.apache.spark.ml.linalg.{Vector => MlVector}
+import org.apache.spark.mllib.linalg.{Vector => MLLibVector}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 
@@ -116,6 +118,10 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
         r.schema.fields.map { f =>
           f.name -> getValue(r.get(r.fieldIndex(f.name)))
         }.toMap
+      case vector: MLLibVector =>
+        vector.toArray
+      case vector: MlVector =>
+        vector.toArray
       case other => other
     }
 
