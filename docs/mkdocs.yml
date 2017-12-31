@@ -14,9 +14,14 @@ pages:
 - Home:
   - Overview: index.md
   - Installation: installation.md
-- Data processing with Cebes:
-  - Session: session.md
-  - Dataframe: dataframe.md
+- Cebes Session:
+  - Key concepts: session.md
+  - Load data into Cebes: session_load_data.md
+  - Manage Dataframes, models and pipelines: session_df.md
+- Cebes Dataframe:
+  - Key concepts: dataframe_concepts.md
+  - User guide: dataframe_guide.md
+  - API Reference: dataframe_reference.md
 - Machine Learning pipelines: pipelines.md
 - Serving pipelines: serving.md
 - Contributing: contributing.md

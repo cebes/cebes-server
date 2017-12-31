@@ -8,7 +8,7 @@ help them to focus on modeling and understanding, instead of the dreary, trivial
 It does so by:
 
 - Simplifying interaction with Apache Spark for [data processing](session.md)  
-    Cebes provides a client with _pandas_-like APIs for working on big [Dataframes](dataframe.md), 
+    Cebes provides a client with _pandas_-like APIs for working on big [Dataframes](dataframe_concepts.md), 
     so you don't need to connect directly to the Spark cluster to run Spark jobs.
 
 - Providing unified APIs for processing data and training models in [pipelines](pipelines.md)  
