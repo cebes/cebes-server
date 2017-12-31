@@ -92,3 +92,7 @@ All [pipelines and models](pipelines_concepts.md) share the same management prin
     - use `Session.model.list`, `Session.model.get`, `Session.model.tag` and `Session.model.untag`
     - the [`CEBES_CACHESPEC_MODEL_STORE`](installation.md#cebes-server-configuration) flag dictates how
     and when in-memory models are evicted.
+
+Since they can be tagged, Cebes can handle pipelines and models as they evolve with your business logic.
+Just keep the same tag name but give them a different version, all your pipelines and models can be managed 
+in a coherent way.
