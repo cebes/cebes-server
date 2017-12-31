@@ -223,6 +223,61 @@ here is a not-so-trivial projection that involves creating an array of values:
     4   MODMAT  [0.0, 0.0]          0.0           0.0
 ```
 
+### Combine expressions
+
+To combine multiple boolean expressions, use boolean operators `&`, `|` and `~` on the expressions.
+
+Note that Python's built-in boolean operators like `and`, `or`, `not` are not usable because they 
+cannot be overridden to provide the functionality we want. Trying to use `and`, `or`, `not` on 
+Cebes expressions will throw an exception.
+
+```python
+>>> df.select(df.wax, df.hardener).where((df.wax < 2.8) & ~(df.hardener > 0.8)).show()
+    ID: 0ba144ef-22e4-48d6-8774-7eef95b57a40
+    Shape: (128, 2)
+    Sample 5 rows:
+       wax  hardener
+    0  2.5       0.7
+    1  2.3       0.6
+    2  2.5       0.8
+    3  2.5       0.6
+    4  2.5       0.8
+
+>>> df.select(df.wax, df.hardener).where((df.wax < 2.8) and not(df.hardener > 0.8)).show()
+    ...
+    ValueError: Cannot convert column into bool: please use '&' for 'and', '|' for 'or', 
+    '~' for 'not' when building Dataframe boolean expressions.
+``` 
+
+Bitwise operations can be constructed as follows:
+
+```python
+>>> df.select(df.roller_durometer, df.current_density, 
+              df.roller_durometer.bitwise_or(df.current_density), 
+              df.roller_durometer.bitwise_and(cb.bitwise_not(df.current_density)).alias('complicated_expr')).show()
+
+    ID: 2ccc186d-6a7c-45f6-8572-bf0e753442eb
+    Shape: (540, 4)
+    Sample 5 rows:
+       roller_durometer  current_density  (roller_durometer | current_density)  \
+    0                34               40                                    42   
+    1                34               40                                    42   
+    2                40               40                                    40   
+    3                40               40                                    40   
+    4                35               40                                    43   
+    
+       complicated_expr
+    0                 2  
+    1                 2  
+    2                 0  
+    3                 0  
+    4                 3
+```
+
+Here we use some functions on the expressions like `df.roller_durometer.bitwise_or()`, but Cebes also provides
+many functions in the functional form `cb.bitwise_not()`. See [this page](dataframe_functions.md) 
+for the full list of functions provided in Cebes.
+
 Other basic SQL operations include [limit](dataframe_reference.md#pycebes.core.dataframe.Dataframe.limit),
  [intersect](dataframe_reference.md#pycebes.core.dataframe.Dataframe.intersect),
  [union](dataframe_reference.md#pycebes.core.dataframe.Dataframe.union), 
@@ -232,7 +287,59 @@ Other basic SQL operations include [limit](dataframe_reference.md#pycebes.core.d
 ---
 ## Joins
 
+Joins of two Dataframes can be done with [join](dataframe_reference.md#pycebes.core.dataframe.Dataframe.join),
+which supports generic join conditions and different types of joins. 
+
+If one Dataframe is significantly smaller than the other in a join, you can mark it 
+[broadcast](dataframe_reference.md#pycebes.core.dataframe.Dataframe.broadcast), in which 
+case the join might be executed more efficient.
+
 ---
-## GroupBy
+## Grouping
 
+Grouping can be done with [groupby](dataframe_reference.md#pycebes.core.dataframe.Dataframe.groupby), 
+[rollup](dataframe_reference.md#pycebes.core.dataframe.Dataframe.rollup) and 
+[cube](dataframe_reference.md#pycebes.core.dataframe.Dataframe.cube) are also supported.
+After `groupby()`, various way to aggregate the results are provided, including functions 
+in [GroupedDataframe](dataframe_reference.md#pycebes.core.dataframe.GroupedDataframe) and 
+[aggregation functions](dataframe_functions.md#pycebes.core.functions.mean).
 
+When grouping on multiple columns, rollup and cube are different in the way they construct the tuples.
+For example, when grouping on 3 columns, `ROLLUP (YEAR, MONTH, DAY)` will give the following outputs:
+
+```
+YEAR, MONTH, DAY
+YEAR, MONTH
+YEAR
+()
+```
+
+while `CUBE (YEAR, MONTH, DAY)` gives the following:
+
+```
+YEAR, MONTH, DAY
+YEAR, MONTH
+YEAR, DAY
+YEAR
+MONTH, DAY
+MONTH
+DAY
+()
+```
+
+## When ... Otherwise ...
+
+A particularly useful API is to compute a column based on values of other columns, much like 
+conditional expressions in programming languages. 
+
+For example, here is how to encode the `gender` string column into numeric:
+
+```python
+>>> people.select(cb.when(people.gender == 'male', 0)
+            .when(people.gender == 'female', 1)
+            .otherwise(2).alias('gender_int'))
+```
+
+If `otherwise()` is not specified, null value will be used. See 
+[when](dataframe_functions.md#pycebes.core.functions.when) and 
+[otherwise](dataframe_functions.md#pycebes.core.column.Column.otherwise) for more information.

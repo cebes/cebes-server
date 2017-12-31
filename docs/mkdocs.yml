@@ -21,7 +21,8 @@ pages:
 - Cebes Dataframe:
   - Key concepts: dataframe_concepts.md
   - User guide: dataframe_guide.md
-  - API Reference: dataframe_reference.md
+  - Dataframe API Reference: dataframe_reference.md
+  - Functional API Reference: dataframe_functions.md
 - Machine Learning pipelines: pipelines.md
 - Serving pipelines: serving.md
 - Contributing: contributing.md
