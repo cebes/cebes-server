@@ -31,6 +31,7 @@ You can test your installation by connecting the client to a server, as outlined
 
 ---
 
+<a name="connect-to-cebes-server"></a>
 ## Connect to a Cebes server
 
 Using the client, you can connect to a Cebes server by creating a new `Session`.

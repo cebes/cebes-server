@@ -343,3 +343,98 @@ For example, here is how to encode the `gender` string column into numeric:
 If `otherwise()` is not specified, null value will be used. See 
 [when](dataframe_functions.md#pycebes.core.functions.when) and 
 [otherwise](dataframe_functions.md#pycebes.core.column.Column.otherwise) for more information.
+
+## Windowing on time-series
+
+Cebes has the [window](dataframe_functions.md#pycebes.core.functions.window) function for windowing on time-series.
+
+In the example below, the `timestamp` column contains the date in format `yyyyMMdd`. We convert 
+it into Unix timestamp using the `unix_timestamp` function:
+
+```python
+# convert the `timestamp` column from "yyyyMMdd" into Unix timestamp, and cast it to type TIMESTAMP
+
+>>> df2 = df.with_column('timestamp_unix', 
+...:    cb.unix_timestamp(df.timestamp.cast(cb.StorageTypes.STRING), pattern='yyyyMMdd').\
+...:    cast(cb.StorageTypes.TIMESTAMP))
+
+
+>>> df2.show()
+    ID: b03c92b0-f97a-4d21-94e5-1b039fc2c038
+    Shape: (540, 41)
+    Sample 5 rows:
+       timestamp cylinder_number customer  job_number grain_screened ink_color  \
+    0   19910108            X126  TVGUIDE       25503            YES       KEY   
+    1   19910109            X266  TVGUIDE       25503            YES       KEY   
+    2   19910104              B7   MODMAT       47201            YES       KEY   
+    3   19910104            T133   MASSEY       39039            YES       KEY   
+    4   19910111             J34    KMART       37351             NO       KEY   
+    
+      proof_on_ctd_ink blade_mfg cylinder_division paper_type       ...        \
+    0              YES    BENTON          GALLATIN   UNCOATED       ...         
+    1              YES    BENTON          GALLATIN   UNCOATED       ...         
+    2              YES    BENTON          GALLATIN   UNCOATED       ...         
+    3              YES    BENTON          GALLATIN   UNCOATED       ...         
+    4              YES    BENTON          GALLATIN   UNCOATED       ...         
+    
+      esa_voltage esa_amperage  wax hardener roller_durometer  current_density  \
+    0         0.0          0.0  2.5      1.0               34               40   
+    1         0.0          0.0  2.5      0.7               34               40   
+    2         0.0          0.0  2.8      0.9               40               40   
+    3         0.0          0.0  2.5      1.3               40               40   
+    4         5.0          0.0  2.3      0.6               35               40   
+    
+       anode_space_ratio chrome_content band_type  timestamp_unix  
+    0         105.000000          100.0      band       663292800  
+    1         105.000000          100.0    noband       663379200  
+    2         103.870003          100.0    noband       662947200  
+    3         108.059998          100.0    noband       662947200  
+    4         106.669998          100.0    noband       663552000  
+    
+    [5 rows x 41 columns]
+```
+
+We then use `window` on the timestamp column, and `groupby` on those groups to find the 
+number of transactions happening every week:
+
+```python
+>>> df3 = df2.groupby(cb.window(df2.timestamp_unix, '7 days', '7 days')).count()
+
+>>> df3.schema
+    Schema(fields=[SchemaField(name='window',storage_type=Struct[TIMESTAMP,TIMESTAMP],variable_type=STRUCT),
+                   SchemaField(name='count',storage_type=LONG,variable_type=DISCRETE)])
+
+>>> df3.show()
+    ID: 22c45afe-1488-4562-ac4b-5d4767e8a6da
+    Shape: (122, 2)
+    Sample 5 rows:
+                                           window  count
+    0  {'end': 676166400.0, 'start': 675561600.0}      8
+    1  {'end': 651974400.0, 'start': 651369600.0}      4
+    2  {'end': 701568000.0, 'start': 700963200.0}      1
+    3  {'end': 707011200.0, 'start': 706406400.0}      1
+    4  {'end': 714873600.0, 'start': 714268800.0}      2
+```
+
+The `window` column now has type `Struct`, containing the start and end timestamp. We have 
+the correct results now, but to make it looks a bit better, wee can 
+convert those timestamps into the `dd/MM/yyyy` format, and sort the data:
+
+```python
+>>> df4 = df3.with_column('start', cb.date_format(df3['window.start'], 'dd/MM/yyyy')).\
+    with_column('end', cb.date_format(df3['window.end'], 'dd/MM/yyyy')).\
+    with_column('window_start', df3['window.start']).sort('window_start')
+    
+>>> df4 = df4.drop(df4.window_start)
+   
+>>> df4.show()
+   ID: 85f03b43-7731-487a-a01c-e5d7ae488c4d
+   Shape: (122, 4)
+   Sample 5 rows:
+                                          window  count       start         end
+   0  {'end': 639273600.0, 'start': 638668800.0}      1  29/03/1990  05/04/1990
+   1  {'end': 639878400.0, 'start': 639273600.0}      2  05/04/1990  12/04/1990
+   2  {'end': 640483200.0, 'start': 639878400.0}      5  12/04/1990  19/04/1990
+   3  {'end': 641088000.0, 'start': 640483200.0}      1  19/04/1990  26/04/1990
+   4  {'end': 641692800.0, 'start': 641088000.0}      2  26/04/1990  03/05/1990
+```
