@@ -26,6 +26,8 @@ import io.cebes.df.{Column, Dataframe}
 import io.cebes.spark.df.expressions.{SparkExpressionParser, SparkPrimitiveExpression}
 import io.cebes.spark.df.support.{SparkGroupedDataframe, SparkNAFunctions, SparkStatFunctions}
 import io.cebes.spark.util.{CebesSparkUtil, SparkSchemaUtils}
+import org.apache.spark.ml.linalg.{Vector => MlVector}
+import org.apache.spark.mllib.linalg.{Vector => MLLibVector}
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.{DataFrame, functions => sparkFunctions}
 
@@ -68,13 +70,30 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
   override def withVariableTypes(newTypes: Map[String, VariableType]): Dataframe = {
     val fields = schema.map { f =>
       newTypes.find(entry => f.compareName(entry._1)).map(_._2) match {
-        case Some(n) if n.isValid(f.storageType) => f.copy(variableType = n)
-        case Some(n) => throw new IllegalArgumentException(s"Column ${f.name} has storage type ${f.storageType} " +
-          s"but is assigned variable type $n")
+        case Some(n) =>
+          if (n.isValid(f.storageType)) {
+            f.copy(variableType = n)
+          } else {
+            throw new IllegalArgumentException(s"Column ${f.name} has storage type ${f.storageType} " +
+              s"but is assigned variable type $n")
+          }
         case None => f.copy()
       }
     }
     withSparkDataFrame(sparkDf, Schema(fields.toArray))
+  }
+
+  override def withStorageType(colName: String, storageType: StorageType): Dataframe = {
+    schema.get(colName) match {
+      case Some(schemaField) =>
+        if (schemaField.storageType == storageType) {
+          this
+        } else {
+          withColumn(colName, col(colName).cast(storageType))
+        }
+      case None =>
+        throw new IllegalArgumentException(s"Column name not found: $colName")
+    }
   }
 
   override def applySchema(newSchema: Schema): Dataframe = {
@@ -83,7 +102,7 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
         s" but the new schema has ${newSchema.length} columns")
 
     val sparkCols = schema.fields.zip(newSchema.fields).map { case (currentCol, newCol) =>
-      sparkDf(currentCol.name).as(newCol.name).cast(SparkSchemaUtils.cebesTypesToSpark(newCol.storageType))
+      sparkDf(currentCol.name).as(newCol.name).cast(cebesTypesToSpark(newCol.storageType))
     }
     withSparkDataFrame(sparkDf.select(sparkCols: _*), newSchema)
   }
@@ -99,6 +118,10 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
         r.schema.fields.map { f =>
           f.name -> getValue(r.get(r.fieldIndex(f.name)))
         }.toMap
+      case vector: MLLibVector =>
+        vector.toArray
+      case vector: MlVector =>
+        vector.toArray
       case other => other
     }
 
@@ -148,7 +171,7 @@ class SparkDataframe private[df](private val dfFactory: SparkDataframeFactory,
   override def withColumn(colName: String, col: Column): Dataframe = {
     val newSparkDf = safeSparkCall(sparkDf.withColumn(colName, parser.toSpark(col)))
     withSparkDataFrame(newSparkDf, schema.withField(colName,
-      SparkSchemaUtils.sparkTypesToCebes(newSparkDf.schema(colName).dataType)))
+      sparkTypesToCebes(newSparkDf.schema(colName).dataType)))
   }
 
   override def withColumnRenamed(existingName: String, newName: String): Dataframe = {

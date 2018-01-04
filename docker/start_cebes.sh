@@ -8,7 +8,6 @@ MYSQL_OPTIONS="?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&use
 mkdir -p "${CEBES_DATA_DIR}/spark-warehouse" "${CEBES_DATA_DIR}/logs" "${CEBES_DATA_DIR}/mysql"
 
 # start MariaDB
-chmod +x /cebes/configure_mariadb.sh
 /cebes/configure_mariadb.sh ${CEBES_DATA_DIR}/mysql
 
 export CEBES_HIVE_METASTORE_URL="jdbc:mysql://${CEBES_MYSQL_SERVER}/cebes_hive_metastore${MYSQL_OPTIONS}"

@@ -27,6 +27,8 @@ ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
 ADD docker/configure_mariadb.sh /cebes/
 ADD docker/start_cebes.sh /cebes/
 
+RUN chmod +x /cebes/configure_mariadb.sh
+
 WORKDIR /cebes
 
 EXPOSE 4040

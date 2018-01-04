@@ -1,16 +1,34 @@
 site_name: Cebes Documentation
-theme: simplex
+theme:
+  name: readthedocs
 docs_dir: sources
 repo_url: http://github.com/phvu/cebes-server
 site_url: http://cebes.io/
+markdown_extensions:
+  - fenced_code
 
-site_description: 'Documentation for Cebes, the integrated framework for Data Science at Scale'
+edit_uri: edit/master/docs/sources
+site_description: 'Cebes - the integrated framework for Data Science'
 
 pages:
 - Home:
   - Overview: index.md
-  - Architecture overview: architecture_overview.md
-  - Getting Started: getting_started.md
-- Features: features.md
-- Deployment: deployment.md
-- About: about.md
+  - Installation: installation.md
+- Cebes Session:
+  - Key concepts: session.md
+  - Load data into Cebes: session_load_data.md
+  - Manage Dataframes, models and pipelines: session_df.md
+- Cebes Dataframe:
+  - Key concepts: dataframe_concepts.md
+  - User guide: dataframe_guide.md
+  - Dataframe API Reference: dataframe_reference.md
+  - Functional API Reference: dataframe_functions.md
+- Machine Learning pipelines:
+  - Key concepts: pipelines_concepts.md
+  - Working with Cebes Pipelines: pipelines_api.md
+  - ETL stages: pipelines_etl.md
+  - Machine Learning stages: pipelines_ml.md
+  - Hyperparameter optimization: pipelines_hyperopt.md
+  - Pipeline repository: pipelines_repo.md
+- Serving pipelines: serving.md
+- Contributing: contributing.md

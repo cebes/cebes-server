@@ -24,6 +24,7 @@ import io.cebes.df.sample.DataSample
 import io.cebes.df.schema.Schema
 import io.cebes.df.support.GroupedDataframe
 import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.types.storage.StorageType
 import io.cebes.df.{Column, Dataframe, DataframeService}
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.spark.config.HasSparkSession
@@ -56,6 +57,12 @@ class SparkDataframeService @Inject()(hasSparkSession: HasSparkSession,
 
   override def withVariableTypes(dfId: UUID, variableTypes: Map[String, VariableType]): Dataframe = cache {
     cachedStore(dfId).withVariableTypes(variableTypes)
+  }
+
+  override def withStorageTypes(dfId: UUID, storageTypes: Map[String, StorageType]): Dataframe = cache {
+    storageTypes.foldLeft(cachedStore(dfId)) { case (dataframe, (colName, storageType)) =>
+      dataframe.withStorageType(colName, storageType)
+    }
   }
 
   override def count(dfId: UUID): Long = cachedStore(dfId).count()

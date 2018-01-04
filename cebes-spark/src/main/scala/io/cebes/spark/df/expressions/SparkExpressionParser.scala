@@ -102,7 +102,7 @@ import org.apache.spark.sql.{Column => SparkColumn, functions => sparkFunctions}
   }
 
   protected def visitCaseWhen(expr: CaseWhen, parsedChildren: Seq[SparkColumn]): Option[SparkColumn] = {
-    require(parsedChildren.length >= 2, "Expected a list of branches")
+    require(parsedChildren.lengthCompare(2) >= 0, "Expected a list of branches")
 
     val branch = sparkFunctions.when(parsedChildren.head, parsedChildren(1))
     Some(parsedChildren.grouped(2).toSeq.tail.foldLeft(branch) { (b, conditionClause) =>

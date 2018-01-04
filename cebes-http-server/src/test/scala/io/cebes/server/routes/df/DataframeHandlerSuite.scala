@@ -208,6 +208,18 @@ class DataframeHandlerSuite extends AbstractRouteSuite {
     assert(df1.schema("customer").variableType === VariableTypes.NOMINAL)
   }
 
+  test("WithStorageTypes") {
+    val df = getCylinderBands
+    assert(df.schema("job_number").storageType === StorageTypes.IntegerType)
+
+    val df1 = requestDf("df/withstoragetypes", WithStorageTypesRequest(df.id,
+      Map("job_number" -> StorageTypes.LongType)))
+    assert(df1.id !== df.id)
+    assert(count(df1) === count(df))
+    assert(df1.schema.fieldNames === df.schema.fieldNames)
+    assert(df1.schema("job_number").storageType === StorageTypes.LongType)
+  }
+
   test("take") {
     val df = getCylinderBands
 

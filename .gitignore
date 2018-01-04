@@ -33,3 +33,4 @@ cebes-persistence-mysql/src/test/resources/application.conf
 cebes-pipeline-repository/src/test/resources/application.conf
 
 bin/env.sh
+docs/venv3/

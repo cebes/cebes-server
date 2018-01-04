@@ -19,6 +19,7 @@ import java.util.UUID
 import io.cebes.df.Column
 import io.cebes.df.DataframeService.AggregationTypes
 import io.cebes.df.types.VariableTypes.VariableType
+import io.cebes.df.types.storage.StorageType
 import io.cebes.json.CebesCoreJsonProtocol._
 import io.cebes.json.GenericJsonProtocol
 import io.cebes.spark.json.CebesSparkJsonProtocol._
@@ -28,6 +29,8 @@ import spray.json._
 case class DataframeRequest(df: UUID)
 
 case class WithVariableTypesRequest(df: UUID, variableTypes: Map[String, VariableType])
+
+case class WithStorageTypesRequest(df: UUID, storageTypes: Map[String, StorageType])
 
 case class LimitRequest(df: UUID, n: Int)
 
@@ -89,6 +92,8 @@ trait HttpDfJsonProtocol extends GenericJsonProtocol {
   implicit val dataframeRequestFormat: RootJsonFormat[DataframeRequest] = jsonFormat1(DataframeRequest)
   implicit val withVariableTypesRequestFormat: RootJsonFormat[WithVariableTypesRequest] =
     jsonFormat2(WithVariableTypesRequest)
+  implicit val withStorageTypesRequestFormat: RootJsonFormat[WithStorageTypesRequest] =
+    jsonFormat2(WithStorageTypesRequest)
   implicit val limitRequestFormat: RootJsonFormat[LimitRequest] = jsonFormat2(LimitRequest)
   implicit val sampleRequestFormat: RootJsonFormat[SampleRequest] = jsonFormat4(SampleRequest)
   implicit val columnNamesRequestFormat: RootJsonFormat[ColumnNamesRequest] = jsonFormat2(ColumnNamesRequest)

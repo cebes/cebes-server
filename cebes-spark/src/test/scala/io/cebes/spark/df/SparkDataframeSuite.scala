@@ -55,6 +55,22 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df3.schema("job_number").variableType === VariableTypes.DISCRETE)
   }
 
+  test("Dataframe storage types") {
+    val df = getCylinderBands
+    assert(df.schema("job_number").storageType === StorageTypes.IntegerType)
+
+    val df2 = df.withStorageType("job_number", StorageTypes.IntegerType)
+    assert(df2.id === df.id)
+
+    val df3 = df.withStorageType("job_number", StorageTypes.LongType)
+    assert(df3.id !== df.id)
+    assert(df3.schema("job_number").storageType === StorageTypes.LongType)
+
+    val ex = intercept[IllegalArgumentException] {
+      df.withStorageType("non_eixst", StorageTypes.LongType)
+    }
+  }
+
   test("Apply schema") {
     val df = getCylinderBands
     assert(df.schema("job_number").storageType === IntegerType)
@@ -265,6 +281,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     intercept[CebesBackendException](df.select(df("non_existing_column")))
   }
 
+
   test("where") {
     val df = getCylinderBands.where(functions.col("job_number") % 2 === 0 && functions.col("grain_screened") === "YES")
     val sample = df.take(100)
@@ -274,6 +291,34 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(sample.rows.forall { s =>
       s(jobColIdx).asInstanceOf[Int] % 2 === 0 && s(grainColIdx) === "YES"
     })
+  }
+
+  test("select with complicated storage types") {
+    val df = getCylinderBands
+
+    val df1 = df.limit(100).select(
+      df("customer"), functions.array(df("esa_voltage"), functions.col("esa_amperage")).alias("array_col"))
+    assert(df1.schema("array_col").storageType.isInstanceOf[ArrayType])
+    assert(df1.schema("array_col").storageType.asInstanceOf[ArrayType].elementType === StorageTypes.FloatType)
+
+    val df2 = df.limit(100).select(
+      df("customer"),
+      functions.map(df("customer"), df("job_number"), df("grain_screened"), df("current_density")).alias("map_col"))
+    assert(df2.schema("map_col").storageType.isInstanceOf[MapType])
+    assert(df2.schema("map_col").storageType.asInstanceOf[MapType].keyType === StorageTypes.StringType)
+    assert(df2.schema("map_col").storageType.asInstanceOf[MapType].valueType === StorageTypes.IntegerType)
+
+    val df3 = df.limit(100).select(
+      df("customer"),
+      functions.struct(df("customer"), df("job_number"), df("grain_screened").alias("col3")).alias("struct_col"))
+    assert(df3.schema("struct_col").storageType.isInstanceOf[StructType])
+    val structStorageType = df3.schema("struct_col").storageType.asInstanceOf[StructType]
+    assert(structStorageType.fields(0).storageType === StorageTypes.StringType)
+    assert(structStorageType.fields(1).storageType === StorageTypes.IntegerType)
+    assert(structStorageType.fields(2).storageType === StorageTypes.StringType)
+    assert(structStorageType.fields(0).name === "customer")
+    assert(structStorageType.fields(1).name === "job_number")
+    assert(structStorageType.fields(2).name === "col3")
   }
 
   test("orderBy") {
@@ -509,7 +554,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df1.numCols === 2)
     assert(df1.numRows === 1)
     val sample = df1.take(10)
-    assert(sample.data.length == 2)
+    assert(sample.data.lengthCompare(2) === 0)
     assert(sample.data.head.head.isInstanceOf[mutable.WrappedArray[_]])
     assert(sample.data.last.head.isInstanceOf[mutable.WrappedArray[_]])
   }
@@ -522,7 +567,7 @@ class SparkDataframeSuite extends FunSuite with BeforeAndAfterAll
     assert(df1.numCols === 2)
     assert(df1.numRows === 1)
     val sample = df1.take(10)
-    assert(sample.data.length == 2)
+    assert(sample.data.lengthCompare(2) === 0)
     assert(sample.data.head.head.isInstanceOf[mutable.WrappedArray[_]])
     assert(sample.data.last.head.isInstanceOf[mutable.WrappedArray[_]])
   }
