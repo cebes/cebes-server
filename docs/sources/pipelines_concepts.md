@@ -58,12 +58,16 @@ Here is a script to train a Linear Regression model on a sample dataset:
 
 >>> with cb.Pipeline() as ppl:
 ...:     inp = cb.placeholder(cb.PlaceholderTypes.DATAFRAME)
-...:     assembler = cb.vector_assembler(inp, ['viscosity', 'proof_cut'], 'features')
-...:     lr = cb.linear_regression(assembler.output_df,features_col='features',
-...:                               label_col='caliper', prediction_col='caliper_predict', reg_param=0.0)
+...:     assembler = cb.vector_assembler(inp, input_cols=['viscosity', 'proof_cut'], 
+...:                                     output_col='features')
+...:     lr = cb.linear_regression(assembler.output_df, 
+...:                               features_col='features', label_col='caliper',
+...:                               prediction_col='caliper_predict', 
+...:                               reg_param=0.0)
 ...:                                      
 
->>> predicted_df, lr_model, assembled_df = ppl.run([lr.output_df, lr.model, assembler.output_df], feeds={inp: df2})
+>>> predicted_df, lr_model, assembled_df = ppl.run(
+...:    [lr.output_df, lr.model, assembler.output_df], feeds={inp: df2})
 
 >>> predicted_df.show()
     ID: 294ab9a2-0b84-4cf9-97b4-de4cd4be9901
@@ -78,9 +82,22 @@ Here is a script to train a Linear Regression model on a sample dataset:
 ```
 
 We construct the Pipeline in the `with cb.Pipeline()` block, which includes a Dataframe placeholder, a vector
-assember and a linear regression stage. We then execute the pipeline (i.e. train the model and run inference)
-using `ppl.run()`. Note how we can retrived the final Dataframe, the model, and the result of VectorAssembler,
-in addition to feeding the placeholder, in one call.
+assember and a linear regression stage. The pipeline above can be visualized as follows:
+
+![Example pipeline](imgs/pipeline_example.png)
+
+Compared to the code, there are some good magics going on:
+
+- We didn't need to specify the output slot of the placeholder, because it only has 1 output slot, which becomes
+its _default_ output slot.
+-  We construct the stages using functions provided in the main namespace of `pycebes`.
+
+Those are done mainly to reduce the verbosity of the Python code. For a more detail description of the API,
+see [this section](pipelines_api.md).
+
+We then execute the pipeline (i.e. train the model and run inference) using `ppl.run()`. Note how we can 
+retrieve the final Dataframe, the model, and the result of VectorAssembler, in addition to feeding 
+the placeholder, in one call.
 
 The resulting model can be use to transform _arbitrary_ input Dataframe, as long as it has the correct schema:
 

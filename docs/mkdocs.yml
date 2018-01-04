@@ -25,8 +25,10 @@ pages:
   - Functional API Reference: dataframe_functions.md
 - Machine Learning pipelines:
   - Key concepts: pipelines_concepts.md
+  - Working with Cebes Pipelines: pipelines_api.md
   - ETL stages: pipelines_etl.md
-  - Machine Learning states: pipelines_ml.md
+  - Machine Learning stages: pipelines_ml.md
+  - Hyperparameter optimization: pipelines_hyperopt.md
   - Pipeline repository: pipelines_repo.md
 - Serving pipelines: serving.md
 - Contributing: contributing.md
