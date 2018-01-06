@@ -23,6 +23,8 @@ works with any compatible Cebes server.
     You can skip this step if you don't want to have Cebes server running locally. Whatever you choose, you
     can always connect to a Cebes server running on a separated Spark cluster.
     
+    In the future, we might provide playground Cebes servers for you to play with. Stay tuned!
+    
 2. Install `pycebes`:
     
         $ pip install pycebes
