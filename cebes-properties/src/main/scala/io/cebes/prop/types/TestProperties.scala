@@ -23,8 +23,12 @@ import io.cebes.prop.{Prop, Property}
  @Prop(Property.TEST_JDBC_URL) url: String,
  @Prop(Property.TEST_JDBC_USERNAME) userName: String,
  @Prop(Property.TEST_JDBC_PASSWORD) password: String,
- @Prop(Property.TEST_JDBC_DRIVER) driver: String)
+ @Prop(Property.TEST_JDBC_DRIVER) driver: String,
+ @Prop(Property.TEST_REPOSITORY_HOST) repositoryHost: String,
+ @Prop(Property.TEST_REPOSITORY_PORT) repositoryPort: Int)
   extends JdbcCredentials {
 
-  def hasS3Credentials: Boolean = !awsSecretKey.isEmpty && !awsAccessKey.isEmpty
+  def hasS3Credentials: Boolean = awsSecretKey.nonEmpty && awsAccessKey.nonEmpty
+
+  def hasTestRepository: Boolean = repositoryHost.nonEmpty
 }

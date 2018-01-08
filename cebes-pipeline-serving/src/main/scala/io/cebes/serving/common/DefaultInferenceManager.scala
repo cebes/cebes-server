@@ -17,8 +17,8 @@ import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.pipeline.InferenceManager
 import io.cebes.pipeline.json.ServingConfiguration
-import io.cebes.repository.client.RepositoryClient
-import DefaultPipelineJsonProtocol._
+import io.cebes.repository.client.RepositoryClientFactory
+import io.cebes.serving.common.DefaultPipelineJsonProtocol._
 import io.cebes.tag.Tag
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -28,7 +28,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
   * Serve as a store of pipelines being served, that can be looked-up using their servingNames.
   */
 class DefaultInferenceManager @Inject()(private val servingConfiguration: ServingConfiguration,
-                                        private val repoClient: RepositoryClient,
+                                        private val repoClientFactory: RepositoryClientFactory,
                                         private val servingActor: ServingActor)
   extends InferenceManager with LazyLogging {
 
@@ -49,7 +49,8 @@ class DefaultInferenceManager @Inject()(private val servingConfiguration: Servin
     servingConfiguration.pipelines.map { servingPl =>
       val repoTag = Tag.fromString(servingPl.pipelineTag)
 
-      val futurePpl = repoClient.download(repoTag, servingPl.userName, servingPl.password)
+      val repoClient = repoClientFactory.get(servingPl.userName, servingPl.password, None)
+      val futurePpl = repoClient.download(repoTag)
       futurePpl.onFailure {
         case ex => logger.error(s"Failed to download ${servingPl.pipelineTag}", ex)
       }

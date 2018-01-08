@@ -28,12 +28,13 @@ import scala.concurrent.{Await, ExecutionContext}
 /**
   * Implements [[PipelineService]] on Spark
   */
-class SparkPipelineService @Inject()(private val pipelineExporter: PipelineFactory,
+class SparkPipelineService @Inject()(override val cachedStore: CachedStore[Pipeline],
+                                     override val tagStore: TagStore[Pipeline],
+                                     private val pipelineExporter: PipelineFactory,
                                      private val pplMessageSerializer: PipelineMessageSerializer,
                                      private val dfService: DataframeService,
-                                     private val modelService: ModelService,
-                                     override val cachedStore: CachedStore[Pipeline],
-                                     override val tagStore: TagStore[Pipeline]) extends PipelineService {
+                                     private val modelService: ModelService)
+  extends PipelineService {
 
   /**
     * Create a new pipeline with the given definition.
@@ -87,6 +88,8 @@ class SparkPipelineService @Inject()(private val pipelineExporter: PipelineFacto
     }
     Await.result(result, waitTime)
   }
+
+  override def cache(ppl: Pipeline): Pipeline = cachedStore.add(ppl)
 
   /**
     * Utility to create a pipeline object and add it to the store.

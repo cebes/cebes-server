@@ -1,4 +1,4 @@
-# All-in-one: running Cebes with Spark in local mode, and mysql
+# All-in-one: running Cebes HTTP server with Spark in local mode, and mysql
 
 FROM openjdk:8-alpine
 
@@ -24,8 +24,8 @@ RUN \
 
 # cebes
 ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
-ADD docker/configure_mariadb.sh /cebes/
-ADD docker/start_cebes.sh /cebes/
+ADD docker/http-server/configure_mariadb.sh /cebes/
+ADD docker/http-server/start_cebes.sh /cebes/
 
 RUN chmod +x /cebes/configure_mariadb.sh
 

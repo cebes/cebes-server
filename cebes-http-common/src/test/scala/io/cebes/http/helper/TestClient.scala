@@ -47,6 +47,8 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
 
   implicit val scheduler: Scheduler = system.scheduler
 
+  private val testDefaultTimeout = Duration(20, TimeUnit.SECONDS)
+
   ////////////////////////////////////////////////////////////////////
   // REST APIs
   ////////////////////////////////////////////////////////////////////
@@ -84,9 +86,10 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
   def postAsync[E, R](url: String, entity: E)
                      (implicit emE: ToEntityMarshaller[E], jfR: JsonFormat[R]): Future[R] = {
     post(url, entity) {
+      implicit val timeout: Duration = testDefaultTimeout
+
       response.status match {
         case StatusCodes.OK =>
-          implicit val timeout: Duration = Duration(5, TimeUnit.SECONDS)
           responseAs[FutureResult]
         case code =>
           Try(responseAs[FailResponse]) match {
@@ -134,6 +137,7 @@ trait TestClient extends FunSuiteLike with ScalatestRouteTest {
   private def query[E, T](url: String, entity: E, method: HttpMethod)
                          (implicit emE: ToEntityMarshaller[E], emT: FromResponseUnmarshaller[T], tag: ClassTag[T]): T =
     new RequestBuilder(method)(getUrl(url), entity).withHeaders(authHeaders: _*) ~> serverRoutes ~> check {
+      implicit val timeout: Duration = testDefaultTimeout
       status match {
         case StatusCodes.OK => responseAs[T]
         case StatusCodes.NotFound | StatusCodes.BadRequest | StatusCodes.InternalServerError =>

@@ -27,6 +27,10 @@ case class TagAddRequest(tag: Tag, objectId: UUID)
 
 case class TagDeleteRequest(tag: Tag)
 
+case class TagInfoRequest(tag: Tag, defaultRepoHost: Option[String], defaultRepoPort: Option[Int])
+
+case class TagInfoResponse(host: String, port: Int, path: String, version: String)
+
 case class TagsGetRequest(pattern: Option[String], maxCount: Int = 100)
 
 case class TaggedDataframeResponse(tag: Tag, id: UUID, createdAt: Long, schema: Schema)
@@ -53,6 +57,8 @@ trait HttpTagJsonProtocol {
 
   implicit val tagAddRequestFormat: RootJsonFormat[TagAddRequest] = jsonFormat2(TagAddRequest)
   implicit val tagDeleteRequestFormat: RootJsonFormat[TagDeleteRequest] = jsonFormat1(TagDeleteRequest)
+  implicit val tagInfoRequestFormat: RootJsonFormat[TagInfoRequest] = jsonFormat3(TagInfoRequest)
+  implicit val tagInfoResponseFormat: RootJsonFormat[TagInfoResponse] = jsonFormat4(TagInfoResponse)
   implicit val tagsGetRequestFormat: RootJsonFormat[TagsGetRequest] = jsonFormat2(TagsGetRequest)
   implicit val taggedDataframeResponseFormat: RootJsonFormat[TaggedDataframeResponse] =
     jsonFormat4(TaggedDataframeResponse)

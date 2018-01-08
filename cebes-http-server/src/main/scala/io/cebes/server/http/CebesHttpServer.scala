@@ -37,13 +37,14 @@ class CebesHttpServer @Inject()(@Prop(Property.HTTP_INTERFACE) override val http
                                 @Prop(Property.HTTP_SERVER_SECRET) override val serverSecret: String,
                                 override protected val refreshTokenStorage: CebesHttpRefreshTokenStorage,
                                 override protected val authService: AuthService,
-                                override protected val injector: Injector)
+                                override protected val injector: Injector,
+                                private val httpServerImplicits: HttpServerImplicits)
   extends HttpServer with AuthHandler with DataframeHandler with PipelineHandler with ModelHandler
     with StorageHandler with ResultHandler with TestHandler with ApiErrorHandler {
 
-  protected implicit val actorSystem: ActorSystem = ActorSystem("CebesServerApp")
+  protected implicit val actorSystem: ActorSystem = httpServerImplicits.actorSystem
   protected implicit val actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
-  protected implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
+  protected implicit val actorMaterializer: ActorMaterializer = httpServerImplicits.actorMaterializer
 
   override val routes: Route =
     handleExceptions(cebesDefaultExceptionHandler) {

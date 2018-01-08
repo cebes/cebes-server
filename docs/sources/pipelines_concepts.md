@@ -38,7 +38,7 @@ whose value will be retrieved, and overwrite the value of any input slot.
 
 ## Where to from here?
 
-Check [this page](pipelines_api.md) for an sample Pipelines and learn how to use Pipeline APIs.
+Check [this page](pipelines_api.md) for a sample Pipeline and learn how to use Pipeline APIs.
 Cebes provides a rich set of stages, including [ETL stages](pipelines_etl.md) and [ML stages](pipelines_ml.md).
 
 Once constructed, pipelines can be kept in Cebes server to run on your in-house datasets. They can also
