@@ -14,7 +14,6 @@ package io.cebes.server.routes.pipeline
 import java.util.UUID
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.StatusCodes
 import io.cebes.df.functions
 import io.cebes.http.client.ServerException
 import io.cebes.pipeline.json._
@@ -32,6 +31,17 @@ import spray.json.DefaultJsonProtocol._
   * Test suite for [[PipelineHandler]]
   */
 class PipelineHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
+
+  private def safeDeleteTag(tag: Tag): Unit = {
+    try {
+      requestPipeline("pipeline/tagdelete", TagDeleteRequest(tag))
+    } catch {
+      case _: ServerException =>
+    }
+
+  }
+
+  private def addTag(tag: Tag, id: UUID): Unit = requestPipeline("pipeline/tagadd", TagAddRequest(tag, id))
 
   test("create and get pipeline") {
     val pplDef = PipelineDef(None, Array(StageDef("s1", "Alias", Map("alias" -> ValueDef("new_name")))))
@@ -67,25 +77,56 @@ class PipelineHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
   }
 
   test("query tag information") {
+    val pplResult = requestPipeline("pipeline/create", simplePipeline)
+    assert(pplResult.id.nonEmpty)
+    val pipelineId = pplResult.id.get
+
+    val testTag1 = Tag.fromString("my-tag/abc:v1")
+    safeDeleteTag(testTag1)
+    addTag(testTag1, pipelineId)
+
     // it picks up the default
     val r1 = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
-      TagInfoRequest(Tag("my-tag/abc", "v1"), None, None)))
+      TagInfoRequest("my-tag/abc:v1", None, None)))
+    assert(r1.tag === testTag1)
     assert(r1.host.nonEmpty)
     assert(r1.port > 0)
     assert(r1.path === "my-tag/abc")
     assert(r1.version === "v1")
 
+    // lookup with pipeline id
+    val r1a = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
+      TagInfoRequest(s"$pipelineId", None, None)))
+    assert(r1a.tag === testTag1)
+    assert(r1a.host.nonEmpty)
+    assert(r1a.port > 0)
+    assert(r1a.path === "my-tag/abc")
+    assert(r1a.version === "v1")
+
+    val ex1 = intercept[ServerException] {
+      wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
+        TagInfoRequest("non-exists-tag", None, None)))
+    }
+    assert(ex1.message.contains("Tag not found"))
+
     // it picks up the default given in the request
     val r2 = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
-      TagInfoRequest(Tag("my-tag/abc", "v1"), Some("myserver.com"), Some(22000))))
+      TagInfoRequest("my-tag/abc:v1", Some("myserver.com"), Some(22000))))
+    assert(r1.tag === testTag1)
     assert(r2.host === "myserver.com")
     assert(r2.port === 22000)
     assert(r2.path === "my-tag/abc")
     assert(r2.version === "v1")
+    safeDeleteTag(testTag1)
+
+    val testTag2 = Tag.fromString("myserver.net:22000/my-tag/abc:v1")
+    safeDeleteTag(testTag2)
+    addTag(testTag2, pipelineId)
 
     // parses things correctly
     val r3 = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
-      TagInfoRequest(Tag("myserver.net:22000/my-tag/abc", "v1"), None, None)))
+      TagInfoRequest("myserver.net:22000/my-tag/abc:v1", None, None)))
+    assert(r3.tag === testTag2)
     assert(r3.host === "myserver.net")
     assert(r3.port === 22000)
     assert(r3.path === "my-tag/abc")
@@ -93,11 +134,13 @@ class PipelineHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
 
     // parses things correctly, even with defaults provided
     val r4 = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
-      TagInfoRequest(Tag("myserver.net:22000/my-tag/abc", "v1"), Some("myserver.com"), Some(15))))
+      TagInfoRequest("myserver.net:22000/my-tag/abc:v1", Some("myserver.com"), Some(15))))
+    assert(r4.tag === testTag2)
     assert(r4.host === "myserver.net")
     assert(r4.port === 22000)
     assert(r4.path === "my-tag/abc")
     assert(r4.version === "v1")
+    safeDeleteTag(testTag2)
   }
 
   test("repository login - fail") {

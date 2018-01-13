@@ -94,9 +94,9 @@ public enum Property {
     TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password", "",
             "Password for JDBC data source for tests", true),
 
-    TEST_REPOSITORY_HOST("CEBES_TEST_REPOSITORY_HOST", "cebes.test.repository.host", "127.0.0.1",
+    TEST_REPOSITORY_HOST("CEBES_TEST_REPOSITORY_HOST", "cebes.test.repository.host", "",
             "Host of the pipeline repository used in some tests of http-server", true),
-    TEST_REPOSITORY_PORT("CEBES_TEST_REPOSITORY_PORT", "cebes.test.repository.host", "32769",
+    TEST_REPOSITORY_PORT("CEBES_TEST_REPOSITORY_PORT", "cebes.test.repository.host", "0",
             "Port of the pipeline repository used in some tests of http-server", true),
 
     // For pipeline repository

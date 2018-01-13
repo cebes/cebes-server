@@ -33,7 +33,7 @@ class TagSuite extends FunSuite {
     assert(tag2.toString === "simple-tag:v1")
 
     // hostname doesn't contain a dot
-    val ex2 = intercept[IllegalArgumentException] {
+    intercept[IllegalArgumentException] {
       Tag.fromString("simple-tag:9000/abc-sz")
     }
 
@@ -68,7 +68,7 @@ class TagSuite extends FunSuite {
     assert(tag5.toString === "simple-tag:9000")
 
     // another fuzzy case
-    val ex = intercept[IllegalArgumentException] {
+    intercept[IllegalArgumentException] {
       Tag.fromString("simple-tag.com:9000:200")
     }
     val tag6 = Tag.fromString("simple-tag.com:9000/a:200")
@@ -98,5 +98,47 @@ class TagSuite extends FunSuite {
       Tag.fromString("")
     }
     assert(ex4.getMessage.startsWith("Invalid tag expression"))
+  }
+
+  test("localhost") {
+    val tag0 = Tag.fromString("localhost/abc")
+    assert(tag0.host === Some("localhost"))
+    assert(tag0.port.isEmpty)
+    assert(tag0.path === Some("abc"))
+    assert(tag0.version === "default")
+
+    val tag1 = Tag.fromString("localhost/abc:v1")
+    assert(tag1.host === Some("localhost"))
+    assert(tag1.port.isEmpty)
+    assert(tag1.path === Some("abc"))
+    assert(tag1.version === "v1")
+
+    val tag2 = Tag.fromString("localhost:22000/abc")
+    assert(tag2.host === Some("localhost"))
+    assert(tag2.port === Some(22000))
+    assert(tag2.path === Some("abc"))
+    assert(tag2.version === "default")
+
+    val tag3 = Tag.fromString("localhost:22000/abc:v3")
+    assert(tag3.host === Some("localhost"))
+    assert(tag3.port === Some(22000))
+    assert(tag3.path === Some("abc"))
+    assert(tag3.version === "v3")
+
+    val tag4 = Tag.fromString("notonlocalhost/abc")
+    assert(tag4.host.isEmpty)
+    assert(tag4.port.isEmpty)
+    assert(tag4.path === Some("notonlocalhost/abc"))
+    assert(tag4.version === "default")
+
+    val tag5 = Tag.fromString("localhostblah/abc")
+    assert(tag5.host.isEmpty)
+    assert(tag5.port.isEmpty)
+    assert(tag5.path === Some("localhostblah/abc"))
+    assert(tag5.version === "default")
+
+    intercept[IllegalArgumentException] {
+      Tag.fromString("notonlocalhost:2000/abc")
+    }
   }
 }

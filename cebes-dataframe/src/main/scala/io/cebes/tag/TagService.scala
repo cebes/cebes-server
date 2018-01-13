@@ -129,4 +129,9 @@ trait TagService[T <: HasId] {
       case None => throw new NoSuchElementException(s"ID not found: ${objId.toString}")
     }
   }
+
+  /**
+    * Find the given UUID in this store, return a sequence of tags
+    */
+  def find(id: UUID): Seq[Tag] = tagStore.find(id)
 }

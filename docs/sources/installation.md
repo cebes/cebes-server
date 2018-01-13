@@ -1,7 +1,7 @@
 The main component of Cebes is a server running as a 
 [Spark application](https://spark.apache.org/docs/latest/index.html). As a Cebes user, you use a 
 client to connect to this server and make it perform tasks of your choice. Cebes provides a Python
-client called `pycebes`, but other language could be supported in the future.
+client called `pycebes`, but other languages could be supported in the future.
 
 ![Cebes server and client](imgs/install_server_client.png)
 
@@ -9,10 +9,10 @@ client called `pycebes`, but other language could be supported in the future.
 
 ## Install the Python client _pycebes_
 
-`pycebes` is the Python client that you use to work with Cebes server. 
+`pycebes` is the Python client that you use to work with _Cebes server_. 
 
-However, when you install `pycebes`, Cebes server is also included, so that you can do everything 
-as if it was a full-blown Cebes server. You are not forced to use this server though. The client 
+However, when you install `pycebes`, _Cebes server_ is also included, so that you can do everything 
+as if it was a full-blown Cebes system. You are not forced to use this server though. The client 
 works with any compatible Cebes server.
 
 1. (Optional) Install docker for your workstation: [Mac](https://docs.docker.com/docker-for-mac/install/), 

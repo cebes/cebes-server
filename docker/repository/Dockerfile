@@ -8,9 +8,9 @@ ARG CEBES_REPO_DIR=/cebes/repository
 RUN apk add --update curl bash libc6-compat mariadb mariadb-client && rm -f /var/cache/apk/*
 
 # cebes
-ADD cebes-pipeline-repository/target/scala-2.11/cebes-pipeline-repository-assembly-*.jar /cebes/
-ADD docker/repository/configure_mariadb.sh /cebes/
-ADD docker/repository/start_cebes_repository.sh /cebes/
+ADD binaries/cebes-pipeline-repository-assembly-*.jar /cebes/
+ADD repository/configure_mariadb.sh /cebes/
+ADD repository/start_cebes_repository.sh /cebes/
 RUN chmod +x /cebes/configure_mariadb.sh
 
 WORKDIR /cebes

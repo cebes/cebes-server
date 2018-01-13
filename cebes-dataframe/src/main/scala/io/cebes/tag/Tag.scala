@@ -61,7 +61,7 @@ object Tag {
 
   val DEFAULT_VERSION = "default"
 
-  private val tagExprServer: String = """([a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/"""
+  private val tagExprServer: String = """(localhost|[a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/"""
   private val tagExprPath: String = """[a-z0-9]+([-_\.\/][a-z0-9]+)*"""
   private val tagExprVersion: String = """[a-z0-9-_]+"""
 

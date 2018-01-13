@@ -23,9 +23,9 @@ RUN \
     mkdir /cebes
 
 # cebes
-ADD cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar /cebes/
-ADD docker/http-server/configure_mariadb.sh /cebes/
-ADD docker/http-server/start_cebes.sh /cebes/
+ADD binaries/cebes-http-server-assembly-*.jar /cebes/
+ADD http-server/configure_mariadb.sh /cebes/
+ADD http-server/start_cebes.sh /cebes/
 
 RUN chmod +x /cebes/configure_mariadb.sh
 

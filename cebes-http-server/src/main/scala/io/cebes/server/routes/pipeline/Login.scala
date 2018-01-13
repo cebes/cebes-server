@@ -35,10 +35,10 @@ class Login @Inject()(override protected val resultStorage: ResultStorage,
     */
   override protected def runImpl(requestEntity: PipelineRepoLoginRequest)
                                 (implicit ec: ExecutionContext): Future[PipelineRepoLoginResponse] = {
-    Future {
-      val host = requestEntity.host.getOrElse(systemDefaultRepoHost)
-      val port = requestEntity.port.getOrElse(systemDefaultRepoPort)
+    val host = requestEntity.host.getOrElse(systemDefaultRepoHost)
+    val port = requestEntity.port.getOrElse(systemDefaultRepoPort)
 
+    Future {
       implicit val actorSystem: ActorSystem = httpServerImplicits.actorSystem
       implicit val actorMaterializer: ActorMaterializer = httpServerImplicits.actorMaterializer
 
@@ -48,6 +48,8 @@ class Login @Inject()(override protected val resultStorage: ResultStorage,
         val token = encode(client.getRequestHeaders)
         PipelineRepoLoginResponse(client.host, client.port, token)
       }
+    }.recoverWith { case ex =>
+      Future.failed(new IllegalArgumentException(s"Failed to login to $host", ex))
     }
   }
 }
