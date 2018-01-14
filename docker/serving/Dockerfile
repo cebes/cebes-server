@@ -1,5 +1,3 @@
-# All-in-one: running Cebes HTTP server with Spark in local mode, and mysql
-
 FROM openjdk:8-alpine
 
 ARG SPARK_VERSION=2.2.0
@@ -13,7 +11,7 @@ ENV CEBES_MYSQL_URL="jdbc:mysql://localhost/cebes_store" \
     CEBES_HIVE_METASTORE_DRIVER="org.mariadb.jdbc.Driver" \
     CEBES_HIVE_METASTORE_USERNAME="docker_cebes_hive" \
     CEBES_HIVE_METASTORE_PASSWORD="docker_cebes_hive_pwd" \
-    CEBES_DATA_DIR="${CEBES_DATA_DIR:-/cebes/data}" \
+    CEBES_SERVING_DIR="${CEBES_SERVING_DIR:-/cebes/serving}" \
     WITH_MARIADB="${WITH_MARIADB:-true}"
 
 # mariadb
@@ -36,17 +34,17 @@ RUN \
     mkdir /cebes
 
 # cebes
-ADD binaries/cebes-http-server-assembly-*.jar \
-    http-server/start_cebes.sh \
-    http-server/configure_mariadb.sh \
+ADD binaries/cebes-pipeline-serving-assembly-*.jar \
+    serving/start_cebes_serving.sh \
+    serving/configure_mariadb.sh \
     /cebes/
 RUN chmod +x /cebes/configure_mariadb.sh
 
 WORKDIR /cebes
 
 EXPOSE 4040
-EXPOSE 21000
+EXPOSE 23000
 
-VOLUME $CEBES_DATA_DIR
+VOLUME $CEBES_SERVING_DIR
 
-ENTRYPOINT ["/cebes/start_cebes.sh"]
+ENTRYPOINT ["/cebes/start_cebes_serving.sh"]

@@ -1,4 +1,4 @@
-# Construct a Pipeline
+## Construct a Pipeline
 
 As an example, here is a script to construct a Pipeline containing a Linear Regression model:
 

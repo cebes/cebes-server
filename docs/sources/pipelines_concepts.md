@@ -36,6 +36,36 @@ To use pipelines, users first construct it by specifying stages and how they con
 They then execute the pipeline with `Pipeline.run()`. At runtime, they can choose which output slots
 whose value will be retrieved, and overwrite the value of any input slot.
 
+---
+<a name="pipeline-tags"></a>
+## Pipeline tags
+
+Similar to [Dataframe tags](dataframe_concepts.md#dataframe-tags), pipelines can be tagged too. 
+In general, tags in Cebes are more powerful than just mere string identifiers. In this section,
+we will see how tags provide a convenient way to do version management and publishing for pipelines.
+
+In Cebes, a pipeline tag is a string of the following syntax:
+
+```
+[repo_host[:repo_port]/]path[:version]
+```
+
+- `repo_host` and `repo_port` is the address of the repository. These are optional. You only need
+the repository when you want to push or pull pipelines. If repository is not specified in the tag,
+Cebes server will use its default value, which is configurable in the `CEBES_DEFAULT_REPOSITORY_*`
+enviroment variables when [Cebes server is installed](installation.md).
+- `path` is a repository path that you give to the pipeline. This is required, must be a valid ASCII
+string, and can have multiple segments separated by `/`.
+- `version` is an optional string that can be used to uniquely identify a pipeline in a given path.
+If not specify, the default version is `default`.
+
+For example, `bob/anomoly-detection:default`, `bob/anomoly-detection:v2`, `repo.company.net/bob/anomoly-detection`,
+`localhost:35000/bob/anomoly-detection:v5` are all valid tags.
+
+See [this section](session_df.md) for using Session API to manage tags in Cebes server, and 
+[this page](pipelines_repo.md) for pushing and pulling pipelines to/from repositories via tags.
+
+---
 ## Where to from here?
 
 Check [this page](pipelines_api.md) for a sample Pipeline and learn how to use Pipeline APIs.

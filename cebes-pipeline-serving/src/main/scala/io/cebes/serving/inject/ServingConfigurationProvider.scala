@@ -21,6 +21,7 @@ import io.cebes.util.ResourceUtil
 import spray.json._
 
 import scala.io.Source
+import scala.util.Try
 
 
 /**
@@ -30,11 +31,7 @@ class ServingConfigurationProvider @Inject()(@Prop(Property.SERVING_CONFIG_FILE)
   extends Provider[ServingConfiguration] {
 
   override def get(): ServingConfiguration = {
-    val realConfigFile = if (configFile.startsWith("/")) {
-      ResourceUtil.getResourceAsFile(configFile)
-    } else {
-      new File(configFile)
-    }
+    val realConfigFile = Try(ResourceUtil.getResourceAsFile(configFile)).getOrElse(new File(configFile))
     if (!realConfigFile.exists()) {
       throw new IllegalArgumentException(s"Serving configuration file does not exist: ${realConfigFile.toString}")
     }

@@ -26,9 +26,9 @@ pages:
 - Machine Learning pipelines:
   - Key concepts: pipelines_concepts.md
   - Working with Cebes Pipelines: pipelines_api.md
-  - ETL stages: pipelines_etl.md
-  - Machine Learning stages: pipelines_ml.md
   - Hyperparameter optimization: pipelines_hyperopt.md
-  - Pipeline repository: pipelines_repo.md
+- Pipeline repository:
+  - Working with repositories in pycebes: pipelines_repo.md
+  - Install pipeline repository: pipelines_deploy.md
 - Serving pipelines: serving.md
 - Contributing: contributing.md

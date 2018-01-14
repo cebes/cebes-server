@@ -140,6 +140,8 @@ for more information.
              --conf 'spark.driver.extraJavaOptions=-Dcebes.logs.dir=/tmp/' \
              cebes-http-server-assembly-${CEBES_VERSION}.jar
 
+An example bash script can be found under `docker/http-server/start_cebes.sh` on github.
+
 ---
 
 ## Automated deployment
@@ -160,6 +162,8 @@ using environment variables, or the `extraJavaOptions` field when running `spark
 | CEBES_HTTP_PORT | cebes.http.port | The port on which the HTTP service will be listening, to be combined with HTTP_INTERFACE | 21000 |
 | CEBES_HTTP_SERVER_SECRET | cebes.http.server.secret | The secret string to be used in authentication of the HTTP server | _skipped_ |
 | CEBES_UPLOAD_PATH | cebes.upload.path | The directory to upload data to | /tmp/upload/ |
+| CEBES_DEFAULT_REPOSITORY_HOST | cebes.default.repository.host | The default repository to talk to, used in http-server | repo.cebes.io |
+| CEBES_DEFALT_REPOSITORY_PORT | cebes.default.repository.port | The default repository port to talk to, used in http-server | 80 |
 | CEBES_HIVE_METASTORE_URL | cebes.hive.metastore.url | URL for the hive metastore |  |
 | CEBES_HIVE_METASTORE_DRIVER | cebes.hive.metastore.driver | Driver name for the hive metastore | org.mariadb.jdbc.Driver |
 | CEBES_HIVE_METASTORE_USERNAME | cebes.hive.metastore.username | Username for the hive metastore |  |
