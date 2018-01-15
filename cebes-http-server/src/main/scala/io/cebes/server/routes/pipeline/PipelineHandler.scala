@@ -18,6 +18,7 @@ import io.cebes.http.server.operations.OperationHelper
 import io.cebes.pipeline.json._
 import io.cebes.server.routes.common.HttpTagJsonProtocol._
 import io.cebes.server.routes.common._
+import io.cebes.server.routes.pipeline.HttpPipelineJsonProtocol._
 import io.cebes.spark.json.CebesSparkJsonProtocol._
 import spray.json.DefaultJsonProtocol.{StringJsonFormat, arrayFormat}
 
@@ -29,6 +30,11 @@ trait PipelineHandler extends OperationHelper {
       operation[TagDelete, TagDeleteRequest, PipelineDef],
       operation[Tags, TagsGetRequest, Array[TaggedPipelineResponse]],
       operation[Get, String, PipelineDef],
+      operation[TagInfo, TagInfoRequest, TagInfoResponse],
+
+      operation[Login, PipelineRepoLoginRequest, PipelineRepoLoginResponse],
+      operation[Push, PipelinePushRequest, String],
+      operation[Pull, PipelinePushRequest, PipelineDef],
 
       operation[Create, PipelineDef, PipelineDef],
       operation[Run, PipelineRunDef, PipelineRunResultDef]

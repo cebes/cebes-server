@@ -84,6 +84,9 @@ abstract class TagDeleteAbstract[T <: HasId, R](protected val tagService: TagSer
     resultTransformer.transformItem(result)
 }
 
+/**
+  * Returns all information about the tags that match the given pattern
+  */
 abstract class TagsAbstract[T <: HasId, R](protected val tagService: TagService[T],
                                            protected val tagEntryTransformer: TagEntryResultTransformer[T, R])
                                           (implicit classTag: ClassTag[R])

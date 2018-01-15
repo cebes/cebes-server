@@ -36,19 +36,10 @@ lazy val cebesPipeline = project.in(file("cebes-pipeline")).
   settings(commonSettings: _*).
   dependsOn(cebesDataframe, cebesProperties)
 
-lazy val cebesSpark = project.in(file("cebes-spark")).
-  disablePlugins(AssemblyPlugin).
-  settings(commonSettings: _*).
-  dependsOn(cebesDataframe, cebesPersistenceJdbc, cebesPipeline)
-
 lazy val cebesHttpCommon = project.in(file("cebes-http-common")).
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
   dependsOn(cebesPersistenceJdbc, cebesAuth)
-
-lazy val cebesHttpServer = project.in(file("cebes-http-server")).
-  settings(commonSettings: _*).
-  dependsOn(cebesSpark, cebesHttpCommon % "compile->compile;test->test")
 
 lazy val cebesPipelineRepository = project.in(file("cebes-pipeline-repository")).
   settings(commonSettings: _*).
@@ -58,6 +49,15 @@ lazy val cebesPipelineRepositoryClient = project.in(file("cebes-pipeline-reposit
   disablePlugins(AssemblyPlugin).
   settings(commonSettings: _*).
   dependsOn(cebesPipeline, cebesHttpCommon)
+
+lazy val cebesSpark = project.in(file("cebes-spark")).
+  disablePlugins(AssemblyPlugin).
+  settings(commonSettings: _*).
+  dependsOn(cebesDataframe, cebesPersistenceJdbc, cebesPipeline, cebesPipelineRepositoryClient)
+
+lazy val cebesHttpServer = project.in(file("cebes-http-server")).
+  settings(commonSettings: _*).
+  dependsOn(cebesSpark, cebesHttpCommon % "compile->compile;test->test")
 
 lazy val cebesPipelineServing = project.in(file("cebes-pipeline-serving")).
   settings(commonSettings: _*).

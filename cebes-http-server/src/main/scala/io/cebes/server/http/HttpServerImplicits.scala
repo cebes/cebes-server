@@ -8,20 +8,22 @@
  * either express or implied, as more fully set forth in the License.
  *
  * See the NOTICE file distributed with this work for information regarding copyright ownership.
- *
- * Created by phvu on 20/09/16.
  */
+package io.cebes.server.http
 
-package io.cebes.server.helpers
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import com.google.inject.Singleton
 
-import io.cebes.prop.types.TestProperties
-import org.scalatest.{Ignore, Tag}
+import scala.concurrent.ExecutionContextExecutor
 
-trait TestPropertyHelper {
+/**
+  * Provides actor system and co.
+  * To be injected by guice
+  */
+@Singleton class HttpServerImplicits {
 
-  val properties: TestProperties = CebesHttpServerTestInjector.instance[TestProperties]
-
-  object S3TestsEnabled extends Tag(if (properties.hasS3Credentials) "" else classOf[Ignore].getName)
-
-  object RepositoryTestsEnabled extends Tag(if (properties.hasTestRepository) "" else classOf[Ignore].getName)
+  val actorSystem: ActorSystem = ActorSystem("CebesHttpServerApp")
+  def actorExecutor: ExecutionContextExecutor = actorSystem.dispatcher
+  val actorMaterializer: ActorMaterializer = ActorMaterializer()(actorSystem)
 }

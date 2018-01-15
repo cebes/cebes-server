@@ -29,6 +29,11 @@ public enum Property {
     UPLOAD_PATH("CEBES_UPLOAD_PATH", "cebes.upload.path", "/tmp/upload/",
             "The directory to upload data to"),
 
+    DEFAULT_REPOSITORY_HOST("CEBES_DEFAULT_REPOSITORY_HOST", "cebes.default.repository.host",
+            "repo.cebes.io", "The default repository to talk to, used in http-server"),
+    DEFAULT_REPOSITORY_PORT("CEBES_DEFALT_REPOSITORY_PORT", "cebes.default.repository.port",
+            "80", "The default repository port to talk to, used in http-server"),
+
     // for Hive metastore
     HIVE_METASTORE_URL("CEBES_HIVE_METASTORE_URL", "cebes.hive.metastore.url", "",
             "URL for the hive metastore"),
@@ -61,7 +66,8 @@ public enum Property {
 
     PIPELINE_STAGE_NAMESPACES("CEBES_PIPELINE_STAGE_NAMESPACES", "cebes.pipeline.stage.namespaces",
             "io.cebes.pipeline.models,io.cebes.pipeline.stages,io.cebes.spark.pipeline.etl," +
-                    "io.cebes.spark.pipeline.features,io.cebes.spark.pipeline.ml.regression",
+                    "io.cebes.spark.pipeline.features,io.cebes.spark.pipeline.ml.evaluation," +
+                    "io.cebes.spark.pipeline.ml.regression,io.cebes.spark.pipeline.ml.tree",
             "a comma-separated list of namespaces containing definition of stages"),
 
     MODEL_STORAGE_DIR("CEBES_MODEL_STORAGE_DIR", "cebes.model.storage.dir",
@@ -87,6 +93,11 @@ public enum Property {
             "Username for JDBC data source for tests", true),
     TEST_JDBC_PASSWORD("CEBES_TEST_JDBC_PASSWORD", "cebes.test.jdbc.password", "",
             "Password for JDBC data source for tests", true),
+
+    TEST_REPOSITORY_HOST("CEBES_TEST_REPOSITORY_HOST", "cebes.test.repository.host", "",
+            "Host of the pipeline repository used in some tests of http-server", true),
+    TEST_REPOSITORY_PORT("CEBES_TEST_REPOSITORY_PORT", "cebes.test.repository.host", "0",
+            "Port of the pipeline repository used in some tests of http-server", true),
 
     // For pipeline repository
 

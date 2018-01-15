@@ -28,9 +28,9 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import com.typesafe.scalalogging.LazyLogging
 import io.cebes.http.server.HttpJsonProtocol._
+import io.cebes.http.server._
 import io.cebes.http.server.auth.HttpAuthJsonProtocol._
 import io.cebes.http.server.auth.LoginRequest
-import io.cebes.http.server._
 import spray.json.JsonFormat
 
 import scala.collection.immutable
@@ -41,8 +41,8 @@ import scala.util.{Failure, Random, Success, Try}
 /**
   * Represent a HTTP connection to server (with security tokens and so on)
   */
-class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
-                                      actorMaterializer: ActorMaterializer) extends LazyLogging {
+class Client(val host: String, val port: Int)(implicit actorSystem: ActorSystem,
+                                              actorMaterializer: ActorMaterializer) extends LazyLogging {
 
   // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/
   // 2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
@@ -54,7 +54,7 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
     case ((Failure(e), p)) => p.failure(e)
   }))(Keep.left).run
 
-  @volatile private var apiVersion: Option[String] = None
+  private lazy val apiVersion: String = getServerVersion()
 
   private def cebesRequest(request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] = {
     val promise = Promise[HttpResponse]
@@ -66,13 +66,18 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
 
   @volatile private var requestHeaders: immutable.Seq[HttpHeader] = immutable.Seq.empty[HttpHeader]
 
+  def getRequestHeaders: Seq[HttpHeader] = requestHeaders
+
+  def setRequestHeaders(headers: Seq[HttpHeader]): this.type = {
+    requestHeaders = immutable.Vector(headers: _*)
+    this
+  }
 
   /**
     * Send a POST request.
     * This is an alias of [[requestAndWait()]] with method = [[HttpMethods.POST]]
     */
-  def postAndWait[RequestType, ResponseType](uri: String,
-                                             content: RequestType)
+  def postAndWait[RequestType, ResponseType](uri: String, content: RequestType)
                                             (implicit ma: ToEntityMarshaller[RequestType],
                                              jfResponse: JsonFormat[ResponseType],
                                              ec: ExecutionContext): Option[ResponseType] =
@@ -89,8 +94,7 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
     * @tparam ResponseType type of the expected response
     * @return
     */
-  def requestAndWait[RequestType, ResponseType](method: HttpMethod, uri: String,
-                                                content: RequestType)
+  def requestAndWait[RequestType, ResponseType](method: HttpMethod, uri: String, content: RequestType)
                                                (implicit ma: ToEntityMarshaller[RequestType],
                                                 jfResponse: JsonFormat[ResponseType],
                                                 ec: ExecutionContext): Option[ResponseType] = {
@@ -197,11 +201,8 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
                                              (implicit ma: ToEntityMarshaller[RequestType],
                                               ua: FromEntityUnmarshaller[ResponseType],
                                               ec: ExecutionContext): Future[ResponseType] = {
-    if (apiVersion.isEmpty) {
-      apiVersion = Some(getServerVersion())
-    }
     val request = new RequestBuilder(method).apply(
-      s"/${apiVersion.getOrElse("")}/$uri", content).withHeaders(requestHeaders)
+      getUrl(uri), content).withHeaders(requestHeaders)
     sendRequest[RequestType, ResponseType](request)
   }
 
@@ -254,7 +255,7 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
     */
   def login(userName: String, passwordHash: String)
            (implicit ec: ExecutionContext): Future[String] = {
-    val request = RequestBuilding.Post(s"/$apiVersion/auth/login", LoginRequest(userName, passwordHash))
+    val request = RequestBuilding.Post(getUrl("auth/login"), LoginRequest(userName, passwordHash))
     sendRequest[LoginRequest, String](request)
   }
 
@@ -262,11 +263,17 @@ class Client(host: String, port: Int)(implicit actorSystem: ActorSystem,
   // private helpers
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  private def getUrl(url: String): String = apiVersion match {
+    case "" => s"/$url"
+    case v => s"/$v/$url"
+  }
+
   /**
     * Find out the server API version by querying it's `/version` endpoint.
     */
-  private def getServerVersion()(implicit ec: ExecutionContext,
-                                 uaFail: FromEntityUnmarshaller[FailResponse]): String = {
+  private def getServerVersion()(implicit uaFail: FromEntityUnmarshaller[FailResponse]): String = {
+    implicit val ec: ExecutionContext = actorSystem.dispatcher
+
     val version = sendRequest[String, VersionResponse](RequestBuilding.Get("/version", "")).map { r =>
       r.api
     }.recoverWith {

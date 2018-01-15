@@ -41,16 +41,27 @@ case class Tag private(name: String, version: String = Tag.DEFAULT_VERSION) {
   def port: Option[Int] = Tag.extract(toString, "port").map(_.toInt)
 
   /**
-    * Everything else follow the host, including the first "/"
+    * Everything else follow the host
     */
   def path: Option[String] = Tag.extract(toString, "path")
+
+  /**
+    * Return this instance if it already has the "server" part specified,
+    * or a new Tag instance with the default host and port explicitly specified
+    */
+  def withDefaultServer(defaultHost: String, defaultPort: Int): Tag = {
+    server match {
+      case Some(_) => this
+      case None => Tag(s"$defaultHost:$defaultPort/$name", version)
+    }
+  }
 }
 
 object Tag {
 
   val DEFAULT_VERSION = "default"
 
-  private val tagExprServer: String = """([a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/"""
+  private val tagExprServer: String = """(localhost|[a-z0-9]+([-_][a-z0-9]+)*(\.[a-z0-9]+([-_][a-z0-9]+)*)+)(:([0-9]+))?\/"""
   private val tagExprPath: String = """[a-z0-9]+([-_\.\/][a-z0-9]+)*"""
   private val tagExprVersion: String = """[a-z0-9-_]+"""
 

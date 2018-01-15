@@ -37,4 +37,11 @@ trait PipelineService extends TagService[Pipeline] {
     *         Will only contain the results of stages requested in the request.
     */
   def run(runRequest: PipelineRunDef)(implicit ec: ExecutionContext): PipelineRunResultDef
+
+  /**
+    * Store the given [[Pipeline]] in the cache
+    *
+    * @return the given Pipeline
+    */
+  def cache(ppl: Pipeline): Pipeline
 }

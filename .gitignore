@@ -34,3 +34,4 @@ cebes-pipeline-repository/src/test/resources/application.conf
 
 bin/env.sh
 docs/venv3/
+docs/site/

@@ -13,7 +13,7 @@ It does so by:
 
 - Providing unified APIs for processing data and training models in [pipelines](pipelines_concepts.md)  
     ETL stages and Machine Learning algorithms can be connected to form flexible 
-    and powerful data processing pipelines.
+    and powerful data processing pipelines. Hyper-parameters can be tuned automatically.
     
 - Simplifying [deployment and life-cycle management](serving.md) of pipelines  
     Pipelines can be exported and published to a _pipeline repository_. They can be taken

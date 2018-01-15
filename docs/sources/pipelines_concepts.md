@@ -36,105 +36,40 @@ To use pipelines, users first construct it by specifying stages and how they con
 They then execute the pipeline with `Pipeline.run()`. At runtime, they can choose which output slots
 whose value will be retrieved, and overwrite the value of any input slot.
 
-## Example
+---
+<a name="pipeline-tags"></a>
+## Pipeline tags
 
-Here is a script to train a Linear Regression model on a sample dataset:
+Similar to [Dataframe tags](dataframe_concepts.md#dataframe-tags), pipelines can be tagged too. 
+In general, tags in Cebes are more powerful than just mere string identifiers. In this section,
+we will see how tags provide a convenient way to do version management and publishing for pipelines.
 
-```python
->>> df = cb.get_default_session().load_test_datasets()['cylinder_bands']
->>> df2 = df.drop(*(set(df.columns) - {'viscosity', 'proof_cut', 'caliper'}))
->>> df2 = df2.dropna(columns=['viscosity', 'proof_cut', 'caliper'])
+In Cebes, a pipeline tag is a string of the following syntax:
 
->>> df2.show()
-    ID: 25a139f8-4a27-442f-8a95-d8b0cd528c75
-    Shape: (466, 3)
-    Sample 5 rows:
-       proof_cut  viscosity  caliper
-    0       55.0         46    0.200
-    1       55.0         46    0.300
-    2       62.0         40    0.433
-    3       52.0         40    0.300
-    4       50.0         46    0.300
-
->>> with cb.Pipeline() as ppl:
-...:     inp = cb.placeholder(cb.PlaceholderTypes.DATAFRAME)
-...:     assembler = cb.vector_assembler(inp, input_cols=['viscosity', 'proof_cut'], 
-...:                                     output_col='features')
-...:     lr = cb.linear_regression(assembler.output_df, 
-...:                               features_col='features', label_col='caliper',
-...:                               prediction_col='caliper_predict', 
-...:                               reg_param=0.0)
-...:                                      
-
->>> predicted_df, lr_model, assembled_df = ppl.run(
-...:    [lr.output_df, lr.model, assembler.output_df], feeds={inp: df2})
-
->>> predicted_df.show()
-    ID: 294ab9a2-0b84-4cf9-97b4-de4cd4be9901
-    Shape: (466, 5)
-    Sample 5 rows:
-       proof_cut  viscosity  caliper      features  caliper_predict
-    0       55.0         46    0.200  [46.0, 55.0]         0.273678
-    1       55.0         46    0.300  [46.0, 55.0]         0.273678
-    2       62.0         40    0.433  [40.0, 62.0]         0.266757
-    3       52.0         40    0.300  [40.0, 52.0]         0.261072
-    4       50.0         46    0.300  [46.0, 50.0]         0.270836
+```
+[repo_host[:repo_port]/]path[:version]
 ```
 
-We construct the Pipeline in the `with cb.Pipeline()` block, which includes a Dataframe placeholder, a vector
-assember and a linear regression stage. The pipeline above can be visualized as follows:
+- `repo_host` and `repo_port` is the address of the repository. These are optional. You only need
+the repository when you want to push or pull pipelines. If repository is not specified in the tag,
+Cebes server will use its default value, which is configurable in the `CEBES_DEFAULT_REPOSITORY_*`
+enviroment variables when [Cebes server is installed](installation.md).
+- `path` is a repository path that you give to the pipeline. This is required, must be a valid ASCII
+string, and can have multiple segments separated by `/`.
+- `version` is an optional string that can be used to uniquely identify a pipeline in a given path.
+If not specify, the default version is `default`.
 
-![Example pipeline](imgs/pipeline_example.png)
+For example, `bob/anomaly-detection:default`, `bob/anomaly-detection:v2`, `repo.company.net/bob/anomaly-detection`,
+`localhost:35000/bob/anomaly-detection:v5` are all valid tags.
 
-Compared to the code, there are some good magics going on:
+See [this section](session_df.md) for using Session API to manage tags in Cebes server, and 
+[this page](pipelines_repo.md) for pushing and pulling pipelines to/from repositories via tags.
 
-- We didn't need to specify the output slot of the placeholder, because it only has 1 output slot, which becomes
-its _default_ output slot.
--  We construct the stages using functions provided in the main namespace of `pycebes`.
+---
+## Where to from here?
 
-Those are done mainly to reduce the verbosity of the Python code. For a more detail description of the API,
-see [this section](pipelines_api.md).
-
-We then execute the pipeline (i.e. train the model and run inference) using `ppl.run()`. Note how we can 
-retrieve the final Dataframe, the model, and the result of VectorAssembler, in addition to feeding 
-the placeholder, in one call.
-
-The resulting model can be use to transform _arbitrary_ input Dataframe, as long as it has the correct schema:
-
-```python
->>> lr_model.transform(assembled_df).show()
-    ID: c1aaddeb-3646-4934-8f75-029a20fe542c
-    Shape: (466, 5)
-    Sample 5 rows:
-       proof_cut  viscosity  caliper      features  caliper_predict
-    0       55.0         46    0.200  [46.0, 55.0]         0.273678
-    1       55.0         46    0.300  [46.0, 55.0]         0.273678
-    2       62.0         40    0.433  [40.0, 62.0]         0.266757
-    3       52.0         40    0.300  [40.0, 52.0]         0.261072
-    4       50.0         46    0.300  [46.0, 50.0]         0.270836
-
->>> lr_model.transform(df2).show()
-    ServerException: ('Field "features" does not exist.', ...)
-```
-
-`df2` is not valid because it has not been vectorized by VectorAssembler, and therefore does not have the 
-`features` column. This example shows why it is often more useful to use a whole pipeline, instead of 
-the individual models.
-
-Let's tag the pipeline so we can reuse it later:
-
-```python
->>> sess = cb.get_default_session()
->>> sess.pipeline.tag(ppl, 'linear_regression')
->>> sess.pipeline.list()
-    UUID                                  Tag                        Created                       # of stages
-    ------------------------------------  -------------------------  --------------------------  -------------
-    7d364b33-cc0b-4c96-9ecb-e2e48fa8d94f  linear_regression:default  2017-12-31 21:13:49.207000              3
-```
-
-The model can also be tagged. See [manage pipelines and models](session_df.md) for more information.
-
-Cebes provides a rich set of stages, including [ETL stages](pipelines_etl.md) and [ML stages](pipelines_ml.md).
+Check [this page](pipelines_api.md) for a sample Pipeline and learn how to use Pipeline APIs.
+Cebes provides a rich set of stages, check programming guide for more information.
 
 Once constructed, pipelines can be kept in Cebes server to run on your in-house datasets. They can also
 be [published to a pipeline repository](pipelines_repo.md) so that they are available for 

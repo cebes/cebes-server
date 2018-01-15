@@ -33,12 +33,12 @@ trait TagService[T <: HasId] {
     * Tag an object. Return that object of type [[T]].
     * Raise an exception if the tag already exists.
     */
-  def tag(dfId: UUID, tag: Tag): T = {
-    cachedStore.get(dfId) match {
+  def tag(objId: UUID, tag: Tag): T = {
+    cachedStore.get(objId) match {
       case None =>
-        throw new NoSuchElementException(s"Object ID not found: ${dfId.toString}")
+        throw new NoSuchElementException(s"Object ID not found: ${objId.toString}")
       case Some(obj) =>
-        Try(tagStore.insert(tag, dfId)) match {
+        Try(tagStore.insert(tag, objId)) match {
           case Success(_) =>
             cachedStore.persist(obj)
             obj
@@ -82,12 +82,12 @@ trait TagService[T <: HasId] {
     try {
       nameRegex match {
         case None =>
-          while (elements.hasNext && results.size < maxCount) {
+          while (elements.hasNext && results.lengthCompare(maxCount) < 0) {
             results += elements.next()
           }
         case Some(regexStr) =>
           val regex = regexStr.replace(".", "\\.").replace("*", ".*").replace("?", ".?").r
-          while (elements.hasNext && results.size < maxCount) {
+          while (elements.hasNext && results.lengthCompare(maxCount) < 0) {
             val (tag, entry) = elements.next()
             if (regex.findFirstIn(tag.toString()).isDefined) {
               results += Tuple2(tag, entry)
@@ -110,7 +110,7 @@ trait TagService[T <: HasId] {
     */
   def get(identifier: String): T = {
     // a bit verbose, so we have meaningful error messages
-    val dfId = Try(UUID.fromString(identifier)) match {
+    val objId = Try(UUID.fromString(identifier)) match {
       case Success(id) => id
       case Failure(_) =>
         Try(Tag.fromString(identifier)) match {
@@ -124,9 +124,14 @@ trait TagService[T <: HasId] {
         }
     }
 
-    cachedStore.get(dfId) match {
-      case Some(df) => df
-      case None => throw new NoSuchElementException(s"ID not found: ${dfId.toString}")
+    cachedStore.get(objId) match {
+      case Some(obj) => obj
+      case None => throw new NoSuchElementException(s"ID not found: ${objId.toString}")
     }
   }
+
+  /**
+    * Find the given UUID in this store, return a sequence of tags
+    */
+  def find(id: UUID): Seq[Tag] = tagStore.find(id)
 }

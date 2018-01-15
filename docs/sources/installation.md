@@ -1,7 +1,7 @@
 The main component of Cebes is a server running as a 
 [Spark application](https://spark.apache.org/docs/latest/index.html). As a Cebes user, you use a 
 client to connect to this server and make it perform tasks of your choice. Cebes provides a Python
-client called `pycebes`, but other language could be supported in the future.
+client called `pycebes`, but other languages could be supported in the future.
 
 ![Cebes server and client](imgs/install_server_client.png)
 
@@ -9,10 +9,10 @@ client called `pycebes`, but other language could be supported in the future.
 
 ## Install the Python client _pycebes_
 
-`pycebes` is the Python client that you use to work with Cebes server. 
+`pycebes` is the Python client that you use to work with _Cebes server_. 
 
-However, when you install `pycebes`, Cebes server is also included, so that you can do everything 
-as if it was a full-blown Cebes server. You are not forced to use this server though. The client 
+However, when you install `pycebes`, _Cebes server_ is also included, so that you can do everything 
+as if it was a full-blown Cebes system. You are not forced to use this server though. The client 
 works with any compatible Cebes server.
 
 1. (Optional) Install docker for your workstation: [Mac](https://docs.docker.com/docker-for-mac/install/), 
@@ -22,6 +22,8 @@ works with any compatible Cebes server.
     
     You can skip this step if you don't want to have Cebes server running locally. Whatever you choose, you
     can always connect to a Cebes server running on a separated Spark cluster.
+    
+    In the future, we might provide playground Cebes servers for you to play with. Stay tuned!
     
 2. Install `pycebes`:
     
@@ -138,6 +140,8 @@ for more information.
              --conf 'spark.driver.extraJavaOptions=-Dcebes.logs.dir=/tmp/' \
              cebes-http-server-assembly-${CEBES_VERSION}.jar
 
+An example bash script can be found under `docker/http-server/start_cebes.sh` on github.
+
 ---
 
 ## Automated deployment
@@ -158,6 +162,8 @@ using environment variables, or the `extraJavaOptions` field when running `spark
 | CEBES_HTTP_PORT | cebes.http.port | The port on which the HTTP service will be listening, to be combined with HTTP_INTERFACE | 21000 |
 | CEBES_HTTP_SERVER_SECRET | cebes.http.server.secret | The secret string to be used in authentication of the HTTP server | _skipped_ |
 | CEBES_UPLOAD_PATH | cebes.upload.path | The directory to upload data to | /tmp/upload/ |
+| CEBES_DEFAULT_REPOSITORY_HOST | cebes.default.repository.host | The default repository to talk to, used in http-server | repo.cebes.io |
+| CEBES_DEFALT_REPOSITORY_PORT | cebes.default.repository.port | The default repository port to talk to, used in http-server | 80 |
 | CEBES_HIVE_METASTORE_URL | cebes.hive.metastore.url | URL for the hive metastore |  |
 | CEBES_HIVE_METASTORE_DRIVER | cebes.hive.metastore.driver | Driver name for the hive metastore | org.mariadb.jdbc.Driver |
 | CEBES_HIVE_METASTORE_USERNAME | cebes.hive.metastore.username | Username for the hive metastore |  |
