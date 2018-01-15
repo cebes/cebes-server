@@ -103,11 +103,13 @@ class PipelineHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
     assert(r1a.path === "my-tag/abc")
     assert(r1a.version === "v1")
 
-    val ex1 = intercept[ServerException] {
-      wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
-        TagInfoRequest("non-exists-tag", None, None)))
-    }
-    assert(ex1.message.contains("Tag not found"))
+    val r1b = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
+        TagInfoRequest("new-tag", None, None)))
+    assert(r1b.tag === Tag.fromString("new-tag"))
+    assert(r1b.host.nonEmpty)
+    assert(r1b.port > 0)
+    assert(r1b.path === "new-tag")
+    assert(r1b.version === "default")
 
     // it picks up the default given in the request
     val r2 = wait(postAsync[TagInfoRequest, TagInfoResponse]("pipeline/taginfo",
