@@ -59,8 +59,8 @@ string, and can have multiple segments separated by `/`.
 - `version` is an optional string that can be used to uniquely identify a pipeline in a given path.
 If not specify, the default version is `default`.
 
-For example, `bob/anomoly-detection:default`, `bob/anomoly-detection:v2`, `repo.company.net/bob/anomoly-detection`,
-`localhost:35000/bob/anomoly-detection:v5` are all valid tags.
+For example, `bob/anomaly-detection:default`, `bob/anomaly-detection:v2`, `repo.company.net/bob/anomaly-detection`,
+`localhost:35000/bob/anomaly-detection:v5` are all valid tags.
 
 See [this section](session_df.md) for using Session API to manage tags in Cebes server, and 
 [this page](pipelines_repo.md) for pushing and pulling pipelines to/from repositories via tags.
@@ -69,7 +69,7 @@ See [this section](session_df.md) for using Session API to manage tags in Cebes 
 ## Where to from here?
 
 Check [this page](pipelines_api.md) for a sample Pipeline and learn how to use Pipeline APIs.
-Cebes provides a rich set of stages, including [ETL stages](pipelines_etl.md) and [ML stages](pipelines_ml.md).
+Cebes provides a rich set of stages, check programming guide for more information.
 
 Once constructed, pipelines can be kept in Cebes server to run on your in-house datasets. They can also
 be [published to a pipeline repository](pipelines_repo.md) so that they are available for 

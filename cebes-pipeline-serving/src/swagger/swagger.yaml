@@ -44,7 +44,7 @@ paths:
       summary: Send an asynchronous inference request
       description: >-
         This endpoint returns a `requestId`, that can be used to query the
-        `request/{requestId}` endpoint and retrive the result asynchronously.
+        `request/{requestId}` endpoint and retrieve the result asynchronously.
       requestBody:
         description: >-
           Describe the requested pipeline, the map of input values and the list of output slots

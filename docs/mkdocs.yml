@@ -1,6 +1,5 @@
 site_name: Cebes Documentation
-theme:
-  name: readthedocs
+theme: readthedocs
 docs_dir: sources
 repo_url: http://github.com/phvu/cebes-server
 site_url: http://cebes.io/
