@@ -285,12 +285,12 @@ class PipelineHandlerSuite extends AbstractRouteSuite with TestPropertyHelper {
 
     // get all the tags
     val tags = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags", TagsGetRequest(None, 10))
-    assert(tags.length > 1)
+    assert(tags.nonEmpty)
     assert(tags.exists(_.tag.toString === "tag1:default"))
 
     val tags1 = request[TagsGetRequest, Array[TaggedPipelineResponse]]("pipeline/tags",
       TagsGetRequest(Some("randomstuff???"), 10))
-    assert(tags1.length === 0)
+    assert(tags1.isEmpty)
 
     // delete tag
     requestPipeline("pipeline/tagdelete", TagDeleteRequest(Tag.fromString("tag1:default")))
