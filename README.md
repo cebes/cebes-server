@@ -58,7 +58,7 @@ You can  run Cebes in a Docker container, locally or on a Spark cluster.
 Cebes can be included in a Docker image with Spark running in local mode. To build the docker image:
 
     sbt clean compile assembly
-    docker build -t cebes -f docker/Dockerfile.local .
+    docker build -t cebes -f docker/http-server/Dockerfile .
     
 The docker image contains everything needed by Cebes, including a MariaDB instance. It can then be run as:
 

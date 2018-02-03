@@ -1,33 +1,57 @@
-site_name: Cebes Documentation
-theme: readthedocs
+site_name: Cebes
+
+# cinder, flatly, mkdocs (scroll), spacelab, united, simplex
+# cyborg, cerulean, slate, yeti, cosmo
+theme:
+  name: material
+  logo: 'imgs/cebes_inverse.png'
+  favicon: 'imgs/cebes.ico'
+  palette:
+      primary: 'indigo'
+      accent: 'deep purple'
+
 docs_dir: sources
 repo_url: http://github.com/phvu/cebes-server
 site_url: http://cebes.io/
+
 markdown_extensions:
-  - fenced_code
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - type: 'github'
+      link: 'https://github.com/phvu/cebes-server'
+    - type: 'twitter'
+      link: 'https://twitter.com/cebes_io'
+    - type: 'gitter'
+      link: 'https://gitter.im/cebes-io/Lobby'
 
 edit_uri: edit/master/docs/sources
 site_description: 'Cebes - the integrated framework for Data Science'
-
 pages:
 - Home:
   - Overview: index.md
   - Installation: installation.md
+  - Roadmap: roadmap.md
 - Cebes Session:
   - Key concepts: session.md
   - Load data into Cebes: session_load_data.md
   - Manage Dataframes, models and pipelines: session_df.md
+  - Session API Reference: session_api.md
 - Cebes Dataframe:
   - Key concepts: dataframe_concepts.md
   - User guide: dataframe_guide.md
   - Dataframe API Reference: dataframe_reference.md
   - Functional API Reference: dataframe_functions.md
-- Machine Learning pipelines:
+- Cebes Pipelines:
   - Key concepts: pipelines_concepts.md
   - Working with Cebes Pipelines: pipelines_api.md
-  - Hyperparameter optimization: pipelines_hyperopt.md
-- Pipeline repository:
-  - Working with repositories in pycebes: pipelines_repo.md
-  - Install pipeline repository: pipelines_deploy.md
-- Serving pipelines: serving.md
-- Contributing: contributing.md
+  # - Hyperparameter optimization: pipelines_hyperopt.md
+  - Pipeline repository:
+    - Working with repositories in pycebes: pipelines_repo.md
+    - Install pipeline repository: pipelines_deploy.md
+  - Serving pipelines: serving.md

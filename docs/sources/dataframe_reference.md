@@ -1,4 +1,4 @@
-<h1 id="pycebes.core.dataframe.Dataframe">Dataframe</h1>
+# <h1 id="pycebes.core.dataframe.Dataframe">Dataframe</h1>
 
 ```python
 Dataframe(self, _id, _schema)
@@ -9,7 +9,7 @@ class result in remote call to the Cebes server to perform corresponding actions
 
 Users should **NOT** manually construct this class.
 
-<h2 id="pycebes.core.dataframe.Dataframe.union">union</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.union">union</h2>
 
 ```python
 Dataframe.union(self, other)
@@ -34,12 +34,12 @@ df.where(df.wax < 2).union(df.where(df.wax > 2.8)).select('customer', 'wax').sho
     4  ABBYPRESS  1.0
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.schema">schema</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.schema">schema</h2>
 
 
 The Schema of this data frame
 
-<h2 id="pycebes.core.dataframe.Dataframe.drop_duplicates">drop_duplicates</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.drop_duplicates">drop_duplicates</h2>
 
 ```python
 Dataframe.drop_duplicates(self, *columns)
@@ -79,7 +79,7 @@ df.drop_duplicates(df.customer, 'cylinder_number').shape
     (490, 40)
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.from_json">from_json</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.from_json">from_json</h2>
 
 ```python
 Dataframe.from_json(js_data)
@@ -95,7 +95,7 @@ __Returns__
 
 `Dataframe`: the result Dataframe object
 
-<h2 id="pycebes.core.dataframe.Dataframe.select">select</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.select">select</h2>
 
 ```python
 Dataframe.select(self, *columns)
@@ -136,7 +136,7 @@ df.select(cb.col('*'))
 df.alias('my_name').select('my_name.*')
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.subtract">subtract</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.subtract">subtract</h2>
 
 ```python
 Dataframe.subtract(self, other)
@@ -162,12 +162,12 @@ df.where(df.wax < 2.8).subtract(df.where(df.wax < 2)).select('customer', 'wax').
     4  colorfulimage  2.5
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.id">id</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.id">id</h2>
 
 
 Return the unique ID of this :class:`Dataframe`
 
-<h2 id="pycebes.core.dataframe.Dataframe.agg">agg</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.agg">agg</h2>
 
 ```python
 Dataframe.agg(self, *exprs)
@@ -206,7 +206,7 @@ df.agg(*[cb.count(c).alias(c) for c in df.columns])
 
 See `GroupedDataframe` for more examples
 
-<h2 id="pycebes.core.dataframe.Dataframe.cube">cube</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.cube">cube</h2>
 
 ```python
 Dataframe.cube(self, *columns)
@@ -247,7 +247,7 @@ df.cube(df.customer, 'proof_on_ctd_ink').agg({'hardener': 'max', 'wax': 'avg'}).
     4          CVS                             1.0      2.30
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.drop">drop</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.drop">drop</h2>
 
 ```python
 Dataframe.drop(self, *columns)
@@ -286,12 +286,12 @@ df1.drop(df1.customer, 'hardener').show()
     4             J34
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.broadcast">broadcast</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.broadcast">broadcast</h2>
 
 
 Marks a Dataframe as small enough for use in broadcast joins.
 
-<h2 id="pycebes.core.dataframe.Dataframe.with_column_renamed">with_column_renamed</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.with_column_renamed">with_column_renamed</h2>
 
 ```python
 Dataframe.with_column_renamed(self, existing_name, new_name)
@@ -304,7 +304,7 @@ __Arguments__
 - __existing_name (str)__:
 - __new_name (str)__:
 
-<h2 id="pycebes.core.dataframe.Dataframe.join">join</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.join">join</h2>
 
 ```python
 Dataframe.join(self, other, expr, join_type='inner')
@@ -330,12 +330,12 @@ df2 = df.where(df.wax < 2.2).select(df[c].alias('df2_{}'.format(c)) for c in df.
 df_join = df1.join(df2, df1.df1_customer == df2.df2_customer)
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.columns">columns</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.columns">columns</h2>
 
 
 Return a list of column names in this ``Dataframe``
 
-<h2 id="pycebes.core.dataframe.Dataframe.sample">sample</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.sample">sample</h2>
 
 ```python
 Dataframe.sample(self, prob=0.1, replacement=True, seed=42)
@@ -357,7 +357,7 @@ __Returns__
 
 `Dataframe`: a sample
 
-<h2 id="pycebes.core.dataframe.Dataframe.limit">limit</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.limit">limit</h2>
 
 ```python
 Dataframe.limit(self, n=100)
@@ -365,7 +365,7 @@ Dataframe.limit(self, n=100)
 
 Returns a new ``Dataframe`` by taking the first ``n`` rows.
 
-<h2 id="pycebes.core.dataframe.Dataframe.alias">alias</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.alias">alias</h2>
 
 ```python
 Dataframe.alias(self, alias='new_name')
@@ -373,7 +373,7 @@ Dataframe.alias(self, alias='new_name')
 
 Returns a new Dataframe with an alias set
 
-<h2 id="pycebes.core.dataframe.Dataframe.shape">shape</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.shape">shape</h2>
 
 
 Return a 2-tuple with number of rows and columns
@@ -386,7 +386,7 @@ __Example__
         (540, 40)
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.dropna">dropna</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.dropna">dropna</h2>
 
 ```python
 Dataframe.dropna(self, how='any', thresh=None, columns=None)
@@ -416,7 +416,7 @@ df.dropna(thresh=38)
 df.dropna(thresh=2, columns=[df.wax, 'proof_on_ctd_ink', df.hardener])
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.show">show</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.show">show</h2>
 
 ```python
 Dataframe.show(self, n=5)
@@ -444,7 +444,7 @@ df.groupby(df.customer, 'cylinder_number').count().show()
     4     TARGET             R43      1
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.fillna">fillna</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.fillna">fillna</h2>
 
 ```python
 Dataframe.fillna(self, value=None, columns=None)
@@ -464,7 +464,7 @@ __Returns:__
 
 Dataframe: a new Dataframe with holes filled
 
-<h2 id="pycebes.core.dataframe.Dataframe.sort">sort</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.sort">sort</h2>
 
 ```python
 Dataframe.sort(self, *args)
@@ -493,7 +493,7 @@ df2 = df1.sort('timestamp', df1.customer.desc)
 df1.sort('non_exist')
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.rollup">rollup</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.rollup">rollup</h2>
 
 ```python
 Dataframe.rollup(self, *columns)
@@ -534,7 +534,7 @@ df.rollup(df.customer, 'proof_on_ctd_ink').agg({'hardener': 'max', 'wax': 'avg'}
     4          CVS                             1.0      2.30
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.where">where</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.where">where</h2>
 
 ```python
 Dataframe.where(self, condition)
@@ -559,7 +559,7 @@ df.where((df.hardener >= 1) & (df.wax < 2.8)).select('wax', df.hardener, df.cust
     4  2.0       1.0   GUIDEPOSTS
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.with_storage_type">with_storage_type</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.with_storage_type">with_storage_type</h2>
 
 ```python
 Dataframe.with_storage_type(self, column, storage_type=<StorageTypes.INTEGER: ('integer', <class 'int'>)>)
@@ -577,7 +577,7 @@ __Returns__
 
 `Dataframe`: this Dataframe or a new Dataframe
 
-<h2 id="pycebes.core.dataframe.Dataframe.intersect">intersect</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.intersect">intersect</h2>
 
 ```python
 Dataframe.intersect(self, other)
@@ -602,7 +602,7 @@ df.where(df.wax > 2).intersect(df.where(df.wax < 2.8)).select('customer', 'wax')
     4  colorfulimage  2.5
 ```
 
-<h2 id="pycebes.core.dataframe.Dataframe.with_column">with_column</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.with_column">with_column</h2>
 
 ```python
 Dataframe.with_column(self, col_name, col)
@@ -616,7 +616,7 @@ __Arguments__
 - __col_name (str)__: new column name
 - __col (Column)__: ``Column`` object describing the new column
 
-<h2 id="pycebes.core.dataframe.Dataframe.with_variable_type">with_variable_type</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.with_variable_type">with_variable_type</h2>
 
 ```python
 Dataframe.with_variable_type(self, column, variable_type=<VariableTypes.DISCRETE: 'Discrete'>)
@@ -634,7 +634,7 @@ __Returns__
 
 `Dataframe`: this Dataframe or a new Dataframe
 
-<h2 id="pycebes.core.dataframe.Dataframe.take">take</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.take">take</h2>
 
 ```python
 Dataframe.take(self, n=10)
@@ -650,7 +650,7 @@ __Returns__
 
 `DataSample`: sample of maximum size `n`
 
-<h2 id="pycebes.core.dataframe.Dataframe.groupby">groupby</h2>
+## <h2 id="pycebes.core.dataframe.Dataframe.groupby">groupby</h2>
 
 ```python
 Dataframe.groupby(self, *columns)
@@ -687,7 +687,7 @@ df.groupby().count().show()
 ```
 
 
-<h1 id="pycebes.core.dataframe.GroupedDataframe">GroupedDataframe</h1>
+# <h1 id="pycebes.core.dataframe.GroupedDataframe">GroupedDataframe</h1>
 
 ```python
 GroupedDataframe(self, df, agg_columns=(), agg_type='GroupBy', pivot_column=None, pivot_values=())
@@ -695,7 +695,7 @@ GroupedDataframe(self, df, agg_columns=(), agg_type='GroupBy', pivot_column=None
 
 Represent a grouped Dataframe, providing aggregation functions.
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.GROUPBY">GROUPBY</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.GROUPBY">GROUPBY</h2>
 
 str(object='') -> str
 str(bytes_or_buffer[, encoding[, errors]]) -> str
@@ -707,7 +707,7 @@ Otherwise, returns the result of object.__str__() (if defined)
 or repr(object).
 encoding defaults to sys.getdefaultencoding().
 errors defaults to 'strict'.
-<h2 id="pycebes.core.dataframe.GroupedDataframe.mean">mean</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.mean">mean</h2>
 
 ```python
 GroupedDataframe.mean(self, *columns)
@@ -732,7 +732,7 @@ df.groupby(df.customer).mean('hardener', 'wax').show()
                 JCP       0.975000  2.437500
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.sum">sum</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.sum">sum</h2>
 
 ```python
 GroupedDataframe.sum(self, *columns)
@@ -757,7 +757,7 @@ df.groupby(df.customer).sum('hardener', 'wax').show()
                 JCP            3.9      9.75
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.pivot">pivot</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.pivot">pivot</h2>
 
 ```python
 GroupedDataframe.pivot(self, column, values=None)
@@ -810,7 +810,7 @@ df.groupby(df.customer).pivot('proof_on_ctd_ink', values=['YES', 'NO']).count().
                 JCP  4.0  NaN
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.min">min</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.min">min</h2>
 
 ```python
 GroupedDataframe.min(self, *columns)
@@ -835,7 +835,7 @@ df.groupby(df.customer).min('hardener', 'wax').show()
                JCP            0.6      1.75
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.CUBE">CUBE</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.CUBE">CUBE</h2>
 
 str(object='') -> str
 str(bytes_or_buffer[, encoding[, errors]]) -> str
@@ -847,7 +847,7 @@ Otherwise, returns the result of object.__str__() (if defined)
 or repr(object).
 encoding defaults to sys.getdefaultencoding().
 errors defaults to 'strict'.
-<h2 id="pycebes.core.dataframe.GroupedDataframe.agg">agg</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.agg">agg</h2>
 
 ```python
 GroupedDataframe.agg(self, *exprs)
@@ -892,7 +892,7 @@ df.groupby(df.customer).agg({'timestamp': 'max', 'job_number': 'min', 'job_numbe
                 JCP        19910322                  4
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.avg">mean</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.avg">mean</h2>
 
 ```python
 GroupedDataframe.mean(self, *columns)
@@ -917,7 +917,7 @@ df.groupby(df.customer).mean('hardener', 'wax').show()
                 JCP       0.975000  2.437500
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.max">max</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.max">max</h2>
 
 ```python
 GroupedDataframe.max(self, *columns)
@@ -942,7 +942,7 @@ df.groupby(df.customer).max('hardener', 'wax').show()
                 JCP            1.7       3.0
 ```
 
-<h2 id="pycebes.core.dataframe.GroupedDataframe.ROLLUP">ROLLUP</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.ROLLUP">ROLLUP</h2>
 
 str(object='') -> str
 str(bytes_or_buffer[, encoding[, errors]]) -> str
@@ -954,7 +954,7 @@ Otherwise, returns the result of object.__str__() (if defined)
 or repr(object).
 encoding defaults to sys.getdefaultencoding().
 errors defaults to 'strict'.
-<h2 id="pycebes.core.dataframe.GroupedDataframe.count">count</h2>
+## <h2 id="pycebes.core.dataframe.GroupedDataframe.count">count</h2>
 
 ```python
 GroupedDataframe.count(self)

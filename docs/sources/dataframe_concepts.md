@@ -1,7 +1,5 @@
 Built on top of Spark, Cebes provides a rich set of APIs for loading, cleaning, transforming data at scale.
-
-Assume that you already [loaded data into Cebes](session_load_data.md). This document describes
-some basic concepts in Cebes, as well as functions for doing analytics on Dataframes.
+This document describes the basic concepts of Cebes Dataframe.
 
 <a name="cebes-types"></a>
 ## Storage types, Variable types and Schema

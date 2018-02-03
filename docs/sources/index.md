@@ -1,5 +1,3 @@
-# Cebes: the integrated framework for Data Science
-
 ## Meet Cebes - your new Data Science buddy
 
 Cebes' mission is to _simplify_ Data Science, improve Data Scientists' productivity, 
