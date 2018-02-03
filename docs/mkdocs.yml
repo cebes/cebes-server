@@ -27,7 +27,7 @@ extra:
       link: 'https://github.com/phvu/cebes-server'
     - type: 'twitter'
       link: 'https://twitter.com/cebes_io'
-    - type: 'gitter'
+    - type: 'globe'
       link: 'https://gitter.im/cebes-io/Lobby'
 
 edit_uri: edit/master/docs/sources
