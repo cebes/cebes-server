@@ -7,10 +7,8 @@ Using `pycebes`, you need to connect to Cebes server by creating a `Session`:
 >>> session = cb.Session()
     [INFO] pycebes.internal.docker_helpers: Starting Cebes container 
         cebes-server-x.xx.x-0[phvu/cebes:x.xx.x] with data path at $HOME/.cebes/x.xx.x
-    [INFO] pycebes.internal.docker_helpers: Cebes container started, 
-        listening at localhost:32770
-    [INFO] pycebes.core.session: Connecting to Cebes container 
-        cebes-server-x.xx.x-0[phvu/cebes:x.xx.x] at port 32770
+    [INFO] pycebes.internal.docker_helpers: Cebes container started, listening at localhost:32770
+    [INFO] pycebes.core.session: Connecting to Cebes container cebes-server-x.xx.x-0[phvu/cebes:x.xx.x] at port 32770
     [INFO] pycebes.core.session: Spark UI can be accessed at http://localhost:32771
 ```
 

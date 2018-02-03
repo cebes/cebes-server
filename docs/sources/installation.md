@@ -103,7 +103,8 @@ for more information.
     The script will ask for the address of the database, the admin username of the database, and create
     the users and databases needed by Cebes server.
 
-    > **NOTE    **: Remember to change the default usernames and passwords in this script to something more secured.
+    !!! attention
+        Remember to change the default usernames and passwords in this script to something more secured.
 
 2. Download the latest version of `cebes-http-server`:
 
@@ -116,6 +117,7 @@ for more information.
 
 3. Submit Cebes server as a Spark application:
 
+        #!/usr/bin/env bash
         CEBES_MYSQL_SERVER="<MySQL_server_host:my_sql_server_port>"
         MYSQL_OPTIONS="?createDatabaseIfNotExist=true&nullNamePatternMatchesAll=true&useSSL=false"
         
@@ -139,7 +141,7 @@ for more information.
              --master "yarn" \
              --conf 'spark.driver.extraJavaOptions=-Dcebes.logs.dir=/tmp/' \
              cebes-http-server-assembly-${CEBES_VERSION}.jar
-
+    
 An example bash script can be found under `docker/http-server/start_cebes.sh` on github.
 
 ---

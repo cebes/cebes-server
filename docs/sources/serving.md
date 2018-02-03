@@ -24,7 +24,9 @@ that are specified in its [configuration file](#configure-cebes-serving).
 
 Since Cebes serving is designed to answer online queries of typically a few data samples, it runs on 
 Spark in local mode. Scalability can be achieved by having multiple instances of Cebes serving behind 
-a load balancer. Talk to us if you need help in designing and building such a system!
+a load balancer. Many Cebes components were designed to be compatible with scalable deployment systems
+such as [Kubernetes](https://kubernetes.io/) and friends. 
+Talk to us if you need help in designing and building such a system!
 
 ---
 <a name="configure-cebes-serving"></a>

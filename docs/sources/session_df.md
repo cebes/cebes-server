@@ -72,11 +72,10 @@ To delete `preprocessed_data:v1`, we need to be specific:
 >>> session.dataframe.untag('preprocessed_data:v1')
 ```
 
-> **Summary**: 
->
->    - _Tag_ is a string given to a Dataframe, so that users can retrieve them later. 
->    - Tagged Dataframes will be persisted in Cebes.
->    - Tag has format `NAME:VERSION`. When unspecified, the default VERSION is `default`.
+!!! hint "Summary"
+    - _Tag_ is a string given to a Dataframe, so that users can retrieve them later. 
+    - Tagged Dataframes will be persisted in Cebes.
+    - Tag has format `NAME:VERSION`. When unspecified, the default VERSION is `default`.
 
 ---
 ## Managing Models and Pipelines
