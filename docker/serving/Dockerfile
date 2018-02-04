@@ -11,7 +11,7 @@ ENV CEBES_MYSQL_URL="jdbc:mysql://localhost/cebes_store" \
     CEBES_HIVE_METASTORE_DRIVER="org.mariadb.jdbc.Driver" \
     CEBES_HIVE_METASTORE_USERNAME="docker_cebes_hive" \
     CEBES_HIVE_METASTORE_PASSWORD="docker_cebes_hive_pwd" \
-    CEBES_SERVING_DIR="${CEBES_SERVING_DIR:-/cebes/serving}" \
+    CEBES_EXPOSED_DIR="/cebes/serving" \
     WITH_MARIADB="${WITH_MARIADB:-true}"
 
 # mariadb
@@ -45,6 +45,6 @@ WORKDIR /cebes
 EXPOSE 4040
 EXPOSE 23000
 
-VOLUME $CEBES_SERVING_DIR
+VOLUME $CEBES_EXPOSED_DIR
 
 ENTRYPOINT ["/cebes/start_cebes_serving.sh"]

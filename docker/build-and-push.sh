@@ -18,25 +18,23 @@ cp ../cebes-http-server/target/scala-2.11/cebes-http-server-assembly-*.jar ./bin
 cp ../cebes-pipeline-serving/target/scala-2.11/cebes-pipeline-serving-assembly-*.jar ./binaries/
 cp ../cebes-pipeline-repository/target/scala-2.11/cebes-pipeline-repository-assembly-*.jar ./binaries/
 
-for maria_db in true false; do
+function build {
+    local img_tag="$1"
+    local docker_file="$2"
 
-    db_tag=""
-    if [ "x$maria_db" = "xfalse" ]; then db_tag="-no-mariadb"; fi
+    for maria_db in true false; do
+        local db_tag=""
+        if [ "x$maria_db" = "xfalse" ]; then db_tag="-no-mariadb"; fi
 
-    image_tag="${HTTP_SERVER_TAG}${db_tag}"
-    echo "Building and pushing ${image_tag}"
-    docker build -t ${image_tag} -f http-server/Dockerfile --build-arg WITH_MARIADB=${maria_db} .
-    docker push ${image_tag}
+        local full_img_tag="${img_tag}${db_tag}"
+        echo "Building and pushing ${full_img_tag} from Dockerfile at ${docker_file}"
+        docker build -t ${full_img_tag} -f ${docker_file} --build-arg WITH_MARIADB=${maria_db} .
+        docker push ${full_img_tag}
+    done
+}
 
-    image_tag="${SERVING_TAG}${db_tag}"
-    echo "Building and pushing ${image_tag}"
-    docker build -t ${image_tag} -f serving/Dockerfile --build-arg WITH_MARIADB=${maria_db} .
-    docker push ${image_tag}
-
-    image_tag="${REPOSITORY_TAG}${db_tag}"
-    echo "Building and pushing ${image_tag}"
-    docker build -t ${image_tag} -f repository/Dockerfile --build-arg WITH_MARIADB=${maria_db} .
-    docker push ${image_tag}
-done
+build ${HTTP_SERVER_TAG} http-server/Dockerfile
+build ${SERVING_TAG} serving/Dockerfile
+build ${REPOSITORY_TAG} repository/Dockerfile
 
 rm -r binaries

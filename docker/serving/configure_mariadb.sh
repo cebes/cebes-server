@@ -2,7 +2,7 @@
 
 MYSQL_ROOT_PASSWORD="root_P@ssw0rd"
 
-MARIADB_DATA_DIR=${1:-"/cebes/data/mysql"}
+MARIADB_DATA_DIR=${1:-"/cebes/serving/mysql"}
 
 if [ -f ${MARIADB_DATA_DIR}/initialized ]; then
     # already configure

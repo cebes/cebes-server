@@ -7,7 +7,8 @@ ENV CEBES_MYSQL_URL="jdbc:mysql://localhost/cebes_store" \
     CEBES_MYSQL_DRIVER="org.mariadb.jdbc.Driver" \
     CEBES_MYSQL_USERNAME="docker_cebes_server" \
     CEBES_MYSQL_PASSWORD="docker_cebes_server_pwd" \
-    CEBES_REPO_DIR="${CEBES_REPO_DIR:-/cebes/repository}" \
+    CEBES_EXPOSED_DIR="/cebes/repository" \
+    CEBES_REPOSITORY_PATH="/cebes/repository/repos" \
     WITH_MARIADB="${WITH_MARIADB:-true}"
 
 # mariadb
@@ -27,6 +28,6 @@ WORKDIR /cebes
 
 EXPOSE 22000
 
-VOLUME $CEBES_REPO_DIR
+VOLUME $CEBES_EXPOSED_DIR
 
 ENTRYPOINT ["/cebes/start_cebes_repository.sh"]

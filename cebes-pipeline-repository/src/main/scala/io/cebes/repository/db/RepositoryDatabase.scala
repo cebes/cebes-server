@@ -63,14 +63,24 @@ object RepositoryDatabase extends Schema with LazyLogging {
 
   def initialize(): Unit = {
     // this is rather bad. Should generate the DDL separately and evolve it manually
-    transaction {
+    def tryQuery(created: Boolean): Unit = {
       try {
-        from(repositories)(r => select(r)).size
+        transaction {
+          from(repositories)(r => select(r)).size
+        }
       } catch {
         case ex: SquerylSQLException =>
-          logger.error("Failed to select some entries from the DB. Trying to create the tables", ex)
-          this.create
+          if (created) {
+            throw ex
+          } else {
+            logger.info("Failed to select some entries from the DB. Will try to create tables")
+            logger.info(s"Error was: ${ex.getMessage}")
+            transaction(this.create)
+            tryQuery(true)
+            logger.info("Created tables successfully")
+          }
       }
     }
+    tryQuery(false)
   }
 }
