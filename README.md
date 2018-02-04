@@ -1,5 +1,10 @@
 # cebes-server
+
+[![Apache 2.0 license](http://img.shields.io/badge/license-Apache_2.0-brightgreen.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](http://cebes.io:8080/buildStatus/icon?job=cebes-server-pull-request)](http://cebes.io:8080/job/cebes-server-pull-request)
+[![Issues](http://img.shields.io/github/issues/cebes/cebes-server.svg)](https://github.com/cebes/cebes-server/issues)
+
+[![Gitter chat](https://badges.gitter.im/cebes-io/servers.svg)](https://gitter.im/cebes-io/servers "Gitter chat")
 
 Cebes - The integrated framework for Data Science at Scale
 
@@ -48,6 +53,8 @@ If you have an AWS account, you can enable those tests by setting the `CEBES_TES
 and `CEBES_TEST_AWS_SECRETKEY` variables in `bin/env.sh`.
     
 The tests will run Spark in local mode.
+
+---
 
 ## Running Cebes
 
@@ -107,7 +114,9 @@ Use `spark-submit` script to submit the Cebes assembly jar like any other Spark 
         ${CEBES_JAR}
         
 See [Spark documentation](https://spark.apache.org/docs/latest/submitting-applications.html) for advanced options.
-        
+
+---
+
 ## Development guide
 
 ### Environment variables and configurations
@@ -139,3 +148,12 @@ UI out of that.
 
 At the moment, some APIs might not be fixed and their swagger documentation might be not there yet. Contribute if you find
 something missing!
+
+### Get involved!
+
+Fork the project, create an [issue](https://github.com/cebes/cebes-server/issues) 
+if you find bugs or have a feature request. 
+
+Join us on [gitter](https://gitter.im/cebes-io/servers) to interact with people. 
+If you prefer the good old way, drop a message to our
+[mailing list](https://groups.google.com/forum/#!forum/cebes-io).
