@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION_TAG=${1:-"0.10.0"}
+VERSION_TAG=${1:-"0.11.0-snapshot"}
 HTTP_SERVER_TAG="cebesio/http-server:${VERSION_TAG}"
 SERVING_TAG="cebesio/pipeline-serving:${VERSION_TAG}"
 REPOSITORY_TAG="cebesio/pipeline-repo:${VERSION_TAG}"
