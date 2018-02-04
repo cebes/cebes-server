@@ -23,9 +23,10 @@ class ServerProvider @Inject()(private val servingConfiguration: ServingConfigur
                                private val injector: Injector) extends Provider[HttpServer] {
 
   override def get(): HttpServer = {
-    if (servingConfiguration.secured)
+    if (servingConfiguration.secured) {
       injector.getInstance(classOf[CebesServingSecuredServer])
-    else
+    } else {
       injector.getInstance(classOf[CebesServingServer])
+    }
   }
 }
