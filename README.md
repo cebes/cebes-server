@@ -1,7 +1,7 @@
 # cebes-server
 
 [![Apache 2.0 license](http://img.shields.io/badge/license-Apache_2.0-brightgreen.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](http://cebes.io:8080/buildStatus/icon?job=cebes-server-pull-request)](http://cebes.io:8080/job/cebes-server-pull-request)
+[![Build Status](http://ci.cebes.io:8080/buildStatus/icon?job=cebes-server-pull-request)](http://cebes.io:8080/job/cebes-server-pull-request)
 [![Issues](http://img.shields.io/github/issues/cebes/cebes-server.svg)](https://github.com/cebes/cebes-server/issues)
 
 [![Gitter chat](https://badges.gitter.im/cebes-io/servers.svg)](https://gitter.im/cebes-io/servers "Gitter chat")
